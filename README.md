@@ -1,4 +1,4 @@
-# lmtyas - Let me tell you a secret - (WIP)
+# lmtyas - Let me tell you a secret
 
 A web service written in Rust that allows an authenticated user to send secrets like passwords to other authenticated users.
 
