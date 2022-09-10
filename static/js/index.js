@@ -1,0 +1,1 @@
+queryWebService("/system/is_server_ready", validateSystemStatus, systemIsNotReady);
