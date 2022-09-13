@@ -130,6 +130,7 @@ async fn main() -> std::io::Result<()> {
                 web::scope("/system")
                     .route("/is_server_ready", web::get().to(is_server_ready))
                     .route("/get/login-hint", web::get().to(get_login_hint))
+                    .route("/get/mail-hint", web::get().to(get_mail_hint))
                     .route("/get/imprint-link", web::get().to(get_imprint_link)),
             )
             .service(web::resource("/").route(web::get().to(redirect_to_index)))

@@ -75,6 +75,18 @@ pub async fn get_login_hint(
     HttpResponse::ok_text_response(login_hint.to_string())
 }
 
+/// returns a hint abou valid mail addresses
+pub async fn get_mail_hint(
+    application_configuration: web::Data<ApplicationConfiguration>,
+) -> impl Responder {
+    match &application_configuration.configuration_file.mail_hint {
+        Some(mail_hint) => {
+            format!("{{\"MailHint\": \"{}\"}}", &mail_hint)
+        }
+        None => "{\"MailHint\": \"\"}".to_string(),
+    }
+}
+
 /// returns a href and target to the imprint page
 pub async fn get_imprint_link(
     application_configuration: web::Data<ApplicationConfiguration>,

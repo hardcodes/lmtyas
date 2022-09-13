@@ -7,7 +7,21 @@ var keepAliveCount = 0;
 var keep_alive_interval = initKeepAliveInterval("/authenticated/keep_session_alive");
 queryWebService("/system/is_server_ready", validateSystemStatus, systemIsNotReady);
 queryWebService("/authenticated/user/get/details/from", displayFromData, function () { });
+queryWebService("/system/get/mail-hint", setMailHint, function () { });
 
+function setMailHint(resulttext) {
+    try {
+        console.log(resulttext);
+        var data = JSON.parse(resulttext);
+        if (data.MailHint) {
+            const imprint = document.getElementById("ToEmail");
+            imprint.setAttribute('placeholder', data.MailHint);
+        }
+    }
+    catch (e) {
+        console.log(e);
+    }
+}
 
 function displaySubmission(resulttext) {
     if (typeof resulttext !== 'undefined') {

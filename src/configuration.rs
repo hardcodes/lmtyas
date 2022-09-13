@@ -48,6 +48,7 @@ pub struct ConfigurationFile {
     #[cfg(feature = "ldap-auth")]
     pub ldap_configuration: LdapAuthConfiguration,
     pub login_hint: String,
+    pub mail_hint: Option<String>,
     pub imprint: Imprint,
 }
 

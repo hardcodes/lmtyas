@@ -49,6 +49,7 @@ r##"Here is an example of a working configuration file:
         "valid_user_regex": "^[\\w\\d\\-]{3,8}"
     },
     "login_hint": "A.C.M.E. LDAP account",
+    "mail_hint": "firstname.lastname@acme.local",
     "imprint": {
         "href": "https://www.acme.local",
         "target": "_blank"
