@@ -8,6 +8,7 @@ mod authentication_middleware;
 mod cli_parser;
 mod configuration;
 mod cookie_functions;
+mod get_userdata_trait;
 mod handler_functions;
 mod header_value_trait;
 mod http_traits;
@@ -18,7 +19,6 @@ mod mail_noauth_notls;
 mod rsa_functions;
 mod secret_functions;
 mod unsecure_string;
-mod get_userdata_trait;
 use actix_files::Files;
 use actix_web::{guard, middleware, web, App, HttpResponse, HttpServer};
 use authenticated_user::cleanup_authenticated_users_hashmap;
@@ -100,11 +100,18 @@ async fn main() -> std::io::Result<()> {
         "default-src 'self';",
         "frame-ancestors 'none';"
     );
-    info!("{} {} will bind to {}", &PROGRAM_NAME, &PROGRAM_VERSION, &web_bind_address);
+    info!(
+        "{} {} will bind to {}",
+        &PROGRAM_NAME, &PROGRAM_VERSION, &web_bind_address
+    );
     HttpServer::new(move || {
         App::new()
             // Enable the logger.
-            .wrap(middleware::Logger::default())
+            .wrap(
+                middleware::Logger::default()
+                    // exclude the password from appearing in the log
+                    .exclude_regex("/authenticated/sysop/set_password_for_rsa_rivate_key"),
+            )
             .wrap(
                 middleware::DefaultHeaders::new()
                     .add((
