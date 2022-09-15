@@ -6,6 +6,7 @@ loginForm.addEventListener('submit', function (e) {
 var keepAliveCount = 0;
 var keep_alive_interval = initKeepAliveInterval("/authenticated/keep_session_alive");
 queryWebService("/system/is_server_ready", validateSystemStatusLocal, systemIsNotReadyLocal);
+document.getElementById("RsaPassword").focus();
 
 function validateSystemStatusLocal(resulttext) {
     try {
@@ -29,8 +30,7 @@ function systemIsNotReadyLocal() {
 
 function systemIsReadyLocal() {
     document.getElementById("ServiceIsNotReady").style.display = "none";
-    document.getElementById("ServiceIsReady").style.display = "block";
-    document.getElementById("RsaPassword").focus();
+    document.getElementById("ServiceIsReady").style.display = "block";  
 }
 
 function setRsaPassword() {
