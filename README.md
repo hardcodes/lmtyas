@@ -53,6 +53,7 @@ See [lmtyas-config.json](conf.dev/lmtyas-config.json) for an example configurati
 |     "valid_user_regex"         | regex of valid user names, e.g. `"^[\\w\\d\\-]{3,8}"`                                                     |
 | },                             | <== end of array                                                                                          |
 | "login_hint"                   | hint for users which account to use for login, e.g. `"A.C.M.E. LDAP account"`                             |
+| "mail_hint"                    | optional hint what mail address format should be used, e.g. `givenname.surname@acme.local`                |
 | "imprint": {                   | ==> array with imprint link data                                                                          |
 | "href"                         | link to an imprint page, e.g. `"https://www.acme.local"`                                                  |
 | "target"                       | target window for imprint, one out of `"_self"`, `"_blank"`, `"_parent"`, `"_top"`                        |
@@ -68,6 +69,7 @@ See [lmtyas-config.json](conf.dev/lmtyas-config.json) for an example configurati
      
         URL must be in the template, see [mailtemplate.txt](./conf.dev/mailtemplate.txt).
 - **NOTE 2** The arrays `email_configuration` and `ldap_configuration` may be absent or differ, depending on the selected features. See section *[Compile and install -features](#compile-and-install---features)*.
+- **NOTE 3** The directive `mail_hint` may be absent. If so the default `firstname.lastname@acme.local` will be used.
 
 You need a SSl certificate and its unencrypted key in pem format. Create your own *[set of rsa keys](#security---data-encryption---rsa-keys)*.
 
