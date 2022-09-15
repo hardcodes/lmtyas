@@ -2,9 +2,7 @@
 extern crate env_logger;
 use crate::aes_functions::{DecryptAes, EncryptAes};
 use crate::authenticated_user::{AuthenticatedAdministrator, AuthenticatedUser};
-use crate::authentication_functions::{
-    get_authenticated_user, update_authenticated_user_cookie_lifetime,
-};
+use crate::authentication_functions::update_authenticated_user_cookie_lifetime;
 #[cfg(feature = "ldap-auth")]
 use crate::authentication_ldap::LdapAuthConfiguration;
 use crate::configuration::ApplicationConfiguration;
@@ -216,7 +214,7 @@ pub async fn set_password_for_rsa_rivate_key(
 ///
 /// # Arguments
 ///
-/// - `bytes` - the POSTed bytes from the form
+/// - `bytes`:                     the POSTed bytes from the form
 /// - `application_configuration`: application configuration
 ///
 /// # Returns
@@ -311,15 +309,14 @@ pub async fn store_secret(
             );
             debug!("url_payload = {}", &url_payload);
             // rsa encrypt url payload
-            let encrypted_url_payload = match rsa_read_lock
-                .encrypt_str(&url_payload)
-            {
+            let encrypted_url_payload = match rsa_read_lock.encrypt_str(&url_payload) {
                 Ok(encrypted_url_payload) => encrypted_url_payload,
                 Err(e) => {
                     return HttpResponse::err_text_response(format!("ERROR: {}", &e));
                 }
             };
-            let encrypted_percent_encoded_url_payload = utf8_percent_encode(&encrypted_url_payload, FRAGMENT);
+            let encrypted_percent_encoded_url_payload =
+                utf8_percent_encode(&encrypted_url_payload, FRAGMENT);
             debug!(
                 "encrypted_percent_encoded_url_payload = {}",
                 &encrypted_percent_encoded_url_payload
@@ -374,126 +371,102 @@ pub async fn store_secret(
 ///
 /// # Arguments
 ///
-/// - encrypted_percent_encoded_url_payload: web::Path<String>, tail of the url
-/// - `application_configuration`: application configuration
+/// - encrypted_percent_encoded_url_payload: tail of the url
+/// - `application_configuration`:           application configuration
+/// - `user`:                                authenticated user calling this function
 ///
 /// # Returns
 ///
 /// - `HttpResponse`
 pub async fn reveal_secret(
-    req: HttpRequest,
     encrypted_percent_encoded_url_payload: web::Path<String>,
     application_configuration: web::Data<ApplicationConfiguration>,
+    user: AuthenticatedUser,
 ) -> HttpResponse {
-    debug!("reveal_secret()");
-    match get_authenticated_user(&req) {
-        Err(err) => HttpResponse::from_error(err),
-        Ok(auth_request) => {
-            debug!(
-                "encrypted_percent_encoded_url_payload {}",
-                &encrypted_percent_encoded_url_payload
-            );
-            let encrypted_url_payload =
-                percent_decode_str(&encrypted_percent_encoded_url_payload).decode_utf8_lossy();
-            debug!("encrypted_url_payload {}", &encrypted_url_payload);
-            // rsa decrypt all data
-            let rsa_read_lock = application_configuration.rsa_keys.read().unwrap();
-            match rsa_read_lock.decrypt_str(&encrypted_url_payload) {
+    debug!(
+        "reveal_secret(), encrypted_percent_encoded_url_payload {}",
+        &encrypted_percent_encoded_url_payload
+    );
+    let encrypted_url_payload =
+        percent_decode_str(&encrypted_percent_encoded_url_payload).decode_utf8_lossy();
+    // rsa decrypt all data
+    let rsa_read_lock = application_configuration.rsa_keys.read().unwrap();
+    let url_payload = match rsa_read_lock.decrypt_str(&encrypted_url_payload) {
+        Ok(url_payload) => url_payload,
+        Err(e) => {
+            return HttpResponse::err_text_response(format!("ERROR: {}", &e));
+        }
+    };
+    debug!("url_payload = {}", &url_payload);
+    // get details from the payload
+    let mut split_iter = url_payload.split(";");
+    let uuid = split_iter.next().unwrap_or("uuid");
+    let iv_base64 = split_iter.next().unwrap_or("iv");
+    let key_base64 = split_iter.next().unwrap_or("key");
+    // load data from file
+    let path = Path::new(
+        &application_configuration
+            .configuration_file
+            .secret_directory,
+    )
+    .join(&uuid);
+    info!("reading secret from file {}", &path.display());
+    let encrypted_secret = match Secret::read_from_disk(&path).await {
+        Ok(encrypted_secret) => encrypted_secret,
+        Err(e) => {
+            return HttpResponse::err_text_response(format!("ERROR: {}", &e));
+        }
+    };
+    info!("success, file {} read", &path.display());
+    // rsa decrypt the stored values
+    let mut aes_encrypted = match encrypted_secret.to_decrypted(&rsa_read_lock) {
+        Ok(aes_encrypted) => aes_encrypted,
+        Err(e) => {
+            return HttpResponse::err_text_response(format!("ERROR: {}", &e));
+        }
+    };
+    debug!("aes_encrypted = {}", &aes_encrypted.secret);
+
+    // check if user is entitled to reveal this secret
+    if aes_encrypted.to_email != user.mail {
+        warn!(
+            "user{} (mail = {}) wants to access secret {} (to_email = {})",
+            &user.user_name, &user.mail, &uuid, &aes_encrypted.to_email
+        );
+        return HttpResponse::err_text_response("ERROR: access to secret not permitted!");
+    }
+    let decrypted_secret = match aes_encrypted
+        .secret
+        .decrypt_b64_aes(&key_base64, &iv_base64)
+    {
+        Ok(decrypted_secret) => decrypted_secret,
+        Err(e) => {
+            return HttpResponse::err_text_response(format!("ERROR: {}", &e));
+        }
+    };
+    // put the plaintext secret into the struct
+    aes_encrypted.secret = decrypted_secret;
+    match serde_json::to_string(&aes_encrypted) {
+        Err(e) => {
+            return HttpResponse::err_text_response(format!("ERROR: {}", &e));
+        }
+        Ok(json_response) => {
+            debug!("json_response = {}", &json_response);
+            // remove the secret file before revealing data.
+            match remove_file(&path) {
                 Err(e) => {
-                    return HttpResponse::err_text_response(format!("ERROR: {}", &e));
+                    warn!("secret {} cannot be deleted: {}", &path.display(), &e);
+                    return HttpResponse::err_text_response(format!(
+                        "ERROR: secret cannot be deleted from server"
+                    ));
                 }
-                Ok(url_payload) => {
-                    debug!("url_payload = {}", &url_payload);
-                    let mut split_iter = url_payload.split(";");
-                    let uuid = split_iter.next().unwrap_or("uuid");
-                    let iv_base64 = split_iter.next().unwrap_or("iv");
-                    let key_base64 = split_iter.next().unwrap_or("key");
-                    // load data from file
-                    let path = Path::new(
-                        &application_configuration
-                            .configuration_file
-                            .secret_directory,
-                    )
-                    .join(&uuid);
-                    info!("reading secret from file {}", &path.display());
-                    match Secret::read_from_disk(&path).await {
-                        Err(e) => {
-                            return HttpResponse::err_text_response(format!("ERROR: {}", &e));
-                        }
-                        Ok(encrypted_secret) => {
-                            info!("success, file {} read", &path.display());
-                            // rsa decrypt the stored values
-                            match encrypted_secret.to_decrypted(&rsa_read_lock) {
-                                Err(e) => {
-                                    return HttpResponse::err_text_response(format!(
-                                        "ERROR: {}",
-                                        &e
-                                    ));
-                                }
-                                Ok(mut aes_encrypted) => {
-                                    debug!("aes_encrypted = {}", &aes_encrypted.secret);
-                                    if aes_encrypted.to_email != auth_request.mail {
-                                        warn!(
-                                            "user{} (mail = {}) wants to access secret {} (to_email = {})",
-                                            &auth_request.user_name, &auth_request.mail, &uuid, &aes_encrypted.to_email
-                                        );
-                                        return HttpResponse::err_text_response(
-                                            "ERROR: access to secret not permitted!",
-                                        );
-                                    }
-                                    match aes_encrypted
-                                        .secret
-                                        .decrypt_b64_aes(&key_base64, &iv_base64)
-                                    {
-                                        Err(e) => {
-                                            return HttpResponse::err_text_response(format!(
-                                                "ERROR: {}",
-                                                &e
-                                            ));
-                                        }
-                                        Ok(decrypted_secret) => {
-                                            aes_encrypted.secret = decrypted_secret;
-                                            match serde_json::to_string(&aes_encrypted) {
-                                                Err(e) => {
-                                                    return HttpResponse::err_text_response(
-                                                        format!("ERROR: {}", &e),
-                                                    );
-                                                }
-                                                Ok(json_response) => {
-                                                    debug!("json_response = {}", &json_response);
-                                                    // remove the secret file before revealing data.
-                                                    match remove_file(&path) {
-                                                        Err(e) => {
-                                                            warn!(
-                                                                "secret {} cannot be deleted: {}",
-                                                                &path.display(),
-                                                                &e
-                                                            );
-                                                            return HttpResponse::err_text_response(
-                                                                format!("ERROR: secret cannot be deleted from server"));
-                                                        }
-                                                        Ok(_) => {
-                                                            info!(
-                                                                "revealing secret with id {}",
-                                                                &uuid
-                                                            );
-                                                            return HttpResponse::ok_json_response(
-                                                                json_response,
-                                                            );
-                                                        }
-                                                    };
-                                                }
-                                            };
-                                        }
-                                    };
-                                }
-                            };
-                        }
-                    }
+                Ok(_) => {
+                    info!("revealing secret with id {}", &uuid);
+                    return HttpResponse::ok_json_response(json_response);
                 }
             };
         }
-    }
+    };
 }
 
 /// Details about the authenticated user
