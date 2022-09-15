@@ -20,7 +20,7 @@ use log::{debug, info, warn};
 use percent_encoding::{percent_decode_str, utf8_percent_encode, AsciiSet, CONTROLS};
 use secstr::SecStr;
 use serde::{Deserialize, Serialize};
-use std::fs::{read, read_to_string, remove_file};
+use std::fs::remove_file;
 use std::path::Path;
 
 #[cfg(feature = "ldap-auth")]
@@ -99,54 +99,36 @@ pub async fn get_imprint_link(
 }
 
 /// return the custom colors.css file if it exists
-pub async fn get_colors_css() -> HttpResponse {
+pub async fn get_colors_css() -> impl Responder {
     let path_local = Path::new("local/css/colors.css");
     let path_static = Path::new("static/css/colors.css");
     let file_path = match path_local.exists() {
         true => path_local,
         _ => path_static,
     };
-    if let Ok(file_content) = read_to_string(file_path) {
-        return HttpResponse::Ok()
-            .append_header(("Access-Control-Allow-Origin", "*"))
-            .body(file_content);
-    } else {
-        return HttpResponse::err_text_response("ERROR: file not found!");
-    }
+    NamedFile::open_async(file_path).await
 }
 
 /// return the custom site logo if it exists
-pub async fn get_company_logo() -> HttpResponse {
+pub async fn get_company_logo() -> impl Responder {
     let path_local = Path::new("local/gfx/company-logo.png");
     let path_static = Path::new("static/gfx/hardcodes-logo.png");
     let file_path = match path_local.exists() {
         true => path_local,
         _ => path_static,
     };
-    if let Ok(file_content) = read(file_path) {
-        return HttpResponse::Ok()
-            .append_header(("Access-Control-Allow-Origin", "*"))
-            .body(file_content);
-    } else {
-        return HttpResponse::err_text_response("ERROR: file not found!");
-    }
+    NamedFile::open_async(file_path).await
 }
 
-/// return the custom site logo if it exists
-pub async fn get_favicon() -> HttpResponse {
+/// return the custom favicon if it exists
+pub async fn get_favicon() -> impl Responder {
     let path_local = Path::new("local/gfx/favicon.png");
     let path_static = Path::new("static/gfx/favicon.png");
     let file_path = match path_local.exists() {
         true => path_local,
         _ => path_static,
     };
-    if let Ok(file_content) = read(file_path) {
-        return HttpResponse::Ok()
-            .append_header(("Access-Control-Allow-Origin", "*"))
-            .body(file_content);
-    } else {
-        return HttpResponse::err_text_response("ERROR: file not found!");
-    }
+    NamedFile::open_async(file_path).await
 }
 
 /// Returns true or false as json value so that
