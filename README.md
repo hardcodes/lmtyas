@@ -12,7 +12,7 @@ Simply enter a
 - context (a hint what the secret is for) and
 - an email address of the receiver
 
-on the website driven by this web service and the receiver will get an email with a link that entitles to read the secret. The secret id and thus the receiver∫∫ is encoded in the link and since authentication is needed to open the secret, we make sure that only the right person reads the secret.
+on the website driven by this web service and the receiver will get an email with a link that entitles to read the secret. The secret id and thus the receiver is encoded in the link and since authentication is needed to open the secret, we make sure that only the right person reads the secret.
 
 ![tell a secret](./gfx/lmtyas-screenshot-001.png)
 
