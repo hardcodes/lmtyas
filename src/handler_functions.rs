@@ -109,7 +109,7 @@ pub async fn get_colors_css() -> impl Responder {
     NamedFile::open_async(file_path).await
 }
 
-/// return the custom site logo if it exists
+/// return the custom company-logo.png if it exists
 pub async fn get_company_logo() -> impl Responder {
     let path_local = Path::new("local/gfx/company-logo.png");
     let path_static = Path::new("static/gfx/hardcodes-logo.png");
@@ -120,7 +120,7 @@ pub async fn get_company_logo() -> impl Responder {
     NamedFile::open_async(file_path).await
 }
 
-/// return the custom favicon if it exists
+/// return the custom favicon.png if it exists
 pub async fn get_favicon() -> impl Responder {
     let path_local = Path::new("local/gfx/favicon.png");
     let path_static = Path::new("static/gfx/favicon.png");
