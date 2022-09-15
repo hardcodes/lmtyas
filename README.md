@@ -83,7 +83,7 @@ An installed `openssl` library is needed.
 
 Here is an example that works for Ubutu 20.04:
 
-Head over to [www.rust-lang.org](https://www.rust-lang.org/tools/install) andn follow the instructions if you don't have a Rust compiler installed yet.
+Head over to [www.rust-lang.org](https://www.rust-lang.org/tools/install) and follow the instructions if you don't have a Rust compiler installed yet.
 
 ```bash
 # done as regular user
