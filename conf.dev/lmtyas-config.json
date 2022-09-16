@@ -25,7 +25,7 @@
         "ldap_user_filter": "(uid={0})",
         "ldap_mail_filter": "(mail={0})",
         "ldap_bind_user_dn": "cn={0},ou=superheros,dc=acme,dc=local",
-        "valid_user_regex": "^[\\w\\d\\-]{3,8}"
+        "valid_user_regex": "^[\\w\\d\\-]{3,8}$"
     },
     "login_hint": "A.C.M.E. LDAP account",
     "mail_hint": "hint:firstname.lastname@acme.local",

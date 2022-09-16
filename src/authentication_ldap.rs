@@ -203,223 +203,215 @@ impl Login for LdapAuthConfiguration {
             ));
         }
         let bytes_vec = bytes.to_vec();
-        if let Ok(form_data) = String::from_utf8(bytes_vec) {
-            debug!("{}", form_data);
-            if let Ok(parsed_form_data) = serde_json::from_str(&form_data) as Result<LoginData, _> {
-                debug!("parsed_form_data={:?}", &parsed_form_data);
-                // is the login_name valid?
-                // prevent sending bogus data to the ldap server.
-                if let Some(valid_user_regex) = &application_configuration
-                    .configuration_file
-                    .ldap_configuration
-                    .user_regex
-                {
-                    if valid_user_regex.is_match(&parsed_form_data.login_name) {
-                        if let Ok(request_id) = Uuid::parse_str(&parsed_form_data.request_id) {
-                            debug!("request_id = {}", &request_id.to_string());
-                            // what url/resource has been requested before login?
-                            let url_requested;
-                            {
-                                // sending of the async ldap queries with the RwLock still locked
-                                // is not possible, so we will close it right after accessing
-                                // the data
-                                let mut auth_state_write_lock = application_configuration
-                                    .shared_request_data
-                                    .write()
-                                    .unwrap();
-                                let auth_request = match auth_state_write_lock
-                                    .authentication_state_hashmap
-                                    .get_mut(&request_id)
-                                {
-                                    None => {
-                                        warn!("login with invalid request id {}", &request_id);
-                                        return HttpResponse::err_text_response(
-                                            "ERROR: invalid request id, login expired",
-                                        );
-                                    }
-                                    Some(a) => a,
-                                };
-                                if auth_request.has_been_used {
-                                    warn!(
-                                        "id {} has already been used, possible replay attack!",
-                                        &request_id
-                                    );
-                                    return HttpResponse::err_text_response("ERROR: login failed");
-                                } else {
-                                    auth_request.has_been_used = true;
-                                    url_requested = auth_request.url_requested.clone();
-                                }
-                            }
-
-                            // input data is validated and
-                            // uuid of the request has been found
-                            let ldap_search_result;
-                            {
-                                // 2. check if user exists
-                                // keep it in a block to make the compiler happy
-                                // because of the result lifetime
-                                //
-                                //
-                                ldap_search_result = match &application_configuration
-                                    .configuration_file
-                                    .ldap_configuration
-                                    .ldap_search_by_uid(
-                                        &parsed_form_data.login_name,
-                                        Some(
-                                            &application_configuration
-                                                .configuration_file
-                                                .ldap_configuration
-                                                .ldap_user_filter,
-                                        ),
-                                    )
-                                    .await
-                                {
-                                    Err(e) => {
-                                        warn!(
-                                            "error while looking up user {}: {}",
-                                            &parsed_form_data.login_name, &e
-                                        );
-                                        return HttpResponse::err_text_response(
-                                            "ERROR: login failed",
-                                        );
-                                    }
-                                    Ok(l) => l.clone(),
-                                }
-                            }
-                            // dirty hack to build a json string from the ldap query result,
-                            // so it can be serialized.
-                            let ldap_result = match serde_json::from_str(
-                                &ldap_search_result.replace("[", "").replace("]", ""),
-                            )
-                                as Result<LdapSearchResult, _>
-                            {
-                                Err(e) => {
-                                    warn!(
-                                        "can not serde_json::from_str({}): {}",
-                                        &ldap_search_result, &e
-                                    );
-                                    return HttpResponse::err_text_response("ERROR: login failed");
-                                }
-                                Ok(r) => r,
-                            };
-                            if ldap_result.user_name != parsed_form_data.login_name {
-                                warn!(
-                                    "user {} does not exist in ldap",
-                                    &parsed_form_data.login_name
-                                );
-                                return HttpResponse::err_text_response("ERROR: login failed");
-                            }
-
-                            // 3. try to bind with the given password, AKA login
-                            //
-                            //
-                            info!(
-                                "user {} exists in ldap, trying bind...",
-                                &parsed_form_data.login_name
-                            );
-                            // the password was encoded before the transfer to make sure
-                            // that special characters would be transferred correctly.
-                            // tested with
-                            // PASS!"§$%&/()=?ß\´`+*~'#-_.:,;<>|WORD
-                            let base64_decoded_password = match String::from_utf8(
-                                base64::decode(&parsed_form_data.login_password).unwrap(),
-                            ) {
-                                Ok(decoded_password) => {
-                                    decoded_password.trim_matches(char::from(0)).to_string()
-                                }
-                                Err(e) => {
-                                    warn!(
-                                        "could not base64 decode password from user {}: {}",
-                                        &parsed_form_data.login_name, &e
-                                    );
-                                    return HttpResponse::err_text_response(
-                                        "ERROR: login not possible",
-                                    );
-                                }
-                            };
-                            match &application_configuration
-                                .configuration_file
-                                .ldap_configuration
-                                .ldap_login(&parsed_form_data.login_name, &base64_decoded_password)
-                                .await
-                            {
-                                Err(e) => {
-                                    warn!(
-                                        "user {} could not log in: {}",
-                                        &parsed_form_data.login_name, &e
-                                    );
-                                    return HttpResponse::err_text_response("ERROR: login failed");
-                                }
-                                Ok(_) => {
-                                    info!(
-                                        "login success for user {}",
-                                        &parsed_form_data.login_name
-                                    );
-
-                                    if let Some(cookie_uuid) = application_configuration
-                                        .shared_authenticated_users
-                                        .write()
-                                        .unwrap()
-                                        .get_cookie_uuid_for(
-                                            &parsed_form_data.login_name,
-                                            &ldap_result.first_name,
-                                            &ldap_result.last_name,
-                                            &ldap_result.mail,
-                                        )
-                                    {
-                                        let rsa_read_lock =
-                                            application_configuration.rsa_keys.read().unwrap();
-                                        // when the rsa key pair already has been loaded,
-                                        // the cookie value is encrypted with the rsa public
-                                        // key otherwise its simply base64 encoded.
-                                        let cookie = build_new_authentication_cookie(
-                                            cookie_uuid.to_string(),
-                                            application_configuration
-                                                .configuration_file
-                                                .max_cookie_age_seconds,
-                                            &rsa_read_lock,
-                                        );
-                                        let proto_fqdn = format!(
-                                            "https://{}",
-                                            &application_configuration.configuration_file.fqdn
-                                        );
-                                        let redirect_url =
-                                            format!("{}{}", &proto_fqdn, &url_requested);
-                                        debug!("redirect_url = {:?}", &redirect_url);
-                                        // set authentication cookie and answer
-                                        // with url to open.
-                                        return HttpResponse::ok_text_response_with_cookie(
-                                            redirect_url,
-                                            cookie,
-                                        );
-                                    } else {
-                                        warn!(
-                                            "cannot create cookie id for user {}",
-                                            &parsed_form_data.login_name
-                                        );
-                                        return HttpResponse::err_text_response(
-                                            "ERROR: login failed",
-                                        );
-                                    }
-                                }
-                            }
-                        } else {
-                            return HttpResponse::err_text_response(
-                                "ERROR: cannot parse request id",
-                            );
-                        }
-                    } else {
-                        return HttpResponse::err_text_response("ERROR: invalid login name");
-                    }
-                } else {
+        let form_data = match String::from_utf8(bytes_vec) {
+            Ok(form_data) => form_data,
+            Err(_) => {
+                return HttpResponse::err_text_response("ERROR: could not parse form data");
+            }
+        };
+        let parsed_form_data = match serde_json::from_str(&form_data) as Result<LoginData, _> {
+            Ok(parsed_form_data) => parsed_form_data,
+            Err(_) => {
+                return HttpResponse::err_text_response("ERROR: could not parse json form data");
+            }
+        };
+        debug!("parsed_form_data={:?}", &parsed_form_data);
+        // is the login_name valid?
+        // prevent sending bogus data to the ldap server.
+        if !&application_configuration
+            .configuration_file
+            .ldap_configuration
+            .user_regex
+            .is_some()
+        {
+            return HttpResponse::err_text_response("ERROR: valid user regex is not defined");
+        }
+        let valid_user_regex = application_configuration
+            .configuration_file
+            .ldap_configuration
+            .user_regex
+            .as_ref()
+            .unwrap();
+        if !valid_user_regex.is_match(&parsed_form_data.login_name) {
+            return HttpResponse::err_text_response("ERROR: invalid login name format");
+        }
+        // what ID was assigned to the resource request?
+        let request_id = match Uuid::parse_str(&parsed_form_data.request_id) {
+            Ok(request_id) => request_id,
+            Err(_) => {
+                return HttpResponse::err_text_response("ERROR: cannot parse request id");
+            }
+        };
+        debug!("request_id = {}", &request_id.to_string());
+        // what url/resource has been requested before login?
+        let url_requested;
+        {
+            // sending of the async ldap queries with the RwLock still locked
+            // is not possible, so we will close it right after accessing
+            // the data
+            let mut auth_state_write_lock = application_configuration
+                .shared_request_data
+                .write()
+                .unwrap();
+            let auth_request = match auth_state_write_lock
+                .authentication_state_hashmap
+                .get_mut(&request_id)
+            {
+                None => {
+                    warn!("login with invalid request id {}", &request_id);
                     return HttpResponse::err_text_response(
-                        "ERROR: valid user regex is not defined",
+                        "ERROR: invalid request id, login expired",
                     );
                 }
+                Some(a) => a,
+            };
+            if auth_request.has_been_used {
+                warn!(
+                    "id {} has already been used, possible replay attack!",
+                    &request_id
+                );
+                return HttpResponse::err_text_response("ERROR: login failed");
+            } else {
+                // mark resource request as used so that this ID cannot be used anymore
+                auth_request.has_been_used = true;
+                url_requested = auth_request.url_requested.clone();
             }
-            HttpResponse::err_text_response("ERROR: could not parse json form data");
         }
-        HttpResponse::err_text_response("ERROR: could not parse form data")
+
+        // input data is validated and
+        // uuid of the request has been found
+        // let ldap_search_result;
+        // {
+        // 2. check if user exists
+        // keep it in a block to make the compiler happy
+        // because of the result lifetime
+        //
+        //
+        let ldap_search_result = match &application_configuration
+            .configuration_file
+            .ldap_configuration
+            .ldap_search_by_uid(
+                &parsed_form_data.login_name,
+                Some(
+                    &application_configuration
+                        .configuration_file
+                        .ldap_configuration
+                        .ldap_user_filter,
+                ),
+            )
+            .await
+        {
+            Err(e) => {
+                warn!(
+                    "error while looking up user {}: {}",
+                    &parsed_form_data.login_name, &e
+                );
+                return HttpResponse::err_text_response("ERROR: login failed");
+            }
+            Ok(l) => l.clone(),
+        };
+        // }
+        // dirty hack to build a json string from the ldap query result,
+        // so it can be serialized.
+        let ldap_result =
+            match serde_json::from_str(&ldap_search_result.replace("[", "").replace("]", ""))
+                as Result<LdapSearchResult, _>
+            {
+                Err(e) => {
+                    warn!(
+                        "can not serde_json::from_str({}): {}",
+                        &ldap_search_result, &e
+                    );
+                    return HttpResponse::err_text_response("ERROR: login failed");
+                }
+                Ok(r) => r,
+            };
+        if ldap_result.user_name != parsed_form_data.login_name {
+            warn!(
+                "user {} does not exist in ldap",
+                &parsed_form_data.login_name
+            );
+            return HttpResponse::err_text_response("ERROR: login failed");
+        }
+
+        // 3. try to bind with the given password, AKA login
+        //
+        //
+        info!(
+            "user {} exists in ldap, trying bind...",
+            &parsed_form_data.login_name
+        );
+        // the password was encoded before the transfer to make sure
+        // that special characters would be transferred correctly.
+        // tested with
+        // PASS!"§$%&/()=?ß\´`+*~'#-_.:,;<>|WORD
+        let base64_decoded_password =
+            match String::from_utf8(base64::decode(&parsed_form_data.login_password).unwrap()) {
+                Ok(decoded_password) => decoded_password.trim_matches(char::from(0)).to_string(),
+                Err(e) => {
+                    warn!(
+                        "could not base64 decode password from user {}: {}",
+                        &parsed_form_data.login_name, &e
+                    );
+                    return HttpResponse::err_text_response("ERROR: login not possible");
+                }
+            };
+        match &application_configuration
+            .configuration_file
+            .ldap_configuration
+            .ldap_login(&parsed_form_data.login_name, &base64_decoded_password)
+            .await
+        {
+            Err(e) => {
+                warn!(
+                    "user {} could not log in: {}",
+                    &parsed_form_data.login_name, &e
+                );
+                return HttpResponse::err_text_response("ERROR: login failed");
+            }
+            Ok(_) => {
+                info!("login success for user {}", &parsed_form_data.login_name);
+
+                if let Some(cookie_uuid) = application_configuration
+                    .shared_authenticated_users
+                    .write()
+                    .unwrap()
+                    .get_cookie_uuid_for(
+                        &parsed_form_data.login_name,
+                        &ldap_result.first_name,
+                        &ldap_result.last_name,
+                        &ldap_result.mail,
+                    )
+                {
+                    let rsa_read_lock = application_configuration.rsa_keys.read().unwrap();
+                    // when the rsa key pair already has been loaded,
+                    // the cookie value is encrypted with the rsa public
+                    // key otherwise its simply base64 encoded.
+                    let cookie = build_new_authentication_cookie(
+                        cookie_uuid.to_string(),
+                        application_configuration
+                            .configuration_file
+                            .max_cookie_age_seconds,
+                        &rsa_read_lock,
+                    );
+                    let proto_fqdn = format!(
+                        "https://{}",
+                        &application_configuration.configuration_file.fqdn
+                    );
+                    let redirect_url = format!("{}{}", &proto_fqdn, &url_requested);
+                    debug!("redirect_url = {:?}", &redirect_url);
+                    // set authentication cookie and answer
+                    // with url to open.
+                    return HttpResponse::ok_text_response_with_cookie(redirect_url, cookie);
+                } else {
+                    warn!(
+                        "cannot create cookie id for user {}",
+                        &parsed_form_data.login_name
+                    );
+                    return HttpResponse::err_text_response("ERROR: login failed");
+                }
+            }
+        }
     }
 
     fn build_valid_user_regex(&mut self) -> Result<(), Box<dyn Error>> {
@@ -458,36 +450,29 @@ impl GetUserData for LdapAuthConfiguration {
         mail: &str,
         application_configuration: &web::Data<ApplicationConfiguration>,
     ) -> Result<String, String> {
-        let ldap_search_result;
+        // 2. check if user exists
+        let ldap_search_result = match &application_configuration
+            .configuration_file
+            .ldap_configuration
+            .ldap_search_by_mail(
+                &mail,
+                Some(
+                    &application_configuration
+                        .configuration_file
+                        .ldap_configuration
+                        .ldap_mail_filter,
+                ),
+            )
+            .await
         {
-            // 2. check if user exists
-            // keep it in a block to make the compiler happy
-            // because of the result lifetime
-            //
-            //
-            ldap_search_result = match &application_configuration
-                .configuration_file
-                .ldap_configuration
-                .ldap_search_by_mail(
-                    &mail,
-                    Some(
-                        &application_configuration
-                            .configuration_file
-                            .ldap_configuration
-                            .ldap_mail_filter,
-                    ),
-                )
-                .await
-            {
-                Err(e) => {
-                    let error_message =
-                        format!("error while looking up user by mail {}: {}", &mail, &e);
-                    warn!("{}", &error_message);
-                    return Err(error_message);
-                }
-                Ok(l) => l.clone(),
+            Err(e) => {
+                let error_message =
+                    format!("error while looking up user by mail {}: {}", &mail, &e);
+                warn!("{}", &error_message);
+                return Err(error_message);
             }
-        }
+            Ok(ldap_search_result) => ldap_search_result.clone(),
+        };
         // dirty hack to build a json string from the ldap query result,
         // so it can be serialized.
         let ldap_result =
