@@ -310,7 +310,6 @@ impl Login for LdapAuthConfiguration {
             }
             Ok(l) => l.clone(),
         };
-        // }
         // dirty hack to build a json string from the ldap query result,
         // so it can be serialized.
         let ldap_result =
