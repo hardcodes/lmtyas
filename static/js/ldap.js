@@ -60,7 +60,7 @@ function sendFormData(requestId) {
         };
         let jsonString = JSON.stringify(jsonObject);
         document.getElementById("SubmitButton").style.visibility = "hidden";
-        sendToWebService("/authentication/login", openUrl, function () { }, jsonString);
+        sendToWebService("/authentication/login", openUrl, startBackHomeTimer(3), jsonString, 2);
     }
     else {
         showErrorMessageWithTimer("ERROR: cannot get request data!", 10);
