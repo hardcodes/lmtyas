@@ -211,4 +211,11 @@ function setImprintLink(resulttext) {
   }
 }
 
+function startLocationReloadTimer(seconds = 5) {
+  if (seconds > 0) {
+    let locationReloadTimeout = setTimeout(function () { window.location.replace(window.location.pathname); }, (seconds * 1000));
+  }
+}
+
 queryWebService("/system/get/imprint-link", setImprintLink, function(){});
+
