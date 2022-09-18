@@ -4,7 +4,7 @@ extern crate env_logger;
 use crate::authenticated_user::AuthenticatedUser;
 use crate::configuration::ApplicationConfiguration;
 use crate::cookie_functions::{
-    build_new_cookie_response, build_new_encrypted_authentication_cookie, COOKIE_NAME,
+    build_new_cookie_response, build_new_authentication_cookie, COOKIE_NAME,
 };
 use crate::header_value_trait::HeaderValueExctractor;
 use crate::http_traits::CustomHttpResponse;
@@ -102,19 +102,18 @@ pub fn update_authenticated_user_cookie_lifetime(req: &HttpRequest) -> HttpRespo
             &header_value
         );
         if let Some(cookie) = header_value.get_value_for_cookie_with_name(COOKIE_NAME) {
-            let plain_cookie;
-            {
-                let rsa_read_lock = application_configuration.rsa_keys.read().unwrap();
-                plain_cookie = match rsa_read_lock.rsa_private_key {
-                    Some(_) => rsa_read_lock
-                        .decrypt_str(&cookie)
-                        .unwrap_or("invalid_rsa".to_string()),
-                    None => String::from_utf8(base64::decode(&cookie).unwrap())
-                        .unwrap_or("invalid_base64".to_string()),
-                };
-            }
+            let rsa_read_lock = application_configuration.rsa_keys.read().unwrap();
+            let plain_cookie = match rsa_read_lock.rsa_private_key {
+                Some(_) => rsa_read_lock
+                    .decrypt_str(&cookie)
+                    .unwrap_or("invalid_rsa_cookie_value".to_string()),
+                None => String::from_utf8(
+                    base64::decode(&cookie).unwrap_or("invalid_base64_cookie".as_bytes().to_vec()),
+                )
+                .unwrap_or("invalid_base64_utf8".to_string()),
+            };
             if let Ok(parsed_cookie_uuid) = Uuid::parse_str(&plain_cookie) {
-                let mut shared_authenticated_users_write_lock= application_configuration
+                let mut shared_authenticated_users_write_lock = application_configuration
                     .shared_authenticated_users
                     .write()
                     .unwrap();
@@ -131,7 +130,7 @@ pub fn update_authenticated_user_cookie_lifetime(req: &HttpRequest) -> HttpRespo
                     authenticated_user.update_timestamp();
                     // create cookie with the same value but renewed cookie lifetime
                     let rsa_read_lock = application_configuration.rsa_keys.read().unwrap();
-                    let updated_cookie = build_new_encrypted_authentication_cookie(
+                    let updated_cookie = build_new_authentication_cookie(
                         parsed_cookie_uuid.to_string(),
                         application_configuration
                             .configuration_file
@@ -142,7 +141,10 @@ pub fn update_authenticated_user_cookie_lifetime(req: &HttpRequest) -> HttpRespo
                         &updated_cookie,
                         application_configuration.configuration_file.fqdn.clone(),
                     );
-                    debug!("HttpResponse = {:?}", &cookie_response);
+                    debug!(
+                        "updated cookie lifetime, HttpResponse = {:?}",
+                        &cookie_response
+                    );
                     return cookie_response;
                 }
             } else {
