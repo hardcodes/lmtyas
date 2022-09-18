@@ -11,7 +11,6 @@ queryWebService("/system/get/mail-hint", setMailHint, function () { });
 
 function setMailHint(resulttext) {
     try {
-        console.log(resulttext);
         var data = JSON.parse(resulttext);
         if (data.MailHint) {
             const imprint = document.getElementById("ToEmail");
