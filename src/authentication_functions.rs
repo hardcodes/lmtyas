@@ -44,9 +44,12 @@ pub fn get_authenticated_user(req: &HttpRequest) -> Result<AuthenticatedUser, Er
                 plain_cookie = match rsa_read_lock.rsa_private_key {
                     Some(_) => rsa_read_lock
                         .decrypt_str(&cookie)
-                        .unwrap_or("invalid_rsa".to_string()),
-                    None => String::from_utf8(base64::decode(&cookie).unwrap())
-                        .unwrap_or("invalid_base64".to_string()),
+                        .unwrap_or("invalid_rsa_cookie_value".to_string()),
+                    None => String::from_utf8(
+                        base64::decode(&cookie)
+                            .unwrap_or("invalid_base64_cookie".as_bytes().to_vec()),
+                    )
+                    .unwrap_or("invalid_base64_utf8".to_string()),
                 };
             }
             if let Ok(parsed_cookie_uuid) = Uuid::parse_str(&plain_cookie) {

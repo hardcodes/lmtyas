@@ -25,7 +25,7 @@ pub fn build_new_encrypted_authentication_cookie(
     rsa: &RsaKeys
 ) -> Cookie<'static> {
     let encrypted_cookie_value = match rsa.encrypt_str(&cookie_value){
-        Err(_) => String::from("invalid"),
+        Err(_) => String::from("invalid_rsa_cookie"),
         Ok(value) => value,
     };
     let new_cookie = Cookie::build(COOKIE_NAME, encrypted_cookie_value)
