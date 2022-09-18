@@ -7,6 +7,7 @@ extern crate env_logger;
 use crate::authentication_functions::get_authenticated_user;
 use actix_web::{dev::Payload, error::ErrorUnauthorized, Error, FromRequest, HttpRequest};
 use chrono::Duration;
+use std::fmt;
 use std::future::Future;
 use std::pin::Pin;
 use std::sync::{Arc, RwLock};
@@ -25,7 +26,7 @@ pub enum AccessScope {
 }
 
 /// Holds the information of an authenticated user (name and timestamp of authentication).
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct AuthenticatedUser {
     pub user_name: String,
     pub first_name: String,
@@ -33,6 +34,17 @@ pub struct AuthenticatedUser {
     pub mail: String,
     pub time_stamp: DateTime<Utc>,
     pub access_scope: AccessScope,
+}
+
+/// custom formatter to suppress first name, last name and mail address
+impl fmt::Display for AuthenticatedUser {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "(user_name={}, time_stamp={}, access_scope={:?})",
+            self.user_name, self.time_stamp, self.access_scope
+        )
+    }
 }
 
 /// Administrators are still users just with a different scope
@@ -197,7 +209,7 @@ pub fn cleanup_authenticated_users_hashmap(
     for (k, v) in &shared_authenticated_users_read_lock.authenticated_users_hashmap {
         // remove authenticated users after the configured time
         if v.time_stamp < time_to_delete {
-            info!("removing {}, {:?}", &k.to_string(), &v);
+            info!("removing {}, {}", &k.to_string(), &v);
             items_to_remove.push(k.clone());
         }
     }
@@ -205,6 +217,8 @@ pub fn cleanup_authenticated_users_hashmap(
 
     let mut shared_authenticated_users_write_lock = shared_authenticated_users.write().unwrap();
     for item in items_to_remove {
-        shared_authenticated_users_write_lock.authenticated_users_hashmap.remove(&item);
+        shared_authenticated_users_write_lock
+            .authenticated_users_hashmap
+            .remove(&item);
     }
 }

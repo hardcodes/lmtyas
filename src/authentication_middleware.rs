@@ -221,7 +221,7 @@ where
                         .authenticated_users_hashmap
                         .get(&parsed_cookie_uuid)
                     {
-                        info!("user is already authenticated: {:?}", &auth_request);
+                        info!("user is already authenticated: {}", &auth_request);
 
                         let service_request_future = self.service.call(request);
 
