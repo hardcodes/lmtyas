@@ -357,7 +357,7 @@ pub async fn store_secret(
                         "error sending mail to {}: {}",
                         &parsed_form_data.to_email, &e
                     );
-                    return HttpResponse::err_text_response(format!("ERROR: {}", &e));
+                    return HttpResponse::err_text_response(format!("ERROR: cannot send mail: {}", &e));
                 }
                 Ok(_) => {
                     return HttpResponse::ok_text_response("OK");
