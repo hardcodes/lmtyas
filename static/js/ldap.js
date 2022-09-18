@@ -1,7 +1,8 @@
 const loginForm = document.getElementById("LoginForm");
 loginForm.addEventListener('submit', function (e) {
     e.preventDefault();
-    sendLoginData();
+    sendLoginData(loginForm);
+    return false;
 });
 queryWebService("/system/is_server_ready", validateSystemStatusLocal, systemIsNotReadyLocal);
 queryWebService("/system/get/login-hint", showLoginHint, function () { });
@@ -30,31 +31,21 @@ function showLoginHint(resulttext) {
     }
 }
 
-function sendLoginData() {
-    let request = findGetParameterNoDecodeURIComponent("request");
-    if (request != null && typeof (request !== 'undefined')) {
-        sendFormData(request);
-    }
-    else {
-        document.getElementById("SubmitButton").style.visibility = "hidden";
-        showErrorMessageWithTimer("ERROR: could not find request id", 10);
-    }
-}
-
-function sendFormData(requestId) {
+function sendLoginData(loginForm) {
+    console.log("sendLoginData()");
+    let requestId = findGetParameterNoDecodeURIComponent("request");
     if (requestId != null && typeof (requestId !== 'undefined')) {
         let loginPassword;
         try {
             // encode password to transfer special characters
-            loginPassword = btoa(unescape(encodeURIComponent(document.getElementById("LoginPassword").value)));
+            loginPassword = btoa(unescape(encodeURIComponent(loginForm.password.value)));
         }
         catch (error) {
             console.log("ERROR: could not convert password to base64: " + output);
             showErrorMessage("ERROR: could not convert password to base64");
         }
-        let loginName = document.getElementById("LoginName").value;
         let jsonObject = {
-            LoginName: loginName,
+            LoginName: loginForm.username.value,
             LoginPassword: loginPassword,
             RequestId: requestId
         };
@@ -63,7 +54,8 @@ function sendFormData(requestId) {
         sendToWebService("/authentication/login", openUrl, startBackHomeTimer(3), jsonString, 2);
     }
     else {
-        showErrorMessageWithTimer("ERROR: cannot get request data!", 10);
+        document.getElementById("SubmitButton").style.visibility = "hidden";
+        showErrorMessageWithTimer("ERROR: could not find request id", 10);
     }
 }
 
