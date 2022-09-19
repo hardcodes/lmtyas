@@ -1,8 +1,8 @@
 extern crate env_logger;
+use crate::rsa_functions::RsaKeys;
 use actix_web::{
     cookie::time::Duration, cookie::Cookie, cookie::SameSite, http, http::StatusCode, HttpResponse,
 };
-use crate::rsa_functions::RsaKeys;
 use base64;
 
 /// Name of the cookie that is sent to an authenticated user browser
@@ -22,9 +22,9 @@ pub const COOKIE_NAME: &str = env!("CARGO_PKG_NAME");
 pub fn build_new_encrypted_authentication_cookie(
     cookie_value: String,
     cookie_lifetime: i64,
-    rsa: &RsaKeys
+    rsa: &RsaKeys,
 ) -> Cookie<'static> {
-    let encrypted_cookie_value = match rsa.encrypt_str(&cookie_value){
+    let encrypted_cookie_value = match rsa.encrypt_str(&cookie_value) {
         Err(_) => String::from("invalid_rsa_cookie"),
         Ok(value) => value,
     };
@@ -80,20 +80,11 @@ fn build_new_base64_authentication_cookie(
 pub fn build_new_authentication_cookie(
     cookie_value: String,
     cookie_lifetime: i64,
-    rsa: &RsaKeys
+    rsa: &RsaKeys,
 ) -> Cookie<'static> {
     let new_cookie = match rsa.rsa_private_key {
-        Some(_) => build_new_encrypted_authentication_cookie(
-            cookie_value,
-            cookie_lifetime,
-            &rsa,
-        ),
-        None => {
-            build_new_base64_authentication_cookie(
-                cookie_value,
-                cookie_lifetime
-            )
-        }
+        Some(_) => build_new_encrypted_authentication_cookie(cookie_value, cookie_lifetime, &rsa),
+        None => build_new_base64_authentication_cookie(cookie_value, cookie_lifetime),
     };
     new_cookie
 }
@@ -143,7 +134,7 @@ pub fn build_redirect_to_resource_url_response(
 }
 
 /// Get plain cookie value (rsa decrypt or base64 decode)
-/// 
+///
 /// # Arguments
 ///
 /// - `transmitted_cookie`: cookie value that is either rsa encrypted or base64 encoded
@@ -152,7 +143,10 @@ pub fn build_redirect_to_resource_url_response(
 /// # Returns
 ///
 /// - plain cookie value as String
-pub fn get_plain_cookie_string(transmitted_cookie: &str, rsa: &RsaKeys) -> String{
+pub fn get_plain_cookie_string(transmitted_cookie: &str, rsa: &RsaKeys) -> String {
+    // when the rsa key pair already has been loaded,
+    // the cookie value is encrypted with the rsa public
+    // key otherwise its simply base64 encoded.
     match rsa.rsa_private_key {
         Some(_) => rsa
             .decrypt_str(&transmitted_cookie)

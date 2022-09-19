@@ -42,6 +42,9 @@ pub fn get_authenticated_user(req: &HttpRequest) -> Result<AuthenticatedUser, Er
             let plain_cookie;
             {
                 let rsa_read_lock = application_configuration.rsa_keys.read().unwrap();
+                // when the rsa key pair already has been loaded,
+                // the cookie value is encrypted with the rsa public
+                // key otherwise its simply base64 encoded.
                 plain_cookie = get_plain_cookie_string(&cookie, &rsa_read_lock);
             }
             if let Ok(parsed_cookie_uuid) = Uuid::parse_str(&plain_cookie) {
@@ -95,6 +98,9 @@ pub fn update_authenticated_user_cookie_lifetime(req: &HttpRequest) -> HttpRespo
         );
         if let Some(cookie) = header_value.get_value_for_cookie_with_name(COOKIE_NAME) {
             let rsa_read_lock = application_configuration.rsa_keys.read().unwrap();
+            // when the rsa key pair already has been loaded,
+            // the cookie value is encrypted with the rsa public
+            // key otherwise its simply base64 encoded.
             let plain_cookie = get_plain_cookie_string(&cookie, &rsa_read_lock);
             if let Ok(parsed_cookie_uuid) = Uuid::parse_str(&plain_cookie) {
                 let mut shared_authenticated_users_write_lock = application_configuration
