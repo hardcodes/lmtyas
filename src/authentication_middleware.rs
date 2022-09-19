@@ -3,7 +3,7 @@ use log::{debug, info, warn};
 extern crate env_logger;
 pub use crate::authentication_ldap::LdapAuthConfiguration;
 use crate::configuration::ApplicationConfiguration;
-use crate::cookie_functions::COOKIE_NAME;
+use crate::cookie_functions::{get_plain_cookie_string, COOKIE_NAME};
 use crate::header_value_trait::HeaderValueExctractor;
 use actix_web::dev::{forward_ready, Service, ServiceRequest, ServiceResponse, Transform};
 use actix_web::{body::EitherBody, http, http::StatusCode, web, Error, HttpResponse};
@@ -13,8 +13,8 @@ use std::collections::HashMap;
 use std::future::{ready, Ready};
 use uuid::v1::{Context, Timestamp};
 use uuid::Uuid;
+#[cfg(feature = "ldap-auth")]
 type AuthenticationRedirectType = LdapAuthConfiguration;
-use base64;
 use chrono::Duration;
 use std::sync::{Arc, RwLock};
 
@@ -203,16 +203,7 @@ where
                 // when the rsa key pair already has been loaded,
                 // the cookie value is encrypted with the rsa public
                 // key otherwise its simply base64 encoded.
-                let plain_cookie = match rsa_read_lock.rsa_private_key {
-                    Some(_) => rsa_read_lock
-                        .decrypt_str(&cookie)
-                        .unwrap_or("invalid_rsa_cookie_value".to_string()),
-                    None => String::from_utf8(
-                        base64::decode(&cookie)
-                            .unwrap_or("invalid_base64_cookie".as_bytes().to_vec()),
-                    )
-                    .unwrap_or("invalid_base64_utf8".to_string()),
-                };
+                let plain_cookie = get_plain_cookie_string(&cookie, &rsa_read_lock);
                 if let Ok(parsed_cookie_uuid) = Uuid::parse_str(&plain_cookie) {
                     if let Some(auth_request) = application_configuration
                         .shared_authenticated_users

@@ -4,7 +4,8 @@ extern crate env_logger;
 use crate::authenticated_user::AuthenticatedUser;
 use crate::configuration::ApplicationConfiguration;
 use crate::cookie_functions::{
-    build_new_cookie_response, build_new_authentication_cookie, COOKIE_NAME,
+    build_new_authentication_cookie, build_new_cookie_response, get_plain_cookie_string,
+    COOKIE_NAME,
 };
 use crate::header_value_trait::HeaderValueExctractor;
 use crate::http_traits::CustomHttpResponse;
@@ -41,16 +42,7 @@ pub fn get_authenticated_user(req: &HttpRequest) -> Result<AuthenticatedUser, Er
             let plain_cookie;
             {
                 let rsa_read_lock = application_configuration.rsa_keys.read().unwrap();
-                plain_cookie = match rsa_read_lock.rsa_private_key {
-                    Some(_) => rsa_read_lock
-                        .decrypt_str(&cookie)
-                        .unwrap_or("invalid_rsa_cookie_value".to_string()),
-                    None => String::from_utf8(
-                        base64::decode(&cookie)
-                            .unwrap_or("invalid_base64_cookie".as_bytes().to_vec()),
-                    )
-                    .unwrap_or("invalid_base64_utf8".to_string()),
-                };
+                plain_cookie = get_plain_cookie_string(&cookie, &rsa_read_lock);
             }
             if let Ok(parsed_cookie_uuid) = Uuid::parse_str(&plain_cookie) {
                 if let Some(authenticated_user) = application_configuration
@@ -103,15 +95,7 @@ pub fn update_authenticated_user_cookie_lifetime(req: &HttpRequest) -> HttpRespo
         );
         if let Some(cookie) = header_value.get_value_for_cookie_with_name(COOKIE_NAME) {
             let rsa_read_lock = application_configuration.rsa_keys.read().unwrap();
-            let plain_cookie = match rsa_read_lock.rsa_private_key {
-                Some(_) => rsa_read_lock
-                    .decrypt_str(&cookie)
-                    .unwrap_or("invalid_rsa_cookie_value".to_string()),
-                None => String::from_utf8(
-                    base64::decode(&cookie).unwrap_or("invalid_base64_cookie".as_bytes().to_vec()),
-                )
-                .unwrap_or("invalid_base64_utf8".to_string()),
-            };
+            let plain_cookie = get_plain_cookie_string(&cookie, &rsa_read_lock);
             if let Ok(parsed_cookie_uuid) = Uuid::parse_str(&plain_cookie) {
                 let mut shared_authenticated_users_write_lock = application_configuration
                     .shared_authenticated_users

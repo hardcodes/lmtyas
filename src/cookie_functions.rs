@@ -141,3 +141,26 @@ pub fn build_redirect_to_resource_url_response(
         .body("OK");
     redirect_to_resource_url_response
 }
+
+/// Get plain cookie value (rsa decrypt or base64 decode)
+/// 
+/// # Arguments
+///
+/// - `transmitted_cookie`: cookie value that is either rsa encrypted or base64 encoded
+/// - `rsa`:             rsa keys to encrypt the cookie
+///
+/// # Returns
+///
+/// - plain cookie value as String
+pub fn get_plain_cookie_string(transmitted_cookie: &str, rsa: &RsaKeys) -> String{
+    match rsa.rsa_private_key {
+        Some(_) => rsa
+            .decrypt_str(&transmitted_cookie)
+            .unwrap_or("invalid_rsa_cookie_value".to_string()),
+        None => String::from_utf8(
+            base64::decode(&transmitted_cookie)
+                .unwrap_or("invalid_base64_cookie".as_bytes().to_vec()),
+        )
+        .unwrap_or("invalid_base64_utf8".to_string()),
+    }
+}
