@@ -113,6 +113,7 @@ async fn main() -> std::io::Result<()> {
                 middleware::Logger::new("%a %{CUSTOM_REQUEST}xi %s %b %{User-Agent}i %T")
                     // exclude the password from appearing in the log
                     .exclude_regex("/authenticated/sysop/set_password_for_rsa_rivate_key")
+                    .exclude_regex("/authenticated/secret/reveal")
                     .custom_request_replace("CUSTOM_REQUEST", |req| {
                         extract_request_path(format!("{} {}", &req.method(), &req.uri()).as_str())
                     }),
