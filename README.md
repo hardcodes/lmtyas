@@ -81,7 +81,7 @@ An installed `openssl` library is needed.
 
 # Compile and install
 
-Here is an example that works for Ubutu 20.04:
+Here is an example that works for Ubutu 20.04 (it should also work on Ubuntu 22.04 and CentOS >=7):
 
 Head over to [www.rust-lang.org](https://www.rust-lang.org/tools/install) and follow the instructions if you don't have a Rust compiler installed yet.
 
