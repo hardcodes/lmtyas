@@ -12,6 +12,7 @@ mod get_userdata_trait;
 mod handler_functions;
 mod header_value_trait;
 mod http_traits;
+mod log_functions;
 mod login_user_trait;
 mod mail_configuration;
 #[cfg(feature = "mail-noauth-notls")]
@@ -29,6 +30,7 @@ use cli_parser::parse_cli_parameters;
 use configuration::ApplicationConfiguration;
 use handler_functions::*;
 use log::info;
+use log_functions::extract_request_path;
 use login_user_trait::Login;
 use std::io::Write;
 use std::path::Path;
@@ -108,9 +110,12 @@ async fn main() -> std::io::Result<()> {
         App::new()
             // Enable the logger.
             .wrap(
-                middleware::Logger::default()
+                middleware::Logger::new("%a %{CUSTOM_REQUEST}xi %s %b %{User-Agent}i %T")
                     // exclude the password from appearing in the log
-                    .exclude_regex("/authenticated/sysop/set_password_for_rsa_rivate_key"),
+                    .exclude_regex("/authenticated/sysop/set_password_for_rsa_rivate_key")
+                    .custom_request_replace("CUSTOM_REQUEST", |req| {
+                        extract_request_path(format!("{} {}", &req.method(), &req.uri()).as_str())
+                    }),
             )
             .wrap(
                 middleware::DefaultHeaders::new()
