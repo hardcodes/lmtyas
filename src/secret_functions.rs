@@ -35,15 +35,14 @@ impl SharedSecretData {
     /// - `uuid::Uuid`: UUid that is used as file name to store the secret data
     pub fn create_uuid(&mut self) -> uuid::Uuid {
         let time_stamp = Utc::now();
-        let unix_timestamp_seconds = time_stamp.timestamp().clone() as u64;
-        let unix_timestamp_subsec_nanos = time_stamp.timestamp_subsec_nanos().clone();
+        let unix_timestamp_seconds = time_stamp.timestamp() as u64;
+        let unix_timestamp_subsec_nanos = time_stamp.timestamp_subsec_nanos();
         let ts = Timestamp::from_unix(
             &self.uuid_context,
             unix_timestamp_seconds,
             unix_timestamp_subsec_nanos,
         );
-        let secret_uuid = Uuid::new_v1(ts, SECRET_ID);
-        secret_uuid
+        Uuid::new_v1(ts, SECRET_ID)
     }
 }
 
@@ -154,7 +153,7 @@ impl Secret {
     }
 
     /// replaces the placeholders in a mail template:
-    /// 
+    ///
     /// {ToDisplayName}   -> `&self.to_display_name`
     /// {FromDisplayName} -> `&self.from_display_name`
     /// {Context}         -> `&self.context`
@@ -166,30 +165,30 @@ impl Secret {
     ///                       of the secret, the iv and key for the aes encrypted
     ///                       secret itself,
     ///                       (will replace {UrlPayload} in the mail template.
-    /// 
+    ///
     /// # Returns
-    /// 
+    ///
     /// - `String`
-    pub fn build_mail_body(&self, mail_body_template: &str, url_payload: &str) -> String{
-        let mail_body = mail_body_template
+    pub fn build_mail_body(&self, mail_body_template: &str, url_payload: &str) -> String {
+        mail_body_template
             .replace("{ToDisplayName}", &self.to_display_name)
             .replace("{FromDisplayName}", &self.from_display_name)
             .replace("{Context}", &self.context)
-            .replace("{UrlPayload}", &url_payload);
-            mail_body
+            .replace("{UrlPayload}", url_payload)
     }
+
     /// replaces the placeholder in a mail subject:
-    /// 
+    ///
     /// {Context}         -> `&self.context`
     ///
     /// # Agruments
     ///  
     /// - `subject`:       subject with placeholder
-    /// 
+    ///
     /// # Returns
-    /// 
+    ///
     /// - `String`
-    pub fn build_context(&self,subject: &str) -> String{
+    pub fn build_context(&self, subject: &str) -> String {
         let s = subject.replace("{Context}", &self.context);
         s
     }
