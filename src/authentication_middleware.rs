@@ -82,7 +82,7 @@ pub fn cleanup_authentication_state_hashmap(
         // remove authentication requests that already have been used
         // or were not used in a timely manner
         if v.has_been_used || v.time_stamp < time_to_delete {
-            info!("removing {}, {}", &k.to_string(), &v);
+            info!("removing authentication request {}, {}", &k.to_string(), &v);
             items_to_remove.push(*k);
         }
     }

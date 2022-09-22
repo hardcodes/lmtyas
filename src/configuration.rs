@@ -143,8 +143,8 @@ impl ApplicationConfiguration {
     pub fn load_rsa_keys(&self) -> Result<(), Box<dyn Error>> {
         match &self.rsa_password.read().unwrap().rsa_private_key_password {
             None => {
-                let string_error = "Password not set, inform system administrator".to_string();
-                let boxed_error = Box::<dyn Error + Send + Sync>::from(string_error);
+                const RSA_PASSWORD_NOT_SET: &str = "Password not set, inform system administrator";
+                let boxed_error = Box::<dyn Error + Send + Sync>::from(RSA_PASSWORD_NOT_SET);
                 return Err(boxed_error);
             }
             Some(rsa_private_key_password) => {

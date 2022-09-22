@@ -145,14 +145,17 @@ pub fn get_plain_cookie_string(transmitted_cookie: &str, rsa: &RsaKeys) -> Strin
     // when the rsa key pair already has been loaded,
     // the cookie value is encrypted with the rsa public
     // key otherwise its simply base64 encoded.
+    const INVALID_RSA_COOKIE: &str = "invalid_rsa_cookie_value";
+    const INVALID_B64_COOKIE: &str = "invalid_base64_cookie";
+    const INVALID_B64_UTF8: &str = "invalid_base64_utf8";
     match rsa.rsa_private_key {
         Some(_) => rsa
             .decrypt_str(&transmitted_cookie)
-            .unwrap_or("invalid_rsa_cookie_value".to_string()),
+            .unwrap_or(INVALID_RSA_COOKIE.to_string()),
         None => String::from_utf8(
             base64::decode(&transmitted_cookie)
-                .unwrap_or("invalid_base64_cookie".as_bytes().to_vec()),
+                .unwrap_or(INVALID_B64_COOKIE.as_bytes().to_vec()),
         )
-        .unwrap_or("invalid_base64_utf8".to_string()),
+        .unwrap_or(INVALID_B64_UTF8.to_string()),
     }
 }

@@ -77,11 +77,12 @@ pub async fn get_login_hint(
 pub async fn get_mail_hint(
     application_configuration: web::Data<ApplicationConfiguration>,
 ) -> impl Responder {
+    const EMPTY_MAIL_HINT_JSON: &str = "{\"MailHint\": \"\"}";
     match &application_configuration.configuration_file.mail_hint {
         Some(mail_hint) => {
             format!("{{\"MailHint\": \"{}\"}}", &mail_hint)
         }
-        None => "{\"MailHint\": \"\"}".to_string(),
+        None => EMPTY_MAIL_HINT_JSON.to_string(),
     }
 }
 
@@ -89,10 +90,11 @@ pub async fn get_mail_hint(
 pub async fn get_imprint_link(
     application_configuration: web::Data<ApplicationConfiguration>,
 ) -> impl Responder {
+    const SERDE_SERIALIZE_IMPRINT_ERROR: &str ="ERROR: failed to serialize imprint link";
     let imprint_link = &application_configuration.configuration_file.imprint.clone();
     HttpResponse::ok_json_response(
         serde_json::to_string(&imprint_link)
-            .unwrap_or("ERROR: failed to serialize imprint link".to_string()),
+            .unwrap_or(SERDE_SERIALIZE_IMPRINT_ERROR.to_string()),
     )
 }
 
