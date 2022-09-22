@@ -65,7 +65,7 @@ impl AuthenticatedUser {
             first_name: String::from(first_name),
             last_name: String::from(last_name),
             mail: String::from(mail),
-            access_scope: access_scope,
+            access_scope,
             time_stamp: Utc::now(),
         }
     }
@@ -87,9 +87,7 @@ impl FromRequest for AuthenticatedUser {
 
     fn from_request(req: &HttpRequest, _payload: &mut Payload) -> Self::Future {
         let req = req.clone();
-        Box::pin(async move {
-            return get_authenticated_user(&req);
-        })
+        Box::pin(async move { get_authenticated_user(&req) })
     }
 }
 
@@ -102,19 +100,17 @@ impl FromRequest for AuthenticatedAdministrator {
     type Future = Pin<Box<dyn Future<Output = Result<AuthenticatedAdministrator, Error>>>>;
 
     fn from_request(req: &HttpRequest, payload: &mut Payload) -> Self::Future {
-        let fut = AuthenticatedUser::from_request(&req, payload);
+        let fut = AuthenticatedUser::from_request(req, payload);
         Box::pin(async move {
             match fut.await {
                 Ok(user) => {
                     if user.access_scope == AccessScope::Administrator {
                         return Ok(AuthenticatedAdministrator(user));
                     }
-                    return Err(ErrorUnauthorized("ERROR: Not an administrator!"));
+                    Err(ErrorUnauthorized("ERROR: Not an administrator!"))
                 }
-                Err(err) => {
-                    return Err(err);
-                }
-            };
+                Err(err) => Err(err),
+            }
         })
     }
 }
@@ -148,7 +144,7 @@ impl SharedAuthenticatedUsersHashMap {
         SharedAuthenticatedUsersHashMap {
             authenticated_users_hashmap: AuthenticatedUsersHashMap::new(),
             uuid_context: Context::new(1),
-            admin_accounts: admin_accounts,
+            admin_accounts,
         }
     }
 
@@ -167,11 +163,8 @@ impl SharedAuthenticatedUsersHashMap {
         };
         let authenticated_user =
             AuthenticatedUser::new(user_name, first_name, last_name, mail, scope);
-        let unix_timestamp_seconds = authenticated_user.time_stamp.timestamp().clone() as u64;
-        let unix_timestamp_subsec_nanos = authenticated_user
-            .time_stamp
-            .timestamp_subsec_nanos()
-            .clone();
+        let unix_timestamp_seconds = authenticated_user.time_stamp.timestamp() as u64;
+        let unix_timestamp_subsec_nanos = authenticated_user.time_stamp.timestamp_subsec_nanos();
         let ts = Timestamp::from_unix(
             &self.uuid_context,
             unix_timestamp_seconds,
@@ -187,7 +180,7 @@ impl SharedAuthenticatedUsersHashMap {
             return None;
         } else {
             self.authenticated_users_hashmap
-                .insert(request_uuid.clone(), authenticated_user);
+                .insert(request_uuid, authenticated_user);
         }
         Some(request_uuid)
     }
@@ -210,7 +203,7 @@ pub fn cleanup_authenticated_users_hashmap(
         // remove authenticated users after the configured time
         if v.time_stamp < time_to_delete {
             info!("removing {}, {}", &k.to_string(), &v);
-            items_to_remove.push(k.clone());
+            items_to_remove.push(*k);
         }
     }
     drop(shared_authenticated_users_read_lock);

@@ -3,10 +3,13 @@
 #[inline]
 pub fn extract_request_path(path: &str) -> String {
     // no parameters in path
-    if !path.contains("?") {
+    if !path.contains('?') {
         return path.to_string();
     }
     // strip parameters
-    let mut parts = path.split("?");
-    parts.next().unwrap_or("failed to strip request parameters").to_string()
+    let mut parts = path.split('?');
+    parts
+        .next()
+        .unwrap_or("failed to strip request parameters")
+        .to_string()
 }

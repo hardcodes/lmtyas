@@ -9,7 +9,6 @@ pub use crate::login_user_trait::Login;
 use crate::unsecure_string::SecureStringToUnsecureString;
 use actix_web::{http, http::StatusCode, web, web::Bytes, HttpResponse};
 use async_trait::async_trait;
-use base64;
 use ldap3::{LdapConnAsync, Scope, SearchEntry};
 use log::{debug, info, warn};
 use regex::Regex;
@@ -63,18 +62,18 @@ impl LdapAuthConfiguration {
         // in plaintext. It is converted here and lives only
         // for the short time of a query.
         let bind_pw = &self.ldap_bind_passwd.to_unsecure_string();
-        ldap.simple_bind(&self.ldap_bind_dn, &bind_pw)
+        ldap.simple_bind(&self.ldap_bind_dn, bind_pw)
             .await?
             .success()?;
         debug!("ldap.simple_bind() -> OK");
         let (rs, _res) = ldap
-            .search(&self.ldap_base_ou, Scope::Subtree, &filter, attributes)
+            .search(&self.ldap_base_ou, Scope::Subtree, filter, attributes)
             .await?
             .success()?;
         let mut result = String::new();
         for entry in rs {
             let search_entry = SearchEntry::construct(entry);
-            // build a string containing the whole result mot unlike json.
+            // build a string containing the whole result not unlike json.
             // Not 100% happy with this solution but for now it seems the
             // most generic approach.
             result.push_str(&format!("{:?}", search_entry.attrs));
@@ -106,7 +105,7 @@ impl LdapAuthConfiguration {
             Some(f) => f,
             None => &self.ldap_user_filter,
         };
-        let filterstring = &ldap_filter.replace("{0}", &user_name);
+        let filterstring = &ldap_filter.replace("{0}", user_name);
         self.ldap_search(filterstring, vec!["uid", "givenName", "sn", "mail"])
             .await
     }
@@ -132,7 +131,7 @@ impl LdapAuthConfiguration {
             Some(f) => f,
             None => &self.ldap_mail_filter,
         };
-        let filterstring = &ldap_filter.replace("{0}", &mail);
+        let filterstring = &ldap_filter.replace("{0}", mail);
         self.ldap_search(filterstring, vec!["uid", "givenName", "sn", "mail"])
             .await
     }
@@ -152,10 +151,8 @@ impl LdapAuthConfiguration {
         let (conn, mut ldap) = LdapConnAsync::new(&self.ldap_url).await?;
         ldap3::drive!(conn);
         debug!("Connected to {}", &&self.ldap_url);
-        let ldap_bind_dn = &self.ldap_bind_user_dn.replace("{0}", &user_name);
-        ldap.simple_bind(&ldap_bind_dn, &password)
-            .await?
-            .success()?;
+        let ldap_bind_dn = &self.ldap_bind_user_dn.replace("{0}", user_name);
+        ldap.simple_bind(&ldap_bind_dn, password).await?.success()?;
         debug!("ldap.simple_bind() -> OK");
         Ok(ldap.unbind().await?)
     }
@@ -313,7 +310,7 @@ impl Login for LdapAuthConfiguration {
         // dirty hack to build a json string from the ldap query result,
         // so it can be serialized.
         let ldap_result =
-            match serde_json::from_str(&ldap_search_result.replace("[", "").replace("]", ""))
+            match serde_json::from_str(&ldap_search_result.replace('[', "").replace(']', ""))
                 as Result<LdapSearchResult, _>
             {
                 Err(e) => {
@@ -454,7 +451,7 @@ impl GetUserData for LdapAuthConfiguration {
             .configuration_file
             .ldap_configuration
             .ldap_search_by_mail(
-                &mail,
+                mail,
                 Some(
                     &application_configuration
                         .configuration_file
@@ -475,7 +472,7 @@ impl GetUserData for LdapAuthConfiguration {
         // dirty hack to build a json string from the ldap query result,
         // so it can be serialized.
         let ldap_result =
-            match serde_json::from_str(&ldap_search_result.replace("[", "").replace("]", ""))
+            match serde_json::from_str(&ldap_search_result.replace('[', "").replace(']', ""))
                 as Result<LdapSearchResult, _>
             {
                 Err(e) => {

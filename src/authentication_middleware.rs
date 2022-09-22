@@ -10,6 +10,7 @@ use actix_web::{body::EitherBody, http, http::StatusCode, web, Error, HttpRespon
 use chrono::{DateTime, Utc};
 use futures_util::future::LocalBoxFuture;
 use std::collections::HashMap;
+use std::fmt;
 use std::future::{ready, Ready};
 use uuid::v1::{Context, Timestamp};
 use uuid::Uuid;
@@ -47,6 +48,17 @@ pub struct AuthenticationState {
     pub time_stamp: DateTime<Utc>,
 }
 
+/// custom formatter to suppress secrets in the url
+impl fmt::Display for AuthenticationState {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "(has_been_used={}, time_stamp={})",
+            self.has_been_used, self.time_stamp
+        )
+    }
+}
+
 impl AuthenticationState {
     /// Creates new empty Instance with current time stamp
     pub fn new(url: String) -> AuthenticationState {
@@ -70,8 +82,8 @@ pub fn cleanup_authentication_state_hashmap(
         // remove authentication requests that already have been used
         // or were not used in a timely manner
         if v.has_been_used || v.time_stamp < time_to_delete {
-            info!("removing {}, {:?}", &k.to_string(), &v);
-            items_to_remove.push(k.clone());
+            info!("removing {}, {}", &k.to_string(), &v);
+            items_to_remove.push(*k);
         }
     }
     drop(shared_request_data_read_lock);
@@ -107,11 +119,8 @@ impl SharedRequestData {
     pub fn store_resource_request(&mut self, url: String) -> Option<uuid::Uuid> {
         debug!("store_resource_request()");
         let authentication_state = AuthenticationState::new(url);
-        let unix_timestamp_seconds = authentication_state.time_stamp.timestamp().clone() as u64;
-        let unix_timestamp_subsec_nanos = authentication_state
-            .time_stamp
-            .timestamp_subsec_nanos()
-            .clone();
+        let unix_timestamp_seconds = authentication_state.time_stamp.timestamp() as u64;
+        let unix_timestamp_subsec_nanos = authentication_state.time_stamp.timestamp_subsec_nanos();
         let ts = Timestamp::from_unix(
             &self.uuid_context,
             unix_timestamp_seconds,
@@ -130,7 +139,7 @@ impl SharedRequestData {
             return None;
         } else {
             self.authentication_state_hashmap
-                .insert(request_uuid.clone(), authentication_state);
+                .insert(request_uuid, authentication_state);
         }
         debug!("returning uuid {}", &request_uuid.to_string());
         Some(request_uuid)
@@ -248,7 +257,7 @@ where
             let redirect_service_response =
                     <AuthenticationRedirectType as AuthenticationRedirect>::get_authentication_redirect_response(
                         &request_path_with_query,
-                        &request_uuid,
+                        request_uuid,
                         &application_configuration,
                     );
             // redirect browser to the given URI
@@ -261,6 +270,6 @@ where
         // no UUID was generated = too many requests
         debug!("no uuid, returning server busy");
         let busy_response = HttpResponse::build(StatusCode::TOO_MANY_REQUESTS).finish();
-        return Box::pin(async { Ok(request.into_response(busy_response).map_into_right_body()) });
+        Box::pin(async { Ok(request.into_response(busy_response).map_into_right_body()) })
     }
 }

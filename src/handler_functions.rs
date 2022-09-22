@@ -56,9 +56,9 @@ pub async fn still_alive(
         .rsa_private_key_password
         .is_some()
     {
-        return HttpResponse::Ok().body("Yes sir, I can boogie!");
+        HttpResponse::Ok().body("Yes sir, I can boogie!")
     } else {
-        return HttpResponse::Ok().body("System not ready!");
+        HttpResponse::Ok().body("System not ready!")
     }
 }
 
@@ -150,9 +150,9 @@ pub async fn is_server_ready(
         .rsa_private_key_password
         .is_some()
     {
-        return HttpResponse::ok_json_response("{\"isReady\": true}");
+        HttpResponse::ok_json_response("{\"isReady\": true}")
     } else {
-        return HttpResponse::ok_json_response("{\"isReady\": false}");
+        HttpResponse::ok_json_response("{\"isReady\": false}")
     }
 }
 
@@ -187,7 +187,7 @@ pub async fn set_password_for_rsa_rivate_key(
     debug!("new rsa password = {}", &base64_decoded_password);
     if let Ok(mut rsa_password_write_lock) = application_configuration.rsa_password.write() {
         rsa_password_write_lock.rsa_private_key_password =
-            Some(SecStr::from(base64_decoded_password.clone()));
+            Some(SecStr::from(base64_decoded_password));
     } else {
         return HttpResponse::err_text_response("ERROR: can not acquire a lock on system data!");
     }
@@ -201,11 +201,11 @@ pub async fn set_password_for_rsa_rivate_key(
             // loading the rsa keys did not work, throw the password away
             let _result = application_configuration.clear_rsa_password();
             warn!("error loading rsa private key: {:?}", e);
-            return HttpResponse::err_text_response("ERROR: could not load rsa private key!");
+            HttpResponse::err_text_response("ERROR: could not load rsa private key!")
         }
         Ok(_) => {
             info!("rsa keys have been loaded successfully");
-            return HttpResponse::ok_text_response("OK");
+            HttpResponse::ok_text_response("OK")
         }
     }
 }
@@ -270,13 +270,13 @@ pub async fn store_secret(
     // store aes encrypted secret instead of plaintext secret
     parsed_form_data.secret = aes_encryption_result.encrypted_data.clone();
     // rsa encrypt all data
-    let rsa_read_lock = application_configuration.rsa_keys.read().unwrap();
-    let encrypted_form_data = match parsed_form_data.to_encrypted(&rsa_read_lock) {
-        Ok(encrypted_form_data) => encrypted_form_data,
-        Err(e) => {
-            return HttpResponse::err_text_response(format!("ERROR: {}", &e));
-        }
-    };
+    let encrypted_form_data =
+        match parsed_form_data.to_encrypted(&application_configuration.rsa_keys.read().unwrap()) {
+            Ok(encrypted_form_data) => encrypted_form_data,
+            Err(e) => {
+                return HttpResponse::err_text_response(format!("ERROR: {}", &e));
+            }
+        };
 
     // write data to disk
     let mut shared_secret_write_lock = application_configuration.shared_secret.write().unwrap();
@@ -309,7 +309,12 @@ pub async fn store_secret(
             );
             debug!("url_payload = {}", &url_payload);
             // rsa encrypt url payload
-            let encrypted_url_payload = match rsa_read_lock.encrypt_str(&url_payload) {
+            let encrypted_url_payload = match application_configuration
+                .rsa_keys
+                .read()
+                .unwrap()
+                .encrypt_str(&url_payload)
+            {
                 Ok(encrypted_url_payload) => encrypted_url_payload,
                 Err(e) => {
                     return HttpResponse::err_text_response(format!("ERROR: {}", &e));
@@ -357,7 +362,10 @@ pub async fn store_secret(
                         "error sending mail to {}: {}",
                         &parsed_form_data.to_email, &e
                     );
-                    return HttpResponse::err_text_response(format!("ERROR: cannot send mail: {}", &e));
+                    return HttpResponse::err_text_response(format!(
+                        "ERROR: cannot send mail: {}",
+                        &e
+                    ));
                 }
                 Ok(_) => {
                     return HttpResponse::ok_text_response("OK");
@@ -446,27 +454,24 @@ pub async fn reveal_secret(
     };
     // put the plaintext secret into the struct
     aes_encrypted.secret = decrypted_secret;
-    match serde_json::to_string(&aes_encrypted) {
+    let json_response = match serde_json::to_string(&aes_encrypted) {
         Err(e) => {
             return HttpResponse::err_text_response(format!("ERROR: {}", &e));
         }
-        Ok(json_response) => {
-            debug!("json_response = {}", &json_response);
-            // remove the secret file before revealing data.
-            match remove_file(&path) {
-                Err(e) => {
-                    warn!("secret {} cannot be deleted: {}", &path.display(), &e);
-                    return HttpResponse::err_text_response(format!(
-                        "ERROR: secret cannot be deleted from server"
-                    ));
-                }
-                Ok(_) => {
-                    info!("revealing secret with id {}", &uuid);
-                    return HttpResponse::ok_json_response(json_response);
-                }
-            };
-        }
+        Ok(json_response) => json_response,
     };
+    debug!("json_response = {}", &json_response);
+    // remove the secret file before revealing data.
+    match remove_file(&path) {
+        Err(e) => {
+            warn!("secret {} cannot be deleted: {}", &path.display(), &e);
+            HttpResponse::err_text_response("ERROR: secret cannot be deleted from server")
+        }
+        Ok(_) => {
+            info!("revealing secret with id {}", &uuid);
+            HttpResponse::ok_json_response(json_response)
+        }
+    }
 }
 
 /// Details about the authenticated user

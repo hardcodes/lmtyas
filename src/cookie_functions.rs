@@ -3,7 +3,6 @@ use crate::rsa_functions::RsaKeys;
 use actix_web::{
     cookie::time::Duration, cookie::Cookie, cookie::SameSite, http, http::StatusCode, HttpResponse,
 };
-use base64;
 
 /// Name of the cookie that is sent to an authenticated user browser
 pub const COOKIE_NAME: &str = env!("CARGO_PKG_NAME");
@@ -83,7 +82,7 @@ pub fn build_new_authentication_cookie(
     rsa: &RsaKeys,
 ) -> Cookie<'static> {
     let new_cookie = match rsa.rsa_private_key {
-        Some(_) => build_new_encrypted_authentication_cookie(cookie_value, cookie_lifetime, &rsa),
+        Some(_) => build_new_encrypted_authentication_cookie(cookie_value, cookie_lifetime, rsa),
         None => build_new_base64_authentication_cookie(cookie_value, cookie_lifetime),
     };
     new_cookie
@@ -125,12 +124,11 @@ pub fn build_redirect_to_resource_url_response(
     location: String,
     allowed_origin: String,
 ) -> HttpResponse {
-    let redirect_to_resource_url_response = HttpResponse::Found()
+    HttpResponse::Found()
         .append_header((http::header::LOCATION, location))
         .append_header((http::header::SET_COOKIE, cookie.to_string()))
         .append_header(("Access-Control-Allow-Origin", allowed_origin))
-        .body("OK");
-    redirect_to_resource_url_response
+        .body("OK")
 }
 
 /// Get plain cookie value (rsa decrypt or base64 decode)

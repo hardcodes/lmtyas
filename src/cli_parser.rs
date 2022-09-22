@@ -1,10 +1,10 @@
-use crate::PROGRAM_NAME;
-use crate::PROGRAM_VERSION;
 use crate::PROGRAM_AUTHORS;
 use crate::PROGRAM_DESCRIPTION;
+use crate::PROGRAM_NAME;
+use crate::PROGRAM_VERSION;
 
 /// Parse the command line parameters with help of clap.
-pub fn parse_cli_parameters<'p>() -> clap::ArgMatches {
+pub fn parse_cli_parameters() -> clap::ArgMatches {
     let arg_matches = clap::App::new(PROGRAM_NAME)
         .version(PROGRAM_VERSION)
         .author(PROGRAM_AUTHORS)
@@ -17,8 +17,9 @@ pub fn parse_cli_parameters<'p>() -> clap::ArgMatches {
                 .help("json file with the configuration of the webservice")
                 .takes_value(true)
                 .required(true),
-        ).after_help(
-r##"Here is an example of a working configuration file:
+        )
+        .after_help(
+            r##"Here is an example of a working configuration file:
 
 {
     "web_bind_address": "127.0.0.1:8844",
@@ -54,7 +55,8 @@ r##"Here is an example of a working configuration file:
         "href": "https://www.acme.local",
         "target": "_blank"
     }
-}"##)
+}"##,
+        )
         .get_matches();
-        arg_matches
+    arg_matches
 }

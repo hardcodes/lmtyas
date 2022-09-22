@@ -189,7 +189,6 @@ impl Secret {
     ///
     /// - `String`
     pub fn build_context(&self, subject: &str) -> String {
-        let s = subject.replace("{Context}", &self.context);
-        s
+        subject.replace("{Context}", &self.context)
     }
 }
