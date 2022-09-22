@@ -169,24 +169,24 @@ sudo systemctl start lmtyas.service
 So far only the default features have been developed.
 
 - Default: **ldap-auth**, **mail-noauth-notls**
-- **ldap-auth**: authenticate users with an external ldap server.
+- **ldap-auth**: authenticate and query users with an external ldap server.
 - **mail-noauth-notls**: send mails to user via mail server that does not need authentication and uses no encrypted transport.
 
 
 # Customization
 
 
-# Customization - company logo
+## Customization - company logo
 
 If you create a folder `local/gfx` and put a png file `company-logo.png` into it, this file will be read instead. So you can customize the company logo displayed for the site.
 
 
-# Customization - favicon
+## Customization - favicon
 
 If you create a folder `local/gfx` and put a png file `favicon.png` into it, this file will be read instead. So you can customize the favicon displayed for the site.
 
 
-# Customization - colors
+## Customization - colors
 
 if you create a folder `local/css` and put a copy of the file [static/css/colors.css](./static/css/colors.css) into it, this file will be read instead. So you can customize the colors applied to the css.
 
