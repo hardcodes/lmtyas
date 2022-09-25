@@ -71,6 +71,7 @@ impl AuthenticationState {
 }
 
 /// Removes aged authentication requests
+#[inline]
 pub fn cleanup_authentication_state_hashmap(
     shared_request_data: &Arc<RwLock<SharedRequestData>>,
     max_age_in_seconds: i64,

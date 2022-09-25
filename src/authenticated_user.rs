@@ -192,6 +192,7 @@ impl SharedAuthenticatedUsersHashMap {
 /// The html files with forms call the route `/authenticated/keep_session_alive`
 /// once a minute, to update the cookie timestamp. Once they leave the forms,
 /// they will be removed, after `max_cookie_age_seconds`.
+#[inline]
 pub fn cleanup_authenticated_users_hashmap(
     shared_authenticated_users: &Arc<RwLock<SharedAuthenticatedUsersHashMap>>,
     max_age_in_seconds: i64,
