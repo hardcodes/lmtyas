@@ -19,6 +19,8 @@ use uuid::Uuid;
 
 // maximum bytes that can be transferred as login data
 const MAX_BYTES: usize = 384;
+// maximum length of a password
+const MAX_PASSWORD_LENGTH: usize = 128;
 
 /// Holds the configuration to access an LDAP server
 /// for user authentication
@@ -203,7 +205,7 @@ impl Login for LdapAuthConfiguration {
         let form_data = match String::from_utf8(bytes_vec) {
             Ok(form_data) => form_data,
             Err(_) => {
-                return HttpResponse::err_text_response("ERROR: could not parse form data");
+                return HttpResponse::err_text_response("ERROR: invalid utf8 in form data");
             }
         };
         let parsed_form_data = match serde_json::from_str(&form_data) as Result<LoginData, _> {
@@ -231,6 +233,9 @@ impl Login for LdapAuthConfiguration {
             .unwrap();
         if !valid_user_regex.is_match(&parsed_form_data.login_name) {
             return HttpResponse::err_text_response("ERROR: invalid login name format");
+        }
+        if parsed_form_data.login_password.len() > MAX_PASSWORD_LENGTH {
+            return HttpResponse::err_text_response("ERROR: password is too long!");
         }
         // what ID was assigned to the resource request?
         let request_id = match Uuid::parse_str(&parsed_form_data.request_id) {
