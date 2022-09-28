@@ -208,7 +208,7 @@ async fn main() -> std::io::Result<()> {
                         .to(HttpResponse::MethodNotAllowed),
                 ),
             )
-            .default_service(web::to(|| HttpResponse::NotFound()))
+            .default_service(web::to(not_found_404))
     })
     .keep_alive(std::time::Duration::from_secs(45))
     .bind_openssl(web_bind_address, ssl_acceptor_builder)?

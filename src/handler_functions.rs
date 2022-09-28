@@ -18,6 +18,7 @@ use log::{debug, info, warn};
 use percent_encoding::{percent_decode_str, utf8_percent_encode, AsciiSet, CONTROLS};
 use secstr::SecStr;
 use serde::{Deserialize, Serialize};
+use std::fs::read_to_string;
 use std::fs::remove_file;
 use std::path::Path;
 
@@ -90,11 +91,10 @@ pub async fn get_mail_hint(
 pub async fn get_imprint_link(
     application_configuration: web::Data<ApplicationConfiguration>,
 ) -> impl Responder {
-    const SERDE_SERIALIZE_IMPRINT_ERROR: &str ="ERROR: failed to serialize imprint link";
+    const SERDE_SERIALIZE_IMPRINT_ERROR: &str = "ERROR: failed to serialize imprint link";
     let imprint_link = &application_configuration.configuration_file.imprint.clone();
     HttpResponse::ok_json_response(
-        serde_json::to_string(&imprint_link)
-            .unwrap_or(SERDE_SERIALIZE_IMPRINT_ERROR.to_string()),
+        serde_json::to_string(&imprint_link).unwrap_or(SERDE_SERIALIZE_IMPRINT_ERROR.to_string()),
     )
 }
 
@@ -530,4 +530,12 @@ pub async fn get_sysop_js(_admin: AuthenticatedAdministrator) -> impl Responder 
 /// - `HttpResponse`
 pub async fn keep_session_alive(req: HttpRequest, _user: AuthenticatedUser) -> HttpResponse {
     update_authenticated_user_cookie_lifetime(&req)
+}
+
+/// custom 404 handler
+/// returns 404.html or plain error message if file cannot be found
+pub async fn not_found_404() -> HttpResponse {
+    let file_path = Path::new("static/404.html");
+    let file_content = read_to_string(file_path).unwrap_or("404 not found".to_string());
+    HttpResponse::build(StatusCode::NOT_FOUND).body(file_content)
 }
