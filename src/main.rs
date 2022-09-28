@@ -194,6 +194,7 @@ async fn main() -> std::io::Result<()> {
                     // feature that points to the login page
                     .service(Files::new("/", "./authentication/").index_file(AUTH_PAGE)),
             )
+            // serve custom favicon if it exists
             .route("/gfx/favicon.png", web::get().to(get_favicon))
             // serve custom site logo if it exists
             .route("/gfx/company-logo.png", web::get().to(get_company_logo))
