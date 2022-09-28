@@ -75,8 +75,6 @@ function accessWebService(url, okcallback, errorcallback, method = "GET", formda
   var xhttp = new XMLHttpRequest();
 
   xhttp.onreadystatechange = function () {
-    // console.log(this.readyState);
-    // console.log(this.status);
     if (this.readyState == 4 && (this.status == 200 || (this.status >= 400 && this.status < 500))) {
       stopProgressSpinner();
       if (this.status > 400 && this.status < 500 || this.responseText.includes("ERROR:")) {
