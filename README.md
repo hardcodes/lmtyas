@@ -71,7 +71,7 @@ See [lmtyas-config.json](conf.dev/lmtyas-config.json) for an example configurati
 - **NOTE 2** The arrays `email_configuration` and `ldap_configuration` may be absent or differ, depending on the selected features. See section *[Compile and install -features](#compile-and-install---features)*.
 - **NOTE 3** The directive `mail_hint` may be absent. If so the default `firstname.lastname@acme.local` will be used.
 
-You need a SSl certificate and its unencrypted key in pem format. Create your own *[set of rsa keys](#security---data-encryption---rsa-keys)*.
+You need a SSL certificate and its unencrypted key in pem format. Create your own *[set of rsa keys](#security---data-encryption---rsa-keys)*.
 
 
 # External dependencies

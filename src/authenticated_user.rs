@@ -174,7 +174,7 @@ impl SharedAuthenticatedUsersHashMap {
         if self.authenticated_users_hashmap.len() >= MAX_AUTH_USERS {
             // A real user/browser will come back again and start a new authentication
             // attempt. A possible attacker will simply knock on the server without beeing
-            // redirected to the uuthentication url again and stopped after reaching MAX_AUTH_USERS.
+            // redirected to the authentication url again and stopped after reaching MAX_AUTH_USERS.
             // So the webservice won't consume all memory on the host.
             warn!("MAX_AUTH_USERS exceeded, possible DOS attack!");
             return None;
