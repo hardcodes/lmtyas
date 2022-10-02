@@ -1,0 +1,14 @@
+Dear {ToDisplayName},
+
+{FromDisplayName} has sent you a new password for {Context}.
+
+To reveal the password, please open the following address in a browser:
+
+https://127.0.0.1:8844/html/reveal.html?secret_id={UrlPayload}
+
+You need to login with your *ACME LDAP* account to access this website.
+The website is reachable from the company network only and javascript
+needs to be enabled in your browser-
+
+Best regards
+Your it department

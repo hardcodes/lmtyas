@@ -1,0 +1,170 @@
+#!/bin/sh
+#
+# create .deb package
+
+which dpkg-deb||{ echo "dpkg-deb is missing!";exit 1; }
+ARCH=$(lscpu|grep Architecture|cut -f 2 -d ":"|tr -d " "|sed "s/x86_64/amd64/g")
+VERSION=$(grep "^version" Cargo.toml|cut -f 2 -d "="|tr -d '" ')
+TMP_DIR=$(mktemp -d)
+echo "checking for TMP_DIR ${TMP_DIR}..."
+[ -d "${TMP_DIR}" ] || { echo "${TMP_DIR} is missing!";exit 1; }
+WORK_DIR="${TMP_DIR}/lmtyas_${VERSION}-1_${ARCH}"
+mkdir -p ${WORK_DIR}
+echo "checking for workdir ${WORK_DIR}..."
+[ -d "${WORK_DIR}" ] || { echo "${WORK_DIR} is missing!";exit 1; }
+[ -d "ignore/packages" ] || mkdir -p ignore/packages
+
+echo "building..."
+cargo build --release
+strip target/release/lmtyas
+
+echo "preparing package..."
+mkdir -p ${WORK_DIR}/etc/lmtyas
+cp README.md ${WORK_DIR}/etc/lmtyas/
+cp conf.dev/lmtyas-config.json ${WORK_DIR}/etc/lmtyas/lmtyas-config.json.example
+cp conf.dev/mailtemplate.txt ${WORK_DIR}/etc/lmtyas/mailtemplate.txt.example
+cat << __EOF__ > ${WORK_DIR}/etc/lmtyas/lmtyas-systemd.conf
+lmtyasCFGFILE="/etc/lmtyas/lmtyas-config.json"
+__EOF__
+mkdir -p ${WORK_DIR}/etc/systemd/system
+cat << __EOF__ > ${WORK_DIR}/etc/systemd/system/lmtyas.service
+[Unit]
+Description=[lmtyas.service] let me tell you a secret service
+After=network.target
+Wants=basic.target
+
+[Install]
+WantedBy=multi-user.target
+
+[Service]
+EnvironmentFile=-/etc/lmtyas/lmtyas-systemd.conf
+Type=simple
+Restart=always
+User=lmtyas
+Group=lmtyas
+WorkingDirectory=/opt/lmtyas
+ExecStart=/opt/lmtyas/lmtyassvc --config-file \${lmtyasCFGFILE}
+__EOF__
+mkdir -p ${WORK_DIR}/opt/lmtyas/output/secrets
+cp -r admin-html ${WORK_DIR}/opt/lmtyas/
+cp -r authenticated ${WORK_DIR}/opt/lmtyas/
+cp -r authentication ${WORK_DIR}/opt/lmtyas/
+cp -r static ${WORK_DIR}/opt/lmtyas/
+cp target/release/lmtyas ${WORK_DIR}/opt/lmtyas/
+mkdir -p ${WORK_DIR}/DEBIAN
+
+echo "creating control file"
+cat << __EOF__ > ${WORK_DIR}/DEBIAN/control
+Package: lmtyas
+Version: ${VERSION}
+Architecture: ${ARCH}
+Maintainer: Sven Putze <github@hardcodes.de>
+Depends: openssl, systemd
+Description: web service "let me tell you a secret"
+ A web service that allows an authenticated user to send secrets like passwords to other authenticated users.
+__EOF__
+
+echo "creating preinst file"
+cat << __EOF__ > ${WORK_DIR}/DEBIAN/preinst
+if  [ "$1" = install ]
+then
+  echo "Setting up lmtyas group and user"
+  # creating lmtyas group if it does not exist yet
+  if ! getent group lmtyas >/dev/null; then
+    addgroup --system lmtyas >/dev/null
+  fi
+
+  # creating lmtyas user if he isn't already there
+  if ! getent passwd lmtyas >/dev/null; then
+    sudo adduser --disabled-login \
+    --home /opt/lmtyas \
+    --no-create-home \
+    --system  \
+    --shell /usr/sbin/nologin \
+    --ingroup lmtyas \
+    lmtyas \
+    >/dev/null
+  fi
+fi
+__EOF__
+
+echo "creating postinst file"
+cat << __EOF__ > ${WORK_DIR}/DEBIAN/postinst
+#!/bin/bash
+
+if [ "$1" = configure ]; then
+  chown root:lmtyas /etc/lmtyas/lmtyas-systemd.conf
+  chmod 640 /etc/lmtyas/lmtyas-systemd.conf
+
+  chown -R lmtyas:lmtyas /opt/lmtyas/
+  find /opt/lmtyas/ -type f -exec chmod 640 {} \;
+  find /opt/lmtyas/ -type d -exec chmod 750 {} \;
+  chmod -R 750 /opt/lmtyas/lmtyas
+
+  if [ -f /etc/lmtyas/lmtyas-config.json ]; then
+    echo "updating systemd unit file..."
+    systemctl daemon-reload > /dev/null
+    systemctl enable lmtyas.service > /dev/null
+    systemctl unmask lmtyas.service > /dev/null
+    echo "starting service..."
+    systemctl start lmtyas.service > /dev/null
+  else
+    echo "you must create a /etc/lmtyas/lmtyas-config.json file, see /etc/lmtyas/lmtyas-config.json.example,"
+    echo "a mail template, see /etc/lmtyas/mailtemplate.txt.example and"
+    echo "RSA private keys with fitting permissions, see /etc/lmtyas/README.md"
+    echo "Then run"
+    echo "systemctl daemon-reload"
+    echo "systemctl enable lmtyas.service"
+    echo "systemctl unmask lmtyas.service"
+    echo "systemctl start lmtyas.service"
+  fi
+fi
+__EOF__
+
+echo "creating prerm file"
+cat << __EOF__ > ${WORK_DIR}/DEBIAN/prerm
+#!/bin/bash
+
+# check if service is running and stop it
+if [ systemctl is-active --quiet lmtyas.service ];then
+  echo "service is already stopped"
+else
+  echo "stopping service..."
+  systemctl stop --quiet lmtyas.service
+fi  
+__EOF__
+
+echo "creating postrm file"
+cat << __EOF__ > ${WORK_DIR}/DEBIAN/postrm
+#!/bin/bash
+
+function remove_files() {
+  userdel lmtyas -r -f
+  groupdel lmtyas
+  rm -rf /opt/lmtyas/admin-html
+  rm -rf /opt/lmtyas/authenticated
+  rm -rf /opt/lmtyas/authentication
+  rm -rf /opt/lmtyas/static
+  rm -f /opt/lmtyas/lmtyas
+
+}
+if [ $1 = 'remove' ]; then
+  remove_files
+fi
+if [ $1 = 'purge' ]; then
+  remove_files
+  rm -rf /etc/lmtyas
+  rm -rf /opt/lmtyas
+fi
+__EOF__
+
+chmod -R 755 ${WORK_DIR}/DEBIAN
+
+echo "building package"
+dpkg-deb --build --root-owner-group ${WORK_DIR}||exit 1
+cp ${TMP_DIR}/*.deb ignore/packages/||exit 1
+#rm -r ${TMP_DIR}/*
+#rmdir ${TMP_DIR}
+
+echo "done!"
+

@@ -1,0 +1,31 @@
+:root {
+    --mainfont: #162152;
+    --input-invalid-border: #AD434A;
+    --input-ok-border: #49b35b;
+    --error-bg: #9D132A;
+    --error-font: #FFFFFF;
+    --ok-bg: #49b35b;
+    --ok-font: #FFFFFF;
+    --form-bg:  #EEEEEE;
+    --button-enabled: #8ac1ff;
+    --button-disabled: #EEEEEE;
+    --notify-bg: #0655af;
+    --notify-font:#FFFFFF;
+    --msg-shadow: #999999;
+    --spinner-border:  #C9C9C9;
+    --spinner-border-top:  #001455;
+    --ul-link-before: #0655AF;
+    --header-bg: #aac1dd;
+    --header-links-bg: #0655AF;
+    --header-links-font: #000000;
+    --header-links-hover-bg: #616161;
+    --header-links-hover-font: #FFFFFF;
+    --header-links-visited-font: #FFFFFF;
+    --header-links-active-font: #FFFFFF;
+    --header-links-active-bg: #060505;
+    --input-border: #CCCCCC;
+    --input-ro-bg: #CCCCDD;
+    --footer-font: #FFFFFF;
+    --footer-bg: #3f3973;
+    --footer-links-hover-bg: #88a1aa;
+}
