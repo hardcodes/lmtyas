@@ -1,33 +1,91 @@
-#!/bin/sh
+#!/bin/bash
 #
 # create .deb package
 
+THIS=$0
+SRC_DIR="."
+
+function usage {
+    cat << __EOF__
+Usage: $THIS [-h , --help] [--source-dir, -s <path to project>]
+
+  Create a new Debian package from the compiled binary and source files.
+
+ -h , --help
+     Show this message
+ -s, --source-dir <path to project>
+     Path to project directory if script is executed from somewhere else
+
+  Prerequisites:
+
+     The binary /target/release/lmtyas must have been compiled first,
+     see README.md.
+
+  Example:
+
+     $THIS
+     $THIS --source-dir "<my>/<path>/<to>/<project>/<dir>"
+__EOF__
+    exit 1
+}
+
+function parseparameters {
+    while [[ $# > 0 ]] ; do
+        case "$1" in
+            "-h")
+               ;&
+            "--help")
+               usage
+               ;;
+            "-s")
+               ;&
+            "--source-dir")
+               SRC_DIR=$(echo "${2}"|tr -d '"')
+               shift
+               ;;
+         esac
+         shift
+    done
+}
+
+parseparameters "$@"
+
+# check if package build tools are available
 which dpkg-deb||{ echo "dpkg-deb is missing!";exit 1; }
+# does the binary exist?
+RELEASE_BIN="${SRC_DIR}/target/release/lmtyas"
+[ -x "${RELEASE_BIN}" ] || { echo "${RELEASE_BIN} is missing!"; exit 1; }
+RELEASE_VERSION=$("${RELEASE_BIN}" --version|cut -f 2 -d " ")
+CARGO_VERSION=$(grep "^version" "${SRC_DIR}/Cargo.toml"|cut -f 2 -d "="|tr -d '" ')
+# has the binary the correct version?
+[ "${RELEASE_VERSION}" = "${CARGO_VERSION}" ] || { echo "${RELEASE_BIN} version ${RELEASE_VERSION} does not match Cargo.toml version ${CARGO_VERSION}!"; exit 1; }
+
 ARCH=$(lscpu|grep Architecture|cut -f 2 -d ":"|tr -d " "|sed "s/x86_64/amd64/g")
-VERSION=$(grep "^version" Cargo.toml|cut -f 2 -d "="|tr -d '" ')
 TMP_DIR=$(mktemp -d)
 echo "checking for TMP_DIR ${TMP_DIR}..."
 [ -d "${TMP_DIR}" ] || { echo "${TMP_DIR} is missing!";exit 1; }
-WORK_DIR="${TMP_DIR}/lmtyas_${VERSION}-1_${ARCH}"
+
+WORK_DIR="${TMP_DIR}/lmtyas_${CARGO_VERSION}-1_${ARCH}"
 mkdir -p ${WORK_DIR}
 echo "checking for workdir ${WORK_DIR}..."
 [ -d "${WORK_DIR}" ] || { echo "${WORK_DIR} is missing!";exit 1; }
-[ -d "ignore/packages" ] || mkdir -p ignore/packages
 
-echo "building..."
-cargo build --release
-strip target/release/lmtyas
+[ -d "${SRC_DIR}/ignore/packages" ] || mkdir -p "${SRC_DIR}/ignore/packages"
+
+echo "stripping binary"
+strip "${RELEASE_BIN}"
 
 echo "preparing package..."
-mkdir -p ${WORK_DIR}/etc/lmtyas
-cp README.md ${WORK_DIR}/etc/lmtyas/
-cp conf.dev/lmtyas-config.json ${WORK_DIR}/etc/lmtyas/lmtyas-config.json.example
-cp conf.dev/mailtemplate.txt ${WORK_DIR}/etc/lmtyas/mailtemplate.txt.example
-cat << __EOF__ > ${WORK_DIR}/etc/lmtyas/lmtyas-systemd.conf
+mkdir -p "${WORK_DIR}/etc/lmtyas"
+cp "${SRC_DIR}/README.md" "${WORK_DIR}/etc/lmtyas/"
+cp "${SRC_DIR}/conf.dev/lmtyas-config.json" "${WORK_DIR}/etc/lmtyas/lmtyas-config.json.example"
+cp "${SRC_DIR}/conf.dev/mailtemplate.txt" "${WORK_DIR}/etc/lmtyas/mailtemplate.txt.example"
+cat << __EOF__ > "${WORK_DIR}/etc/lmtyas/lmtyas-systemd.conf"
 lmtyasCFGFILE="/etc/lmtyas/lmtyas-config.json"
 __EOF__
-mkdir -p ${WORK_DIR}/etc/systemd/system
-cat << __EOF__ > ${WORK_DIR}/etc/systemd/system/lmtyas.service
+
+mkdir -p "${WORK_DIR}/etc/systemd/system"
+cat << __EOF__ > "${WORK_DIR}/etc/systemd/system/lmtyas.service"
 [Unit]
 Description=[lmtyas.service] let me tell you a secret service
 After=network.target
@@ -45,18 +103,18 @@ Group=lmtyas
 WorkingDirectory=/opt/lmtyas
 ExecStart=/opt/lmtyas/lmtyassvc --config-file \${lmtyasCFGFILE}
 __EOF__
-mkdir -p ${WORK_DIR}/opt/lmtyas/output/secrets
-cp -r admin-html ${WORK_DIR}/opt/lmtyas/
-cp -r authenticated ${WORK_DIR}/opt/lmtyas/
-cp -r authentication ${WORK_DIR}/opt/lmtyas/
-cp -r static ${WORK_DIR}/opt/lmtyas/
-cp target/release/lmtyas ${WORK_DIR}/opt/lmtyas/
-mkdir -p ${WORK_DIR}/DEBIAN
+mkdir -p "${WORK_DIR}/opt/lmtyas/output/secrets"
+cp -r "${SRC_DIR}/admin-html" "${WORK_DIR}/opt/lmtyas/"
+cp -r "${SRC_DIR}/authenticated" "${WORK_DIR}/opt/lmtyas/"
+cp -r "${SRC_DIR}/authentication" "${WORK_DIR}/opt/lmtyas/"
+cp -r "${SRC_DIR}/static" "${WORK_DIR}/opt/lmtyas/"
+cp ${RELEASE_BIN} "${WORK_DIR}/opt/lmtyas/"
+mkdir -p "${WORK_DIR}/DEBIAN"
 
 echo "creating control file"
-cat << __EOF__ > ${WORK_DIR}/DEBIAN/control
+cat << __EOF__ > "${WORK_DIR}/DEBIAN/control"
 Package: lmtyas
-Version: ${VERSION}
+Version: ${CARGO_VERSION}
 Architecture: ${ARCH}
 Maintainer: Sven Putze <github@hardcodes.de>
 Depends: openssl, systemd
@@ -65,7 +123,7 @@ Description: web service "let me tell you a secret"
 __EOF__
 
 echo "creating preinst file"
-cat << __EOF__ > ${WORK_DIR}/DEBIAN/preinst
+cat << __EOF__ > "${WORK_DIR}/DEBIAN/preinst"
 if  [ "$1" = install ]
 then
   echo "Setting up lmtyas group and user"
@@ -76,20 +134,19 @@ then
 
   # creating lmtyas user if he isn't already there
   if ! getent passwd lmtyas >/dev/null; then
-    sudo adduser --disabled-login \
-    --home /opt/lmtyas \
-    --no-create-home \
-    --system  \
-    --shell /usr/sbin/nologin \
-    --ingroup lmtyas \
-    lmtyas \
-    >/dev/null
+    sudo adduser --disabled-login \\
+    --home /opt/lmtyas \\
+    --no-create-home \\
+    --system  \\
+    --shell /usr/sbin/nologin \\
+    --ingroup lmtyas \\
+    lmtyas > /dev/null
   fi
 fi
 __EOF__
 
 echo "creating postinst file"
-cat << __EOF__ > ${WORK_DIR}/DEBIAN/postinst
+cat << __EOF__ > "${WORK_DIR}/DEBIAN/postinst"
 #!/bin/bash
 
 if [ "$1" = configure ]; then
@@ -97,8 +154,8 @@ if [ "$1" = configure ]; then
   chmod 640 /etc/lmtyas/lmtyas-systemd.conf
 
   chown -R lmtyas:lmtyas /opt/lmtyas/
-  find /opt/lmtyas/ -type f -exec chmod 640 {} \;
-  find /opt/lmtyas/ -type d -exec chmod 750 {} \;
+  find /opt/lmtyas/ -type f -exec chmod 640 {} \\;
+  find /opt/lmtyas/ -type d -exec chmod 750 {} \\;
   chmod -R 750 /opt/lmtyas/lmtyas
 
   if [ -f /etc/lmtyas/lmtyas-config.json ]; then
@@ -122,7 +179,7 @@ fi
 __EOF__
 
 echo "creating prerm file"
-cat << __EOF__ > ${WORK_DIR}/DEBIAN/prerm
+cat << __EOF__ > "${WORK_DIR}/DEBIAN/prerm"
 #!/bin/bash
 
 # check if service is running and stop it
@@ -135,7 +192,7 @@ fi
 __EOF__
 
 echo "creating postrm file"
-cat << __EOF__ > ${WORK_DIR}/DEBIAN/postrm
+cat << __EOF__ > "${WORK_DIR}/DEBIAN/postrm"
 #!/bin/bash
 
 function remove_files() {
@@ -158,13 +215,13 @@ if [ $1 = 'purge' ]; then
 fi
 __EOF__
 
-chmod -R 755 ${WORK_DIR}/DEBIAN
+chmod -R 755 "${WORK_DIR}/DEBIAN"
 
 echo "building package"
-dpkg-deb --build --root-owner-group ${WORK_DIR}||exit 1
-cp ${TMP_DIR}/*.deb ignore/packages/||exit 1
-#rm -r ${TMP_DIR}/*
-#rmdir ${TMP_DIR}
+dpkg-deb --build --root-owner-group "${WORK_DIR}"||exit 1
+cp ${TMP_DIR}/*.deb "${SRC_DIR}/ignore/packages/"||exit 1
+rm -r ${TMP_DIR}/*
+rmdir ${TMP_DIR}
 
 echo "done!"
 
