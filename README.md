@@ -178,17 +178,17 @@ So far only the default features have been developed.
 
 ## Customization - company logo
 
-If you create a folder `local/gfx` and put a png file `company-logo.png` into it, this file will be read instead. So you can customize the company logo displayed for the site.
+To customize the company logo displayed for the site create a folder `local/gfx` and put a png file `company-logo.png` into it.
 
 
 ## Customization - favicon
 
-If you create a folder `local/gfx` and put a png file `favicon.png` into it, this file will be read instead. So you can customize the favicon displayed for the site.
+To customize the favicon displayed for the site create a folder `local/gfx` and put a png file `favicon.png` into it.
 
 
 ## Customization - colors
 
-if you create a folder `local/css` and put a copy of the file [static/css/colors.css](./static/css/colors.css) into it, this file will be read instead. So you can customize the colors applied to the css.
+To customize the colors applied to the css create a folder `local/css` and put a tweaked copy of the file [static/css/colors.css](./static/css/colors.css) into it.
 
 
 # Set RSA password
