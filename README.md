@@ -193,7 +193,7 @@ To customize the colors applied to the css create a folder `local/css` and put a
 
 # Set RSA password
 
-If the service is (re-)started, a valid administrator (see) must set the password of the RSA private key first. Therefore open the URL
+If the service is (re-)started, a valid administrator (see `admin_accounts` in section *[Configuration file](#configuration-file)*) must set the password of the RSA private key first. Therefore open the URL
 
 `https://<dns name>:<oprt number>/authenticated/sysop/sysop.html`
 
