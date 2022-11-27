@@ -150,7 +150,7 @@ pub fn get_plain_cookie_string(transmitted_cookie: &str, rsa: &RsaKeys) -> Strin
             .decrypt_str(transmitted_cookie)
             .unwrap_or_else(|_| -> String { "invalid_rsa_cookie_value".to_string() }),
         None => String::from_utf8(
-            base64::decode(&transmitted_cookie)
+            base64::decode(transmitted_cookie)
                 .unwrap_or_else(|_| -> Vec<u8> { "invalid_base64_cookie".as_bytes().to_vec() }),
         )
         .unwrap_or_else(|_| -> String { "invalid_base64_utf8".to_string() }),

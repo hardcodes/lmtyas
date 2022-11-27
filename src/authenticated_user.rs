@@ -19,7 +19,7 @@ const MAX_AUTH_USERS: usize = 512;
 const NODE_ID: &[u8; 6] = &[0x27, 0x9b, 0xbe, 0x13, 0x86, 0x80];
 
 /// Defines the type of user
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum AccessScope {
     User,
     Administrator,

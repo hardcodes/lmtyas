@@ -180,7 +180,7 @@ pub async fn set_password_for_rsa_rivate_key(
     // tested with
     // PASS!"§$%&/()=?ß\´`+*~'#-_.:,;<>|WORD
     let base64_decoded_password =
-        match String::from_utf8(base64::decode(&base64_encoded_password.as_str()).unwrap()) {
+        match String::from_utf8(base64::decode(base64_encoded_password.as_str()).unwrap()) {
             Ok(password) => password.trim_matches(char::from(0)).to_string(),
             Err(e) => {
                 warn!("could not base64 decode password: {}", &e);
@@ -416,7 +416,7 @@ pub async fn reveal_secret(
             .configuration_file
             .secret_directory,
     )
-    .join(&uuid);
+    .join(uuid);
     info!("reading secret from file {}", &path.display());
     let encrypted_secret = match Secret::read_from_disk(&path).await {
         Ok(encrypted_secret) => encrypted_secret,

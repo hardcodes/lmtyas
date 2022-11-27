@@ -316,7 +316,7 @@ impl Login for LdapAuthConfiguration {
         // dirty hack to build a json string from the ldap query result,
         // so it can be serialized.
         let ldap_result =
-            match serde_json::from_str(&ldap_search_result.replace('[', "").replace(']', ""))
+            match serde_json::from_str(&ldap_search_result.replace(['[', ']'], ""))
                 as Result<LdapSearchResult, _>
             {
                 Err(e) => {
@@ -478,7 +478,7 @@ impl GetUserData for LdapAuthConfiguration {
         // dirty hack to build a json string from the ldap query result,
         // so it can be serialized.
         let ldap_result =
-            match serde_json::from_str(&ldap_search_result.replace('[', "").replace(']', ""))
+            match serde_json::from_str(&ldap_search_result.replace(['[', ']'], ""))
                 as Result<LdapSearchResult, _>
             {
                 Err(e) => {

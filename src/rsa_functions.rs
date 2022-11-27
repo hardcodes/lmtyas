@@ -90,7 +90,7 @@ impl RsaKeys {
     /// - `encrypted_data`: a String slice with data to decrypt
     pub fn decrypt_str(&self, encrypted_data: &str) -> Result<String, &'static str> {
         match &self.rsa_private_key {
-            Some(rsa) => match base64::decode(&encrypted_data) {
+            Some(rsa) => match base64::decode(encrypted_data) {
                 Err(_) => Err("Could not base64 decode given value"),
                 Ok(raw_data) => {
                     let mut buf: Vec<u8> = vec![0; rsa.size() as usize];

@@ -40,8 +40,8 @@ impl EncryptAes for String {
             Ok(encrypted_data) => {
                 let base64_config = base64::Config::new(base64::CharacterSet::UrlSafe, true);
                 let base64_encrypted_data = base64::encode_config(&encrypted_data, base64_config);
-                let base64_key = base64::encode_config(&key_buf, base64_config);
-                let base64_iv = base64::encode_config(&iv_buf, base64_config);
+                let base64_key = base64::encode_config(key_buf, base64_config);
+                let base64_iv = base64::encode_config(iv_buf, base64_config);
                 let aes_encryption_result = AesEncryptionData {
                     encrypted_data: base64_encrypted_data,
                     encryption_key: base64_key,
@@ -71,9 +71,9 @@ impl DecryptAes for String {
     /// - `String` - plaintext
     fn decrypt_b64_aes(&self, key_base64: &str, iv_base64: &str) -> Result<String, Box<dyn Error>> {
         let encrypted_data =
-            base64::decode_config(&self.trim_matches(char::from(0)), base64::URL_SAFE)?;
-        let iv = base64::decode_config(&iv_base64.trim_matches(char::from(0)), base64::URL_SAFE)?;
-        let key = base64::decode_config(&key_base64.trim_matches(char::from(0)), base64::URL_SAFE)?;
+            base64::decode_config(self.trim_matches(char::from(0)), base64::URL_SAFE)?;
+        let iv = base64::decode_config(iv_base64.trim_matches(char::from(0)), base64::URL_SAFE)?;
+        let key = base64::decode_config(key_base64.trim_matches(char::from(0)), base64::URL_SAFE)?;
         let cipher = Cipher::aes_256_cbc();
         let plaintext = decrypt(cipher, &key, Some(&iv), &encrypted_data)?;
         let p: String = String::from_utf8(plaintext)?;
