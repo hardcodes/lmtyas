@@ -191,8 +191,6 @@ where
     type Error = Error;
     type Future = LocalBoxFuture<'static, Result<Self::Response, Self::Error>>;
 
-    forward_ready!(service);
-
     /// 2. The middleware's call method gets called with a normal
     /// request and is the main implementation of the middleware.
     fn call(&self, request: ServiceRequest) -> Self::Future {
@@ -222,15 +220,27 @@ where
                         .authenticated_users_hashmap
                         .get(&parsed_cookie_uuid)
                     {
-                        info!("user is already authenticated: {}", &auth_request);
+                        let request_peer_addr = request.peer_addr();
+                        let peer_address = match request_peer_addr {
+                            Some(socket_address) => socket_address.to_string(),
+                            None => "unknown ip".to_string(),
+                        };
+                        if peer_address.ne(&auth_request.request_peer_addr) {
+                            warn!(
+                                "Cookie stolen? peer_address = {}, auth_request = {}",
+                                &peer_address, &auth_request
+                            );
+                        } else {
+                            info!("user is already authenticated: {}", &auth_request);
 
-                        let service_request_future = self.service.call(request);
+                            let service_request_future = self.service.call(request);
 
-                        return Box::pin(async move {
-                            service_request_future
-                                .await
-                                .map(ServiceResponse::map_into_left_body)
-                        });
+                            return Box::pin(async move {
+                                service_request_future
+                                    .await
+                                    .map(ServiceResponse::map_into_left_body)
+                            });
+                        }
                     };
                 }
             }
@@ -273,4 +283,6 @@ where
         let busy_response = HttpResponse::build(StatusCode::TOO_MANY_REQUESTS).finish();
         Box::pin(async { Ok(request.into_response(busy_response).map_into_right_body()) })
     }
+
+    forward_ready!(service);
 }

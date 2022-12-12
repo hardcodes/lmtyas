@@ -4,12 +4,12 @@ use crate::configuration::ApplicationConfiguration;
 use crate::http_traits::CustomHttpResponse;
 pub use crate::mail_noauth_notls::SendEMail;
 use actix_web::web::Bytes;
-use actix_web::{web, HttpResponse};
+use actix_web::{web, HttpResponse, HttpRequest};
 use async_trait::async_trait;
 use log::{debug, error};
 use std::error::Error;
 
-#[async_trait]
+#[async_trait(?Send)]
 pub trait Login {
     /// This function is called when a user logs in.
     ///
@@ -26,9 +26,11 @@ pub trait Login {
     /// - `HttpResponse`
     async fn login_user(
         bytes: Bytes,
+        http_request: HttpRequest,
         application_configuration: web::Data<ApplicationConfiguration>,
     ) -> HttpResponse {
         debug!("bytes = {:?}", &bytes);
+        debug!("http_request = {:?}", &http_request);
         debug!(
             "application_configuration.configuration_file = {:?}",
             &application_configuration.configuration_file
