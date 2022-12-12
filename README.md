@@ -321,7 +321,7 @@ See [license.md](./gfx/license.md).
 Simply start one with this one line of python code:
 
 ```bash
-python3 -m smtpd -n -c DebuggingServer localhost:2525
+python3 -m smtpd -n -c DebuggingServer 127.0.0.1:2525
 ```
 
 It will accept any incoming requests and dump the data to stdout.
