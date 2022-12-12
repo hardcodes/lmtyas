@@ -315,19 +315,18 @@ impl Login for LdapAuthConfiguration {
         };
         // dirty hack to build a json string from the ldap query result,
         // so it can be serialized.
-        let ldap_result =
-            match serde_json::from_str(&ldap_search_result.replace(['[', ']'], ""))
-                as Result<LdapSearchResult, _>
-            {
-                Err(e) => {
-                    warn!(
-                        "can not serde_json::from_str({}): {}",
-                        &ldap_search_result, &e
-                    );
-                    return HttpResponse::err_text_response("ERROR: login failed");
-                }
-                Ok(r) => r,
-            };
+        let ldap_result = match serde_json::from_str(&ldap_search_result.replace(['[', ']'], ""))
+            as Result<LdapSearchResult, _>
+        {
+            Err(e) => {
+                warn!(
+                    "can not serde_json::from_str({}): {}",
+                    &ldap_search_result, &e
+                );
+                return HttpResponse::err_text_response("ERROR: login failed");
+            }
+            Ok(r) => r,
+        };
         if ldap_result.user_name != parsed_form_data.login_name {
             warn!(
                 "user {} does not exist in ldap",
@@ -438,11 +437,11 @@ impl AuthenticationRedirect for LdapAuthConfiguration {
             "get_authentication_redirect_response() => {}",
             &redirect_url
         );
-        let redirect_idp_service_response = HttpResponse::build(StatusCode::SEE_OTHER)
+        let authentication_redirect_response = HttpResponse::build(StatusCode::SEE_OTHER)
             .append_header((http::header::LOCATION, redirect_url))
             .append_header(("Access-Control-Allow-Origin", "*"))
             .finish();
-        redirect_idp_service_response
+        authentication_redirect_response
     }
 }
 
@@ -477,19 +476,18 @@ impl GetUserData for LdapAuthConfiguration {
         };
         // dirty hack to build a json string from the ldap query result,
         // so it can be serialized.
-        let ldap_result =
-            match serde_json::from_str(&ldap_search_result.replace(['[', ']'], ""))
-                as Result<LdapSearchResult, _>
-            {
-                Err(e) => {
-                    let error_message = format!(
-                        "can not serde_json::from_str({}): {}",
-                        &ldap_search_result, &e
-                    );
-                    return Err(error_message);
-                }
-                Ok(r) => r,
-            };
+        let ldap_result = match serde_json::from_str(&ldap_search_result.replace(['[', ']'], ""))
+            as Result<LdapSearchResult, _>
+        {
+            Err(e) => {
+                let error_message = format!(
+                    "can not serde_json::from_str({}): {}",
+                    &ldap_search_result, &e
+                );
+                return Err(error_message);
+            }
+            Ok(r) => r,
+        };
         let display_name = format!("{} {}", &ldap_result.first_name, &ldap_result.last_name);
         Ok(display_name)
     }
