@@ -1,13 +1,15 @@
 //#[macro_use]
 extern crate env_logger;
 use crate::authentication_middleware::AuthenticationRedirect;
+use crate::authentication_middleware::PeerIpAddress;
+use crate::authentication_middleware::UNKNOWN_PEER_IP;
 use crate::configuration::ApplicationConfiguration;
 use crate::cookie_functions::build_new_authentication_cookie;
 use crate::get_userdata_trait::GetUserData;
 use crate::http_traits::CustomHttpResponse;
 pub use crate::login_user_trait::Login;
 use crate::unsecure_string::SecureStringToUnsecureString;
-use actix_web::{http, http::StatusCode, web, web::Bytes, HttpResponse, HttpRequest};
+use actix_web::{http, http::StatusCode, web, web::Bytes, HttpRequest, HttpResponse};
 use async_trait::async_trait;
 use ldap3::{LdapConnAsync, Scope, SearchEntry};
 use log::{debug, info, warn};
@@ -195,12 +197,8 @@ impl Login for LdapAuthConfiguration {
     ) -> HttpResponse {
         debug!("bytes = {:?}", &bytes);
         debug!("request = {:?}", &request);
-        let request_peer_addr = request.peer_addr();
-        let peer_address = match request_peer_addr{
-            Some(socket_address) => socket_address.to_string(),
-            None => "unknown ip".to_string(),
-        };
-        debug!("peer_address = {}", &peer_address);
+        let peer_ip = Peer::get_peer_ip_address(&request);
+        debug!("peer_address = {:?}", &peer_ip);
         // 1. validate input
         //
         //
@@ -390,7 +388,7 @@ impl Login for LdapAuthConfiguration {
                         &ldap_result.first_name,
                         &ldap_result.last_name,
                         &ldap_result.mail,
-                        &peer_address
+                        &peer_ip,
                     )
                 {
                     let rsa_read_lock = application_configuration.rsa_keys.read().unwrap();
@@ -499,5 +497,16 @@ impl GetUserData for LdapAuthConfiguration {
         };
         let display_name = format!("{} {}", &ldap_result.first_name, &ldap_result.last_name);
         Ok(display_name)
+    }
+}
+
+struct Peer;
+
+impl PeerIpAddress for Peer {
+    fn get_peer_ip_address(request: &HttpRequest) -> String {
+        match request.peer_addr() {
+            None => UNKNOWN_PEER_IP.to_string(),
+            Some(s) => s.ip().to_string(),
+        }
     }
 }

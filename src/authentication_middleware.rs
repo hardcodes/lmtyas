@@ -5,8 +5,9 @@ pub use crate::authentication_ldap::LdapAuthConfiguration;
 use crate::configuration::ApplicationConfiguration;
 use crate::cookie_functions::{get_plain_cookie_string, COOKIE_NAME};
 use crate::header_value_trait::HeaderValueExctractor;
+#[cfg(feature = "ldap-auth")]
 use actix_web::dev::{forward_ready, Service, ServiceRequest, ServiceResponse, Transform};
-use actix_web::{body::EitherBody, http, http::StatusCode, web, Error, HttpResponse};
+use actix_web::{body::EitherBody, http, http::StatusCode, web, Error, HttpRequest, HttpResponse};
 use chrono::{DateTime, Utc};
 use futures_util::future::LocalBoxFuture;
 use std::collections::HashMap;
@@ -220,15 +221,15 @@ where
                         .authenticated_users_hashmap
                         .get(&parsed_cookie_uuid)
                     {
-                        let request_peer_addr = request.peer_addr();
-                        let peer_address = match request_peer_addr {
-                            Some(socket_address) => socket_address.to_string(),
-                            None => "unknown ip".to_string(),
+                        let peer_ip = if let Some(s) = request.peer_addr() {
+                            s.ip().to_string()
+                        } else {
+                            UNKNOWN_PEER_IP.to_string()
                         };
-                        if peer_address.ne(&auth_request.request_peer_addr) {
+                        if peer_ip.ne(&auth_request.peer_ip) {
                             warn!(
-                                "Cookie stolen? peer_address = {}, auth_request = {}",
-                                &peer_address, &auth_request
+                                "Cookie stolen? peer_address = {:?}, auth_request = {}",
+                                &peer_ip, &auth_request
                             );
                         } else {
                             info!("user is already authenticated: {}", &auth_request);
@@ -286,3 +287,13 @@ where
 
     forward_ready!(service);
 }
+
+/// This trait must be implemented to get the ip address
+/// of the client peer. The implementation may vary if
+/// the service is running behind a proxy.
+pub(crate) trait PeerIpAddress {
+    /// get the ip address of the peer requesting resources
+    fn get_peer_ip_address(request: &HttpRequest) -> String;
+}
+
+pub const UNKNOWN_PEER_IP: &str = "unknown peer";

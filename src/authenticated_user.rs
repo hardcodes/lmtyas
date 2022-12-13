@@ -34,7 +34,7 @@ pub struct AuthenticatedUser {
     pub mail: String,
     pub time_stamp: DateTime<Utc>,
     pub access_scope: AccessScope,
-    pub request_peer_addr: String,
+    pub peer_ip: String,
 }
 
 /// custom formatter to suppress first name, last name and mail address
@@ -42,8 +42,8 @@ impl fmt::Display for AuthenticatedUser {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "(user_name={}, time_stamp={}, access_scope={:?}, request_peer_addr={})",
-            self.user_name, self.time_stamp, self.access_scope, self.request_peer_addr
+            "(user_name={}, time_stamp={}, access_scope={:?}, peer_ip={})",
+            self.user_name, self.time_stamp, self.access_scope, self.peer_ip
         )
     }
 }
@@ -60,7 +60,7 @@ impl AuthenticatedUser {
         last_name: &str,
         mail: &str,
         access_scope: AccessScope,
-        request_peer_addr: &str,
+        peer_ip: &str,
     ) -> AuthenticatedUser {
         AuthenticatedUser {
             user_name: String::from(user_name),
@@ -68,7 +68,7 @@ impl AuthenticatedUser {
             last_name: String::from(last_name),
             mail: String::from(mail),
             access_scope,
-            request_peer_addr: String::from(request_peer_addr),
+            peer_ip: String::from(peer_ip),
             time_stamp: Utc::now(),
         }
     }
@@ -158,7 +158,7 @@ impl SharedAuthenticatedUsersHashMap {
         first_name: &str,
         last_name: &str,
         mail: &str,
-        request_peer_addr: &str,
+        peer_ip: &str,
     ) -> Option<uuid::Uuid> {
         // check if it's an administrator
         let scope = match self.admin_accounts.contains(&user_name.to_string()) {
@@ -166,7 +166,7 @@ impl SharedAuthenticatedUsersHashMap {
             false => AccessScope::User,
         };
         let authenticated_user =
-            AuthenticatedUser::new(user_name, first_name, last_name, mail, scope, request_peer_addr);
+            AuthenticatedUser::new(user_name, first_name, last_name, mail, scope, peer_ip);
         let unix_timestamp_seconds = authenticated_user.time_stamp.timestamp() as u64;
         let unix_timestamp_subsec_nanos = authenticated_user.time_stamp.timestamp_subsec_nanos();
         let ts = Timestamp::from_unix(
