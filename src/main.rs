@@ -59,9 +59,12 @@ async fn main() -> std::io::Result<()> {
 
     // parse cli parameters and load the configuration
     let clap_arg_matches = parse_cli_parameters();
-    let application_configuration = ApplicationConfiguration::read_from_file(Path::new(
-        clap_arg_matches.value_of("configfile").unwrap(),
-    ));
+    let config_file: String = clap_arg_matches
+        .get_one::<String>("configfile")
+        .unwrap()
+        .to_string();
+    let application_configuration =
+        ApplicationConfiguration::read_from_file(Path::new(&config_file));
     // make a clone of the web_bind_address since it will be used
     // after moving application_configuration into the webservice
     let web_bind_address = application_configuration

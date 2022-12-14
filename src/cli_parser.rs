@@ -5,17 +5,17 @@ use crate::PROGRAM_VERSION;
 
 /// Parse the command line parameters with help of clap.
 pub fn parse_cli_parameters() -> clap::ArgMatches {
-    let arg_matches = clap::App::new(PROGRAM_NAME)
+    clap::Command::new(PROGRAM_NAME)
         .version(PROGRAM_VERSION)
         .author(PROGRAM_AUTHORS)
         .about(PROGRAM_DESCRIPTION)
         .arg(
-            clap::Arg::with_name("configfile")
+            clap::Arg::new("configfile")
                 .short('c')
-                .long("--config-file")
+                .long("config-file")
                 .value_name("json configuration file")
                 .help("json file with the configuration of the webservice")
-                .takes_value(true)
+                .num_args(1)
                 .required(true),
         )
         .after_help(
@@ -57,6 +57,5 @@ pub fn parse_cli_parameters() -> clap::ArgMatches {
     }
 }"##,
         )
-        .get_matches();
-    arg_matches
+        .get_matches()
 }
