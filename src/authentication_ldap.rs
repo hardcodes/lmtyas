@@ -396,10 +396,11 @@ impl Login for LdapAuthConfiguration {
                     // the cookie value is encrypted with the rsa public
                     // key otherwise its simply base64 encoded.
                     let cookie = build_new_authentication_cookie(
-                        cookie_uuid.to_string(),
+                        &cookie_uuid.to_string(),
                         application_configuration
                             .configuration_file
                             .max_cookie_age_seconds,
+                        &application_configuration.configuration_file.get_domain(),
                         &rsa_read_lock,
                     );
                     let proto_fqdn = format!(

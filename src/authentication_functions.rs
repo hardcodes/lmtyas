@@ -121,10 +121,11 @@ pub fn update_authenticated_user_cookie_lifetime(req: &HttpRequest) -> HttpRespo
                     // create cookie with the same value but renewed cookie lifetime
                     let rsa_read_lock = application_configuration.rsa_keys.read().unwrap();
                     let updated_cookie = build_new_authentication_cookie(
-                        parsed_cookie_uuid.to_string(),
+                        &parsed_cookie_uuid.to_string(),
                         application_configuration
                             .configuration_file
                             .max_cookie_age_seconds,
+                        &application_configuration.configuration_file.get_domain(),
                         &rsa_read_lock,
                     );
                     let cookie_response = build_new_cookie_response(

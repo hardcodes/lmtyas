@@ -6,6 +6,7 @@ use actix_web::{
 
 /// Name of the cookie that is sent to an authenticated user browser
 pub const COOKIE_NAME: &str = env!("CARGO_PKG_NAME");
+const COOKIE_PATH: &str = "/";
 
 /// build a new rsa encrypted authentication cookie
 ///
@@ -19,18 +20,20 @@ pub const COOKIE_NAME: &str = env!("CARGO_PKG_NAME");
 ///
 /// - `actix_web::cookie::Cookie`
 pub fn build_new_encrypted_authentication_cookie(
-    cookie_value: String,
+    cookie_value: &str,
     cookie_lifetime: i64,
+    domain: &str,
     rsa: &RsaKeys,
 ) -> Cookie<'static> {
-    let encrypted_cookie_value = match rsa.encrypt_str(&cookie_value) {
+    let encrypted_cookie_value = match rsa.encrypt_str(cookie_value) {
         Err(_) => String::from("invalid_rsa_cookie"),
         Ok(value) => value,
     };
     let new_cookie = Cookie::build(COOKIE_NAME, encrypted_cookie_value)
         .secure(true)
         .http_only(true)
-        .path("/")
+        .path(COOKIE_PATH)
+        .domain(String::from(domain))
         .max_age(Duration::seconds(cookie_lifetime))
         .same_site(SameSite::Strict)
         .finish();
@@ -50,14 +53,16 @@ pub fn build_new_encrypted_authentication_cookie(
 ///
 /// - `actix_web::cookie::Cookie`
 fn build_new_base64_authentication_cookie(
-    cookie_value: String,
+    cookie_value: &str,
     cookie_lifetime: i64,
+    domain: &str,
 ) -> Cookie<'static> {
-    let encoded_cookie_value = base64::encode(&cookie_value);
+    let encoded_cookie_value = base64::encode(cookie_value);
     let new_cookie = Cookie::build(COOKIE_NAME, encoded_cookie_value)
         .secure(true)
         .http_only(true)
-        .path("/")
+        .path(COOKIE_PATH)
+        .domain(String::from(domain))
         .max_age(Duration::seconds(cookie_lifetime))
         .same_site(SameSite::Strict)
         .finish();
@@ -77,13 +82,14 @@ fn build_new_base64_authentication_cookie(
 ///
 /// - `actix_web::cookie::Cookie`
 pub fn build_new_authentication_cookie(
-    cookie_value: String,
+    cookie_value: &str,
     cookie_lifetime: i64,
+    domain: &str,
     rsa: &RsaKeys,
 ) -> Cookie<'static> {
     let new_cookie = match rsa.rsa_private_key {
-        Some(_) => build_new_encrypted_authentication_cookie(cookie_value, cookie_lifetime, rsa),
-        None => build_new_base64_authentication_cookie(cookie_value, cookie_lifetime),
+        Some(_) => build_new_encrypted_authentication_cookie(cookie_value, cookie_lifetime, domain, rsa),
+        None => build_new_base64_authentication_cookie(cookie_value, cookie_lifetime, domain),
     };
     new_cookie
 }

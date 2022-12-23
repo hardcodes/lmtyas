@@ -52,6 +52,17 @@ pub struct ConfigurationFile {
     pub imprint: Imprint,
 }
 
+impl ConfigurationFile{
+    /// get the domain part of the stored fqdn
+    /// which contains the <domain>:<port>
+    pub fn get_domain(&self) -> String{
+        match self.fqdn.split_once(':'){
+            Some((domain, _)) => String::from(domain),
+            None => self.fqdn.clone(),
+        }
+    }
+}
+
 /// Loads a json file and deserializes it into an
 /// instance of ConfigurationFile
 impl ConfigurationFile {
