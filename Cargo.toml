@@ -15,7 +15,7 @@ actix-web = { version = "4", features=["openssl"] }
 actix-web-httpauth = "0.8"
 async-trait = "0.1.57"
 # 20221214: base64 0.20.0 breaks the API and does not seem to be stable yet, so let's keep 0.13.0 for a while!
-base64 = "0.13.0"
+base64 = "0.13.1"
 chrono = "0.4.0"
 clap = "4"
 env_logger = "0.10"

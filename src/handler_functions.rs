@@ -293,7 +293,7 @@ pub async fn store_secret(
             .configuration_file
             .secret_directory,
     )
-    .join(&uuid.to_string());
+    .join(uuid.to_string());
     info!("writing secret to file {}", &path.display());
     if let Err(e) = encrypted_form_data.write_to_disk(&path).await {
         warn!("{}", &e);
