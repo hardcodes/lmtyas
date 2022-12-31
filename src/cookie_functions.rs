@@ -1,4 +1,3 @@
-extern crate env_logger;
 use crate::rsa_functions::RsaKeys;
 use actix_web::{
     cookie::time::Duration, cookie::Cookie, cookie::SameSite, http, http::StatusCode, HttpResponse,
@@ -13,7 +12,7 @@ const COOKIE_PATH: &str = "/";
 /// # Arguments
 ///
 /// - `cookie_value`:    containing the value that should be placed inside the cookie
-/// - `cookie_lifetime`: lifetime of the cookie in seconds
+/// - `max_age`:         lifetime of the cookie in seconds
 /// - `rsa`:             rsa keys to encrypt the cookie
 ///
 /// # Returns
@@ -21,7 +20,7 @@ const COOKIE_PATH: &str = "/";
 /// - `actix_web::cookie::Cookie`
 pub fn build_new_encrypted_authentication_cookie(
     cookie_value: &str,
-    cookie_lifetime: i64,
+    max_age: i64,
     domain: &str,
     rsa: &RsaKeys,
 ) -> Cookie<'static> {
@@ -34,7 +33,7 @@ pub fn build_new_encrypted_authentication_cookie(
         .http_only(true)
         .path(COOKIE_PATH)
         .domain(String::from(domain))
-        .max_age(Duration::seconds(cookie_lifetime))
+        .max_age(Duration::seconds(max_age))
         .same_site(SameSite::Strict)
         .finish();
     new_cookie
@@ -47,14 +46,14 @@ pub fn build_new_encrypted_authentication_cookie(
 /// # Arguments
 ///
 /// - `cookie_value`:    containing the value that should be placed inside the cookie
-/// - `cookie_lifetime`: lifetime of the cookie in seconds
+/// - `max_age`:         lifetime of the cookie in seconds
 ///
 /// # Returns
 ///
 /// - `actix_web::cookie::Cookie`
 fn build_new_base64_authentication_cookie(
     cookie_value: &str,
-    cookie_lifetime: i64,
+    max_age: i64,
     domain: &str,
 ) -> Cookie<'static> {
     let encoded_cookie_value = base64::encode(cookie_value);
@@ -63,7 +62,7 @@ fn build_new_base64_authentication_cookie(
         .http_only(true)
         .path(COOKIE_PATH)
         .domain(String::from(domain))
-        .max_age(Duration::seconds(cookie_lifetime))
+        .max_age(Duration::seconds(max_age))
         .same_site(SameSite::Strict)
         .finish();
     new_cookie
@@ -75,7 +74,7 @@ fn build_new_base64_authentication_cookie(
 /// # Arguments
 ///
 /// - `cookie_value`:    containing the value that should be placed inside the cookie
-/// - `cookie_lifetime`: lifetime of the cookie in seconds
+/// - `max_age`:         lifetime of the cookie in seconds
 /// - `rsa`:             rsa keys to encrypt the cookie
 ///
 /// # Returns
@@ -83,13 +82,13 @@ fn build_new_base64_authentication_cookie(
 /// - `actix_web::cookie::Cookie`
 pub fn build_new_authentication_cookie(
     cookie_value: &str,
-    cookie_lifetime: i64,
+    max_age: i64,
     domain: &str,
     rsa: &RsaKeys,
 ) -> Cookie<'static> {
     let new_cookie = match rsa.rsa_private_key {
-        Some(_) => build_new_encrypted_authentication_cookie(cookie_value, cookie_lifetime, domain, rsa),
-        None => build_new_base64_authentication_cookie(cookie_value, cookie_lifetime, domain),
+        Some(_) => build_new_encrypted_authentication_cookie(cookie_value, max_age, domain, rsa),
+        None => build_new_base64_authentication_cookie(cookie_value, max_age, domain),
     };
     new_cookie
 }
@@ -142,7 +141,7 @@ pub fn build_redirect_to_resource_url_response(
 /// # Arguments
 ///
 /// - `transmitted_cookie`: cookie value that is either rsa encrypted or base64 encoded
-/// - `rsa`:             rsa keys to encrypt the cookie
+/// - `rsa`:                rsa keys to decrypt the cookie
 ///
 /// # Returns
 ///
