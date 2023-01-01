@@ -13,8 +13,6 @@ use actix_web::{error::ErrorUnauthorized, http, web, Error, HttpRequest, HttpRes
 use uuid::Uuid;
 
 /// Get the possible authenticated user from cookies.
-/// Returns immediately with a ready future.
-/// The future is needed for impl FromRequest.
 ///
 /// # Arguments
 ///
