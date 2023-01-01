@@ -2,7 +2,7 @@
 
 A web service written in Rust that allows an authenticated user to send secrets like passwords to other authenticated users.
 
-In a perfect world we wouldn't need passwords anymore but more often than not we still do need to tell them to other people (have a look at [SQRL](https://www.grc.com/sqrl/sqrl.htm), there is a world almost without passwords out there). Sending passwords by email is unsecure because most people are not able to receivce encrypted emails. Sending passwords by snail mail is slow.
+In a perfect world we wouldn't need passwords anymore but more often than not we still do need to tell them to other people (have a look at [SQRL](https://www.grc.com/sqrl/sqrl.htm), there is a world almost without passwords out there). Sending passwords by email is unsecure because most people are not able to receive encrypted emails. Sending passwords by snail mail is slow. Using a second channel, e.g. like a chat program, may work but often leaves traces.
 
 *"Let me tell you a secret" enters the stage*
 
@@ -68,6 +68,8 @@ See [lmtyas-config.json](conf.dev/lmtyas-config.json) for an example configurati
         - `{UrlPayload}` is replaced with the encrypted secret id to access the secret.
      
         URL must be in the template, see [mailtemplate.txt](./conf.dev/mailtemplate.txt).
+
+        Depending on your authentication backends you may not know the data for each of the placeholders!
 - **NOTE 2** The arrays `email_configuration` and `ldap_configuration` may be absent or differ, depending on the selected features. See section *[Compile and install -features](#compile-and-install---features)*.
 - **NOTE 3** The directive `mail_hint` may be absent. If so the default `firstname.lastname@acme.local` will be used.
 
@@ -76,7 +78,7 @@ You need a SSL certificate and its unencrypted key in pem format. Create your ow
 
 # External dependencies
 
-An installed `openssl` library is needed.
+An installed `openssl` library is needed on the server side, the header files are needed on your development machine.
 
 
 # Compile and install
@@ -91,6 +93,7 @@ sudo apt update
 sudo apt upgrade
 # install the only dependency:
 sudo apt install openssl
+sudo apt install libssl-dev # only needed on dev machine
 # clone and compile the code
 git clone git@github.com:hardcodes/lmtyas.git
 cd lmtyas
