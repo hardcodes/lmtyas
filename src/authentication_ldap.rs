@@ -383,7 +383,7 @@ impl Login for LdapAuthConfiguration {
                     .shared_authenticated_users
                     .write()
                     .unwrap()
-                    .get_cookie_uuid_for(
+                    .new_cookie_uuid_for(
                         &parsed_form_data.login_name,
                         &ldap_result.first_name,
                         &ldap_result.last_name,

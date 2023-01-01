@@ -152,7 +152,7 @@ impl SharedAuthenticatedUsersHashMap {
     }
 
     /// Store an authenticated user name and return the uuid for the cookie
-    pub fn get_cookie_uuid_for(
+    pub fn new_cookie_uuid_for(
         &mut self,
         user_name: &str,
         first_name: &str,
