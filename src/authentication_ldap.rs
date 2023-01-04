@@ -285,6 +285,14 @@ impl Login for LdapAuthConfiguration {
                 auth_request.has_been_used = true;
                 url_requested = auth_request.url_requested.clone();
             }
+            // is authentication taking place from the same ip address as the resource request?
+            if peer_ip.ne(&auth_request.peer_ip) {
+                warn!(
+                    "IP address changed since resource request: peer_address = {:?}, auth_request = {}",
+                    &peer_ip, &auth_request
+                );
+                return HttpResponse::err_text_response("ERROR: login failed");
+            }
         }
 
         // input data is validated and

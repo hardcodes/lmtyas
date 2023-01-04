@@ -47,6 +47,8 @@ pub struct AuthenticationState {
     pub url_requested: String,
     /// when was the request made, used to prune old entries
     pub time_stamp: DateTime<Utc>,
+    /// peer ip address that requested the resource
+    pub peer_ip: String,
 }
 
 /// custom formatter to suppress secrets in the url
@@ -54,19 +56,20 @@ impl fmt::Display for AuthenticationState {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "(has_been_used={}, time_stamp={})",
-            self.has_been_used, self.time_stamp
+            "(has_been_used={}, time_stamp={}, peer_ip={})",
+            self.has_been_used, self.time_stamp, self.peer_ip
         )
     }
 }
 
 impl AuthenticationState {
     /// Creates new empty Instance with current time stamp
-    pub fn new(url: String) -> AuthenticationState {
+    pub fn new(url: &str, peer_ip: &str) -> AuthenticationState {
         AuthenticationState {
             has_been_used: false,
-            url_requested: url,
+            url_requested: String::from(url),
             time_stamp: Utc::now(),
+            peer_ip: String::from(peer_ip),
         }
     }
 }
@@ -118,9 +121,9 @@ impl SharedRequestData {
     }
 
     /// Store a reuested url and return a uuid as reference for the IdP
-    pub fn store_resource_request(&mut self, url: String) -> Option<uuid::Uuid> {
+    pub fn store_resource_request(&mut self, url: &str, peer_ip: &str) -> Option<uuid::Uuid> {
         debug!("store_resource_request()");
-        let authentication_state = AuthenticationState::new(url);
+        let authentication_state = AuthenticationState::new(url, peer_ip);
         let unix_timestamp_seconds = authentication_state.time_stamp.timestamp() as u64;
         let unix_timestamp_subsec_nanos = authentication_state.time_stamp.timestamp_subsec_nanos();
         let ts = Timestamp::from_unix(
@@ -201,6 +204,11 @@ where
             .app_data::<web::Data<ApplicationConfiguration>>()
             .unwrap()
             .clone();
+        let peer_ip = if let Some(s) = request.peer_addr() {
+            s.ip().to_string()
+        } else {
+            UNKNOWN_PEER_IP.to_string()
+        };
         // At this point we must decide if a user is already authenticated.
         // Yes (cookie) ==> let the user access the requested resources
         for header_value in request.head().headers().get_all(http::header::COOKIE) {
@@ -221,11 +229,6 @@ where
                         .authenticated_users_hashmap
                         .get(&parsed_cookie_uuid)
                     {
-                        let peer_ip = if let Some(s) = request.peer_addr() {
-                            s.ip().to_string()
-                        } else {
-                            UNKNOWN_PEER_IP.to_string()
-                        };
                         if peer_ip.ne(&auth_request.peer_ip) {
                             warn!(
                                 "Cookie stolen? peer_address = {:?}, auth_request = {}",
@@ -260,7 +263,7 @@ where
             .shared_request_data
             .write()
             .unwrap()
-            .store_resource_request(request_path_with_query.clone())
+            .store_resource_request(&request_path_with_query, &peer_ip)
         {
             debug!(
                 "uuid for the request {} is {}",
