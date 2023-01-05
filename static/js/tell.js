@@ -1,5 +1,5 @@
-const loginForm = document.getElementById("NewSecretForm");
-loginForm.addEventListener('submit', function (e) {
+const secretForm = document.getElementById("NewSecretForm");
+secretForm.addEventListener('submit', function (e) {
     e.preventDefault();
     sendFormData();
 });
