@@ -2,6 +2,7 @@ let secretId = findGetParameterNoDecodeURIComponent("secret_id");
 var keepAliveCount = 0;
 if (secretId != null && typeof (secretId !== 'undefined')) {
     var keep_alive_interval = initKeepAliveInterval("/authenticated/keep_session_alive");
+    keepSessionAlive("/authenticated/keep_session_alive");
     queryWebService("/system/is_server_ready", validateSystemStatus, systemIsNotReady);
     queryWebService("/authenticated/secret/reveal/" + secretId, displaySecret, function () { });
 }

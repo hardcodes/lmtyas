@@ -5,6 +5,7 @@ secretForm.addEventListener('submit', function (e) {
 });
 var keepAliveCount = 0;
 var keep_alive_interval = initKeepAliveInterval("/authenticated/keep_session_alive");
+keepSessionAlive("/authenticated/keep_session_alive");
 queryWebService("/system/is_server_ready", validateSystemStatus, systemIsNotReady);
 queryWebService("/authenticated/user/get/details/from", displayFromData, function () { });
 queryWebService("/system/get/mail-hint", setMailHint, function () { });
