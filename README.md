@@ -18,6 +18,8 @@ on the website driven by this web service and the receiver will get an email wit
 
 Yes, identities can be stolen and/or hacked - but then you have got bigger problems at hand. Again, have a good look at [SQRL](https://www.grc.com/sqrl/sqrl.htm).
 
+**NOTE**: secrets like passwords should be forced to be changed after first login!
+
 
 # Configuration file
 
@@ -212,6 +214,8 @@ If the service is (re-)started, a valid administrator (see `admin_accounts` in s
 ## Security - Data Encyrption
 
 The web service uses RSA public key encryption to secure the data. Only encryted data is stored on the disk. For security reasons the password for the RSA private key is not stored in the configuration file. It must be entered by the administrator every time the web service has been started. The password is stored in a secure string so that even a memory dump would not help. It only lives in plain text for the short time it is needed to decrypt data.
+
+**NOTE**: Even the secure string can be circumvented, an attacker that can access your system and create a dump has all time in the world to analyse and/or reconstruct the password. 
 
 
 ## Security - Data Encyrption - Workflow 
