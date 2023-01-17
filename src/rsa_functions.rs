@@ -5,6 +5,7 @@ use secstr::SecStr;
 use serde::Deserialize;
 use std::error::Error;
 use std::path::Path;
+use zeroize::Zeroize;
 
 /// Holds the RSA private and public for
 /// encryption and decryption
@@ -48,10 +49,18 @@ impl RsaKeys {
         secure_passphrase: &SecStr,
     ) -> Result<Self, Box<dyn Error>> {
         let rsa_private_key_file = std::fs::read_to_string(rsa_private_key_path)?;
-        let rsa_private_key = Rsa::private_key_from_pem_passphrase(
+        let mut unsecure_passphrase = secure_passphrase.to_unsecure_string();
+        let rsa_private_key = match Rsa::private_key_from_pem_passphrase(
             rsa_private_key_file.as_bytes(),
-            secure_passphrase.to_unsecure_string().as_bytes(),
-        )?;
+            unsecure_passphrase.as_bytes(),
+        ) {
+            Ok(p) => p,
+            _ => {
+                unsecure_passphrase.zeroize();
+                panic!()
+            }
+        };
+        unsecure_passphrase.zeroize();
         let rsa_public_key_file = std::fs::read_to_string(rsa_public_key_path)?;
         let rsa_public_key = Rsa::public_key_from_pem(rsa_public_key_file.as_bytes())?;
         debug!("rsa_public_key.size() = {}", &rsa_public_key.size());
@@ -97,8 +106,10 @@ impl RsaKeys {
                     match rsa.private_decrypt(&raw_data, &mut buf, Padding::PKCS1) {
                         Err(_) => Err("Could not rsa decrypt given value"),
                         Ok(_) => {
-                            let decrypted_data = String::from_utf8(buf)
-                                .unwrap_or_else(|_| -> String {String::from("could not convert decrypt data to utf8!")});
+                            let decrypted_data =
+                                String::from_utf8(buf).unwrap_or_else(|_| -> String {
+                                    String::from("could not convert decrypt data to utf8!")
+                                });
                             Ok(decrypted_data.trim_matches(char::from(0)).to_string())
                         }
                     }

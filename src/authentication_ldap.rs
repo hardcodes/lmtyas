@@ -18,6 +18,7 @@ use secstr::SecStr;
 use serde::Deserialize;
 use std::error::Error;
 use uuid::Uuid;
+use zeroize::Zeroize;
 
 // maximum bytes that can be transferred as login data
 const MAX_BYTES: usize = 384;
@@ -65,10 +66,11 @@ impl LdapAuthConfiguration {
         // Nevertheless the LDAP library wants the password
         // in plaintext. It is converted here and lives only
         // for the short time of a query.
-        let bind_pw = &self.ldap_bind_passwd.to_unsecure_string();
+        let bind_pw = &mut self.ldap_bind_passwd.to_unsecure_string();
         ldap.simple_bind(&self.ldap_bind_dn, bind_pw)
             .await?
             .success()?;
+        bind_pw.zeroize();
         debug!("ldap.simple_bind() -> OK");
         let (rs, _res) = ldap
             .search(&self.ldap_base_ou, Scope::Subtree, filter, attributes)
@@ -215,7 +217,7 @@ impl Login for LdapAuthConfiguration {
                 return HttpResponse::err_text_response("ERROR: invalid utf8 in form data");
             }
         };
-        let parsed_form_data = match serde_json::from_str(&form_data) as Result<LoginData, _> {
+        let mut parsed_form_data = match serde_json::from_str(&form_data) as Result<LoginData, _> {
             Ok(parsed_form_data) => parsed_form_data,
             Err(_) => {
                 return HttpResponse::err_text_response("ERROR: could not parse json form data");
@@ -360,7 +362,7 @@ impl Login for LdapAuthConfiguration {
         // that special characters would be transferred correctly.
         // tested with
         // PASS!"§$%&/()=?ß\´`+*~'#-_.:,;<>|WORD
-        let base64_decoded_password =
+        let mut base64_decoded_password =
             match String::from_utf8(base64::decode(&parsed_form_data.login_password).unwrap()) {
                 Ok(decoded_password) => decoded_password.trim_matches(char::from(0)).to_string(),
                 Err(e) => {
@@ -371,6 +373,7 @@ impl Login for LdapAuthConfiguration {
                     return HttpResponse::err_text_response("ERROR: login not possible");
                 }
             };
+        parsed_form_data.login_password.zeroize();
         match &application_configuration
             .configuration_file
             .ldap_configuration
@@ -378,6 +381,7 @@ impl Login for LdapAuthConfiguration {
             .await
         {
             Err(e) => {
+                base64_decoded_password.zeroize();
                 warn!(
                     "user {} could not log in: {}",
                     &parsed_form_data.login_name, &e
@@ -385,6 +389,7 @@ impl Login for LdapAuthConfiguration {
                 return HttpResponse::err_text_response("ERROR: login failed");
             }
             Ok(_) => {
+                base64_decoded_password.zeroize();
                 info!("login success for user {}", &parsed_form_data.login_name);
 
                 if let Some(cookie_uuid) = application_configuration
