@@ -12,7 +12,6 @@ use crate::http_traits::CustomHttpResponse;
 pub use crate::mail_noauth_notls::SendEMail;
 use crate::secret_functions::Secret;
 use actix_files::NamedFile;
-use actix_http::body::MessageBody;
 use actix_web::web::Bytes;
 use actix_web::{http::header, http::StatusCode, web, HttpRequest, HttpResponse, Responder};
 use log::{debug, info, warn};
@@ -239,9 +238,12 @@ pub async fn store_secret(
         }
     };
     debug!("{}", form_data);
-    if form_data.len() > MAX_TELL_SECRET_LEN{
-        warn!("form data exeeds {} bytes!", MAX_TELL_SECRET_LEN);
-        return HttpResponse::err_text_response("ERROR: could not parse form data");
+    if form_data.len() > MAX_TELL_SECRET_LEN {
+        warn!("form data exceeds {} bytes!", MAX_TELL_SECRET_LEN);
+        return HttpResponse::err_text_response(format!(
+            "ERROR: more than {} bytes of data sent",
+            &MAX_TELL_SECRET_LEN
+        ));
     }
     let mut parsed_form_data = match serde_json::from_str(&form_data) as Result<Secret, _> {
         Ok(parsed_form_data) => parsed_form_data,
