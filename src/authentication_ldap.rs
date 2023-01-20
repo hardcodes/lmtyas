@@ -11,7 +11,7 @@ pub use crate::login_user_trait::Login;
 use crate::unsecure_string::SecureStringToUnsecureString;
 use actix_web::{http, http::StatusCode, web, web::Bytes, HttpRequest, HttpResponse};
 use async_trait::async_trait;
-use ldap3::{LdapConnAsync, Scope, SearchEntry};
+use ldap3::{ldap_escape, LdapConnAsync, Scope, SearchEntry};
 use log::{debug, info, warn};
 use regex::Regex;
 use secstr::SecStr;
@@ -111,7 +111,7 @@ impl LdapAuthConfiguration {
             Some(f) => f,
             None => &self.ldap_user_filter,
         };
-        let filterstring = &ldap_filter.replace("{0}", user_name);
+        let filterstring = &ldap_filter.replace("{0}", &ldap_escape(user_name));
         self.ldap_search(filterstring, vec!["uid", "givenName", "sn", "mail"])
             .await
     }
@@ -137,7 +137,7 @@ impl LdapAuthConfiguration {
             Some(f) => f,
             None => &self.ldap_mail_filter,
         };
-        let filterstring = &ldap_filter.replace("{0}", mail);
+        let filterstring = &ldap_filter.replace("{0}", &ldap_escape(mail));
         self.ldap_search(filterstring, vec!["uid", "givenName", "sn", "mail"])
             .await
     }
@@ -157,9 +157,14 @@ impl LdapAuthConfiguration {
         let (conn, mut ldap) = LdapConnAsync::new(&self.ldap_url).await?;
         ldap3::drive!(conn);
         debug!("Connected to {}", &&self.ldap_url);
-        ldap.simple_bind(&self.ldap_bind_user_dn.replace("{0}", user_name), password)
-            .await?
-            .success()?;
+        ldap.simple_bind(
+            &self
+                .ldap_bind_user_dn
+                .replace("{0}", &ldap_escape(user_name)),
+            password,
+        )
+        .await?
+        .success()?;
         debug!("ldap.simple_bind() -> OK");
         Ok(ldap.unbind().await?)
     }
