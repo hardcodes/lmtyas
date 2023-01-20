@@ -28,6 +28,10 @@ type UserDataImpl = LdapAuthConfiguration;
 /// Characters that will be percent encoded
 /// https://url.spec.whatwg.org/#fragment-percent-encode-set
 const FRAGMENT: &AsciiSet = &CONTROLS.add(b'/').add(b'=');
+/// max length of form data
+const MAX_FORM_BYTES_LEN: usize = 1024;
+/// max length of form fiels
+const MAX_FORM_INPUT_LEN: usize = 128;
 
 /// redirect browser to our index page
 pub async fn redirect_to_index(
@@ -175,6 +179,13 @@ pub async fn set_password_for_rsa_rivate_key(
     base64_encoded_password: web::Path<String>,
     application_configuration: web::Data<ApplicationConfiguration>,
 ) -> HttpResponse {
+    if base64_encoded_password.len() > MAX_FORM_BYTES_LEN {
+        warn!("form data exceeds {} bytes!", MAX_FORM_BYTES_LEN);
+        return HttpResponse::err_text_response(format!(
+            "ERROR: more than {} bytes of data sent",
+            &MAX_FORM_BYTES_LEN
+        ));
+    }
     // the password was encoded before the transfer to make sure
     // that special characters would be transferred correctly.
     // tested with
@@ -188,6 +199,12 @@ pub async fn set_password_for_rsa_rivate_key(
             }
         };
     debug!("new rsa password = {}", &base64_decoded_password);
+    if base64_decoded_password.len() > MAX_FORM_INPUT_LEN {
+        return HttpResponse::err_text_response(format!(
+            "ERROR: password > {} chars",
+            MAX_FORM_INPUT_LEN
+        ));
+    }
     if let Ok(mut rsa_password_write_lock) = application_configuration.rsa_password.write() {
         rsa_password_write_lock.rsa_private_key_password =
             Some(SecStr::from(base64_decoded_password));
@@ -213,8 +230,6 @@ pub async fn set_password_for_rsa_rivate_key(
     }
 }
 
-const MAX_TELL_SECRET_LEN: usize = 1024;
-
 /// Stores a secret and its meta date as encrypted file on disk
 ///
 /// # Arguments
@@ -238,11 +253,11 @@ pub async fn store_secret(
         }
     };
     debug!("{}", form_data);
-    if form_data.len() > MAX_TELL_SECRET_LEN {
-        warn!("form data exceeds {} bytes!", MAX_TELL_SECRET_LEN);
+    if form_data.len() > MAX_FORM_BYTES_LEN {
+        warn!("form data exceeds {} bytes!", MAX_FORM_BYTES_LEN);
         return HttpResponse::err_text_response(format!(
             "ERROR: more than {} bytes of data sent",
-            &MAX_TELL_SECRET_LEN
+            &MAX_FORM_BYTES_LEN
         ));
     }
     let mut parsed_form_data = match serde_json::from_str(&form_data) as Result<Secret, _> {
@@ -252,6 +267,30 @@ pub async fn store_secret(
         }
     };
     debug!("parsed_form_data={:?}", &parsed_form_data);
+    if parsed_form_data.from_email.len() > MAX_FORM_INPUT_LEN {
+        return HttpResponse::err_text_response(format!(
+            "ERROR: from email > {} chars",
+            MAX_FORM_INPUT_LEN
+        ));
+    }
+    if parsed_form_data.to_email.len() > MAX_FORM_INPUT_LEN {
+        return HttpResponse::err_text_response(format!(
+            "ERROR: to email > {} chars",
+            MAX_FORM_INPUT_LEN
+        ));
+    }
+    if parsed_form_data.context.len() > MAX_FORM_INPUT_LEN {
+        return HttpResponse::err_text_response(format!(
+            "ERROR: context > {} chars",
+            MAX_FORM_INPUT_LEN
+        ));
+    }
+    if parsed_form_data.secret.len() > MAX_FORM_INPUT_LEN {
+        return HttpResponse::err_text_response(format!(
+            "ERROR: secret > {} chars",
+            MAX_FORM_INPUT_LEN
+        ));
+    }
     // get the display name of the receiver
     let display_name = match <UserDataImpl as GetUserData>::get_display_name(
         &parsed_form_data.to_email,
