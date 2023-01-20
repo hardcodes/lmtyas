@@ -1,5 +1,5 @@
 use crate::unsecure_string::SecureStringToUnsecureString;
-use log::debug;
+use log::{debug, warn};
 use openssl::rsa::{Padding, Rsa};
 use secstr::SecStr;
 use serde::Deserialize;
@@ -7,6 +7,8 @@ use std::error::Error;
 use std::path::Path;
 use zeroize::Zeroize;
 
+// min bit size of the modulus (modulus * 8 = rsa key bits)
+const MIN_RSA_MODULUS_SIZE: u32 = 256;
 /// Holds the RSA private and public for
 /// encryption and decryption
 pub struct RsaKeys {
@@ -55,15 +57,25 @@ impl RsaKeys {
             unsecure_passphrase.as_bytes(),
         ) {
             Ok(p) => p,
-            _ => {
+            Err(e) => {
                 unsecure_passphrase.zeroize();
-                panic!()
+                warn!("cannot load rsa private key: {}", e);
+                const RSA_CANNOT_LOAD_KEY: &str = "Cannot load rsa keys!";
+                let boxed_error = Box::<dyn Error + Send + Sync>::from(RSA_CANNOT_LOAD_KEY);
+                return Err(boxed_error);
+                
             }
         };
         unsecure_passphrase.zeroize();
         let rsa_public_key_file = std::fs::read_to_string(rsa_public_key_path)?;
         let rsa_public_key = Rsa::public_key_from_pem(rsa_public_key_file.as_bytes())?;
         debug!("rsa_public_key.size() = {}", &rsa_public_key.size());
+        if rsa_public_key.size() < MIN_RSA_MODULUS_SIZE{
+            warn!("modulus is < {} bytes", MIN_RSA_MODULUS_SIZE);
+            const RSA_MIN_MODULUS_ERR: &str = "RSA key size too small";
+            let boxed_error = Box::<dyn Error + Send + Sync>::from(RSA_MIN_MODULUS_ERR);
+            return Err(boxed_error);
+        }
         Ok(RsaKeys {
             rsa_private_key: Some(rsa_private_key),
             rsa_public_key: Some(rsa_public_key),

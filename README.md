@@ -206,7 +206,8 @@ If the service is (re-)started, a valid administrator (see `admin_accounts` in s
 
 `https://127.0.0.1:8844/authenticated/sysop/sysop.html` when running on localhost
 
-**NOTE**: the password for the RSA private key must be at least 14 characters long, it will be checked in the web form! 14 is the absolute minimum, better use 32 or 64 characters for the password.
+- **NOTE1**: the password for the RSA private key must be at least 14 characters long, it will be checked in the web form! 14 is the absolute minimum, better use 32 or 64 characters for the password.
+- **NOTE2**: the RSA key must have a minimum 2048 bit size to make sure that the data fits into it and can be encrypted.
 
 
 # Security
@@ -264,7 +265,8 @@ Most of the time the people creating and sending the secrets are the same people
 
 ## Security - Data Encryption - RSA Keys
 
-**NOTE**: the password for the RSA private key must be at least 14 characters long, it will be checked in the web form! 14 is the absolute minimum, better use 32 or 64 characters for the password.
+- **NOTE1**: the password for the RSA private key must be at least 14 characters long, it will be checked in the web form! 14 is the absolute minimum, better use 32 or 64 characters for the password.
+- **Note2**: you must use at least 2048 bits for the rsa key (modulus >= 256) to make sure we can encrypt/decrypt all the data with the rsa key pair.
 
 The keys can be created with the `openssl` command:
 
