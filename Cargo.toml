@@ -38,3 +38,6 @@ zeroize = "1.5.7"
 default =["ldap-auth", "mail-noauth-notls"]
 ldap-auth = []
 mail-noauth-notls = []
+
+[dev-dependencies]
+lazy_static = "1.4.0"

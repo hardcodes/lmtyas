@@ -987,6 +987,7 @@ dependencies = [
  "clap",
  "env_logger",
  "futures-util",
+ "lazy_static",
  "ldap3",
  "lettre",
  "log",

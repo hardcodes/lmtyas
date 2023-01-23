@@ -1,0 +1,9 @@
+mod common;
+
+#[test]
+fn test_ldap_server() {
+    let helper_apps: Option<common::ExternalHelperApps> = common::setup();
+    std::thread::sleep(std::time::Duration::from_secs(5));
+    assert_eq!(1, 1);
+    common::teardown(helper_apps);
+}
