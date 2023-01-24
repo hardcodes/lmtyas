@@ -1,7 +1,7 @@
 [package]
 name = "lmtyas"
 description = "let-me-tell-you-a-secret, a web service that allows an authenticated user to send secrets like passwords to other authenticated users."
-version = "1.1.8"
+version = "1.1.9"
 edition = "2021"
 authors = ["Sven Putze <github@hardcodes.de>"]
 readme = "README.md"
@@ -40,4 +40,5 @@ ldap-auth = []
 mail-noauth-notls = []
 
 [dev-dependencies]
+actix-rt = "*"
 lazy_static = "1.4.0"

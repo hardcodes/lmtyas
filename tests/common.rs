@@ -3,7 +3,7 @@ use std::path::Path;
 use std::process::{Child, Command};
 use std::sync::{Arc, Mutex};
 
-const WORKSPACE_DIR: &str = env!("CARGO_MANIFEST_DIR");
+pub const WORKSPACE_DIR: &str = env!("CARGO_MANIFEST_DIR");
 
 lazy_static! {
     static ref SETUP_SINGLETON: Arc<Mutex<bool>> = Arc::new(Mutex::new(false));
