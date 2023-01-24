@@ -60,11 +60,8 @@ pub fn setup() -> Option<ExternalHelperApps> {
 
 /// common teardown routine for all tests
 pub fn teardown(helper_apps: Option<ExternalHelperApps>) {
-    match helper_apps {
-        Some(h) => {
-            h.glauth.unwrap().kill().expect("glauth was not running");
-            h.mail_server.unwrap().kill().expect("dummy mail server was not running");
-        }
-        None => (),
+    if let Some(h) = helper_apps {
+        h.glauth.unwrap().kill().expect("glauth was not running");
+        h.mail_server.unwrap().kill().expect("dummy mail server was not running");
     }
 }

@@ -4,7 +4,7 @@ use actix_web::{cookie::Cookie, http, HttpResponse};
 pub trait CustomHttpResponse {
     /// A shortcut for returning a HttpResponse like
     ///
-    /// ```
+    /// ```ignore
     /// return HttpResponse::Ok()
     /// .content_type("application/text")
     /// .header("Access-Control-Allow-Origin", "*")
@@ -23,7 +23,7 @@ pub trait CustomHttpResponse {
         B: MessageBody + 'static;
     /// A shortcut for returning a HttpResponse like
     ///
-    /// ```
+    /// ```ignore
     /// return HttpResponse::Ok()
     /// .content_type("application/text")
     /// .append_header("Access-Control-Allow-Origin", "*")
@@ -44,7 +44,7 @@ pub trait CustomHttpResponse {
         B: MessageBody + 'static;
     /// A shortcut for returning a HttpResponse like
     ///
-    /// ```
+    /// ```ignore
     /// return HttpResponse::Ok()
     /// .content_type("application/json")
     /// .append_header("Access-Control-Allow-Origin", "*")
@@ -63,7 +63,7 @@ pub trait CustomHttpResponse {
         B: MessageBody + 'static;
     /// A shortcut for returning a HttpResponse like
     ///
-    /// ```
+    /// ```ignore
     /// return HttpResponse::BadRequest()
     /// .content_type("application/text")
     /// .append_header("Access-Control-Allow-Origin", "*")
