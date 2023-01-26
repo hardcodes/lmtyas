@@ -6,7 +6,7 @@ use std::path::Path;
 /// testing the ldap functions in one go,
 /// so that the ldap server must only be started once.
 #[actix_rt::test]
-async fn test_ldap_server() {
+async fn test_with_setup() {
     // set up ldap and dummy mail server
     common::setup();
     // load configuration file with the ldap server connection details
