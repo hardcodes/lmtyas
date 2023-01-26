@@ -4,11 +4,15 @@ use actix_web::{cookie::Cookie, http, HttpResponse};
 pub trait CustomHttpResponse {
     /// A shortcut for returning a HttpResponse like
     ///
-    /// ```ignore
-    /// return HttpResponse::Ok()
-    /// .content_type("application/text")
-    /// .header("Access-Control-Allow-Origin", "*")
-    /// .body("OK: this is fine!");
+    /// ```
+    /// use actix_web::{cookie::Cookie, http, HttpResponse};
+    /// fn cumbersome_example(cookie: Cookie) -> HttpResponse{
+    ///   return HttpResponse::Ok()
+    ///   .content_type("application/text")
+    ///   .append_header(("Access-Control-Allow-Origin", "*"))
+    ///   .append_header((http::header::SET_COOKIE, cookie.to_string()))
+    ///   .body("OK: this is fine!");
+    /// }
     /// ```
     ///
     /// # Arguments
@@ -23,12 +27,14 @@ pub trait CustomHttpResponse {
         B: MessageBody + 'static;
     /// A shortcut for returning a HttpResponse like
     ///
-    /// ```ignore
-    /// return HttpResponse::Ok()
-    /// .content_type("application/text")
-    /// .append_header("Access-Control-Allow-Origin", "*")
-    /// .append_header((http::header::SET_COOKIE, cookie.to_string()))
-    /// .body("OK: this is fine!");
+    /// ```
+    /// use actix_web::HttpResponse;
+    /// fn cumbersome_example() -> HttpResponse{
+    ///   return HttpResponse::Ok()
+    ///   .content_type("application/text")
+    ///   .append_header(("Access-Control-Allow-Origin", "*"))
+    ///   .body("OK: this is fine!");
+    /// }
     /// ```
     ///
     /// # Arguments
@@ -44,11 +50,14 @@ pub trait CustomHttpResponse {
         B: MessageBody + 'static;
     /// A shortcut for returning a HttpResponse like
     ///
-    /// ```ignore
-    /// return HttpResponse::Ok()
-    /// .content_type("application/json")
-    /// .append_header("Access-Control-Allow-Origin", "*")
-    /// .body({"this": "that"});
+    /// ```
+    /// use actix_web::HttpResponse;
+    /// fn cumbersome_example() -> HttpResponse{
+    ///   return HttpResponse::Ok()
+    ///   .content_type("application/json")
+    ///   .append_header(("Access-Control-Allow-Origin", "*"))
+    ///   .body("{\"this\": \"that\"}");
+    /// }
     /// ```
     ///
     /// # Arguments
@@ -63,11 +72,14 @@ pub trait CustomHttpResponse {
         B: MessageBody + 'static;
     /// A shortcut for returning a HttpResponse like
     ///
-    /// ```ignore
-    /// return HttpResponse::BadRequest()
-    /// .content_type("application/text")
-    /// .append_header("Access-Control-Allow-Origin", "*")
-    /// .body("ERROR: this is bad!");
+    /// ```
+    /// use actix_web::HttpResponse;
+    /// fn cumbersome_example() -> HttpResponse{
+    ///   return HttpResponse::BadRequest()
+    ///   .content_type("application/text")
+    ///   .append_header(("Access-Control-Allow-Origin", "*"))
+    ///   .body("ERROR: this is bad!");
+    /// }
     /// ```
     ///
     /// # Arguments
