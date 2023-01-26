@@ -8,7 +8,7 @@ use std::path::Path;
 #[actix_rt::test]
 async fn test_ldap_server() {
     // set up ldap and dummy mail server
-    let helper_apps: Option<common::ExternalHelperApps> = common::setup();
+    common::setup();
     // load configuration file with the ldap server connection details
     let application_configuration = ApplicationConfiguration::read_from_file(
         Path::new(common::WORKSPACE_DIR).join("conf.dev/lmtyas-config.json"),
@@ -104,5 +104,27 @@ async fn test_ldap_server() {
         "expected not to find user b0b in ldap server by mail"
     );
 
-    common::teardown(helper_apps);
+    // ldap login with correct password
+    let ldap_login_success = application_configuration
+        .configuration_file
+        .ldap_configuration
+        .ldap_login("bob", "passw0rd")
+        .await;
+    assert!(
+        matches!(ldap_login_success, Ok(_)),
+        "user bob could not login with correct password"
+    );
+
+    // ldap login with wrong password
+    let ldap_login_fail = application_configuration
+        .configuration_file
+        .ldap_configuration
+        .ldap_login("bob", "password")
+        .await;
+    assert!(
+        matches!(ldap_login_fail, Err(_)),
+        "user bob should not be able to login with wrong password"
+    );
+
+    common::teardown();
 }

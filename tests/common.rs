@@ -6,21 +6,26 @@ use std::sync::{Arc, Mutex};
 pub const WORKSPACE_DIR: &str = env!("CARGO_MANIFEST_DIR");
 
 lazy_static! {
-    static ref SETUP_SINGLETON: Arc<Mutex<bool>> = Arc::new(Mutex::new(false));
+    static ref SETUP_SINGLETON: Arc<Mutex<ExternalHelperApplications>> =
+        Arc::new(Mutex::new(ExternalHelperApplications {
+            setup_done: false,
+            ..Default::default()
+        }));
 }
 
-pub struct ExternalHelperApps {
+#[derive(Default)]
+pub struct ExternalHelperApplications {
+    setup_done: bool,
     glauth: Option<Child>,
     mail_server: Option<Child>,
 }
 
 /// common setup routine for all tests
-pub fn setup() -> Option<ExternalHelperApps> {
-    let mut helper_apps = ExternalHelperApps { glauth: None, mail_server: None };
+pub fn setup() {
     //make sure that setup is only done once
     let mut setup_lock = SETUP_SINGLETON.lock().unwrap();
-    if *setup_lock != false {
-        return None;
+    if setup_lock.setup_done != false {
+        return;
     }
     // starting with test setup
     //
@@ -37,7 +42,7 @@ pub fn setup() -> Option<ExternalHelperApps> {
         ])
         .spawn()
         .expect("cannot start glauth ldap server");
-    helper_apps.glauth = Some(glauth);
+    setup_lock.glauth = Some(glauth);
     // 2. start dummy mail server
     //
     //    `python3 -m smtpd -n -c DebuggingServer 127.0.0.1:2525`
@@ -48,20 +53,29 @@ pub fn setup() -> Option<ExternalHelperApps> {
             "-n",
             "-c",
             "DebuggingServer",
-            "127.0.0.1:2525"
+            "127.0.0.1:2525",
         ])
         .spawn()
         .expect("cannot start dummy mail server");
-    helper_apps.mail_server = Some(mail_server);
+    setup_lock.mail_server = Some(mail_server);
     // done with setup
-    *setup_lock = true;
-    Some(helper_apps)
+    setup_lock.setup_done = true;
 }
 
 /// common teardown routine for all tests
-pub fn teardown(helper_apps: Option<ExternalHelperApps>) {
-    if let Some(h) = helper_apps {
-        h.glauth.unwrap().kill().expect("glauth was not running");
-        h.mail_server.unwrap().kill().expect("dummy mail server was not running");
-    }
+pub fn teardown() {
+    let mut teardown_lock = SETUP_SINGLETON.lock().unwrap();
+    teardown_lock
+        .glauth
+        .as_mut()
+        .unwrap()
+        .kill()
+        .expect("glauth was not running");
+    teardown_lock
+        .mail_server
+        .as_mut()
+        .unwrap()
+        .kill()
+        .expect("dummy mail server was not running");
+    teardown_lock.setup_done = false;
 }

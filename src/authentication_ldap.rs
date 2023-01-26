@@ -153,7 +153,7 @@ impl LdapAuthConfiguration {
     /// # Returns
     ///
     /// - `Result<(), Box<dyn Error>>` - either Ok() or an error
-    async fn ldap_login(&self, user_name: &str, password: &str) -> Result<(), Box<dyn Error>> {
+    pub async fn ldap_login(&self, user_name: &str, password: &str) -> Result<(), Box<dyn Error>> {
         let (conn, mut ldap) = LdapConnAsync::new(&self.ldap_url).await?;
         ldap3::drive!(conn);
         debug!("Connected to {}", &&self.ldap_url);
