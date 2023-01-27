@@ -1,50 +1,28 @@
-// tell the rust compiler which modules we have in extra files
-mod aes_functions;
-mod authenticated_user;
-mod authentication_functions;
-#[cfg(feature = "ldap-auth")]
-mod authentication_ldap;
-mod authentication_middleware;
-mod cli_parser;
-mod configuration;
-mod cookie_functions;
-mod get_userdata_trait;
-mod handler_functions;
-mod header_value_trait;
-mod http_traits;
-mod log_functions;
-mod login_user_trait;
-mod mail_configuration;
-#[cfg(feature = "mail-noauth-notls")]
-mod mail_noauth_notls;
-mod rsa_functions;
-mod secret_functions;
-mod unsecure_string;
 use actix_files::Files;
 use actix_web::{guard, middleware, web, App, HttpResponse, HttpServer};
-use authenticated_user::cleanup_authenticated_users_hashmap;
+use lmtyas::authenticated_user::cleanup_authenticated_users_hashmap;
 #[cfg(feature = "ldap-auth")]
-use authentication_ldap::LdapAuthConfiguration;
-use authentication_middleware::{cleanup_authentication_state_hashmap, CheckAuthentication};
-use cli_parser::parse_cli_parameters;
-use configuration::ApplicationConfiguration;
-use handler_functions::*;
+use lmtyas::authentication_ldap::LdapAuthConfiguration;
+use lmtyas::authentication_middleware::{cleanup_authentication_state_hashmap, CheckAuthentication};
+use lmtyas::cli_parser::parse_cli_parameters;
+use lmtyas::configuration::ApplicationConfiguration;
+use lmtyas::handler_functions::*;
 use log::info;
-use log_functions::extract_request_path;
-use login_user_trait::Login;
+use lmtyas::log_functions::extract_request_path;
+use lmtyas::login_user_trait::Login;
 use std::io::Write;
 use std::path::Path;
 use timer::Timer;
 
-const PROGRAM_NAME: &str = env!("CARGO_PKG_NAME");
-const PROGRAM_VERSION: &str = env!("CARGO_PKG_VERSION");
-const PROGRAM_AUTHORS: &str = env!("CARGO_PKG_AUTHORS");
-const PROGRAM_DESCRIPTION: &str = env!("CARGO_PKG_DESCRIPTION");
+// const PROGRAM_NAME: &str = env!("CARGO_PKG_NAME");
+// const PROGRAM_VERSION: &str = env!("CARGO_PKG_VERSION");
+// const PROGRAM_AUTHORS: &str = env!("CARGO_PKG_AUTHORS");
+// const PROGRAM_DESCRIPTION: &str = env!("CARGO_PKG_DESCRIPTION");
 
 #[cfg(feature = "ldap-auth")]
 type AuthConfiguration = LdapAuthConfiguration;
-#[cfg(feature = "ldap-auth")]
-const AUTH_PAGE: &str = "ldap.html";
+// #[cfg(feature = "ldap-auth")]
+// const AUTH_PAGE: &str = "ldap.html";
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -107,7 +85,7 @@ async fn main() -> std::io::Result<()> {
     );
     info!(
         "{} {} will bind to {}",
-        &PROGRAM_NAME, &PROGRAM_VERSION, &web_bind_address
+        &lmtyas::PROGRAM_NAME, &lmtyas::PROGRAM_VERSION, &web_bind_address
     );
     HttpServer::new(move || {
         App::new()
@@ -195,7 +173,7 @@ async fn main() -> std::io::Result<()> {
                     )
                     // the `const AUTH_PAGE` is defined by a selected
                     // feature that points to the login page
-                    .service(Files::new("/", "./authentication/").index_file(AUTH_PAGE)),
+                    .service(Files::new("/", "./authentication/").index_file(lmtyas::AUTH_PAGE)),
             )
             // serve custom favicon if it exists
             .route("/gfx/favicon.png", web::get().to(get_favicon))

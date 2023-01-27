@@ -38,3 +38,9 @@ zeroize = "1.5.7"
 default =["ldap-auth", "mail-noauth-notls"]
 ldap-auth = []
 mail-noauth-notls = []
+
+[dev-dependencies]
+actix-rt = "*"
+async-mutex = "1.4.0"
+lazy_static = "1.4.0"
+tokio = { version = "1", features = ["full"] }

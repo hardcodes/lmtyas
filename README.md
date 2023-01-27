@@ -536,6 +536,26 @@ Really easy to set up:
     ```
 
 
+# Testing
+
+Tests are at the moment far from complete. To run them, enter
+
+```bash
+cargo test
+```
+
+Before some of the tests are executed, a mail dummy mail server and a `glauth` ldap server is started, see section *[Development](#development)*.
+
+If test fails they may still be running. To find and kill them and assuming you have no other processes with these speficics, you can enter
+
+```bash
+# kill glauth ldap server
+kill $(pidof glauth)
+# kill dummy mail server
+kill $(ps -aux|grep python3|grep smtpd|awk '{print $2;}')
+```
+
+
 ------
 
 # License

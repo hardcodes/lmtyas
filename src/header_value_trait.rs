@@ -15,7 +15,7 @@ pub trait HeaderValueExctractor {
 /// * `Some<String>`: the String representation of the cookie value
 /// * `None`:         if the cookie has not the name `cookie_name` or can not be converted
 ///
-/// ```
+/// ```ignore
 /// "cookie": "<cookie_name>=eb9a5628-8fa1-11ea-8001-81d9d263515d"
 /// "cookie": "<cookie_name>=base64gibberish"
 /// "cookie": "<cookie_name>=5e599155-8f9f-11ea-8009-81d9d263515d; other_cookie=base64gibberish
