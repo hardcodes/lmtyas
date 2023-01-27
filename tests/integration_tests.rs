@@ -2,19 +2,54 @@ mod common;
 use common::SETUP_SINGLETON;
 use lmtyas::authentication_ldap::LdapSearchResult;
 use lmtyas::configuration::ApplicationConfiguration;
+#[cfg(feature = "mail-noauth-notls")]
+pub use lmtyas::mail_noauth_notls::SendEMail;
 use std::path::Path;
 
-/// testing the ldap functions in one go,
-/// so that the ldap server must only be started once.
+/// testing the functions that need external services in one go.
 #[actix_rt::test]
 async fn test_with_setup() {
-    let mut setup_singleton_lock = SETUP_SINGLETON.lock().await;
-    // set up ldap and dummy mail server
-    common::setup(&mut setup_singleton_lock);
-    assert_eq!(setup_singleton_lock.setup_done, true, "setup is not done, cannot run tests!");
     // load configuration file with the ldap server connection details
     let application_configuration = ApplicationConfiguration::read_from_file(
         Path::new(common::WORKSPACE_DIR).join("conf.dev/lmtyas-config.json"),
+    );
+
+    // test sending mail before the server is has been started
+    let send_mail_fail = application_configuration
+        .configuration_file
+        .email_configuration
+        .send_mail("bob@acme.local", "mail_subject", "mail_body");
+    assert!(
+        matches!(send_mail_fail, Err(_)),
+        "should not be able to send mails without server running"
+    );
+
+    let mut setup_singleton_lock = SETUP_SINGLETON.lock().await;
+    // set up ldap and dummy mail server
+    common::setup(&mut setup_singleton_lock);
+    assert!(
+        setup_singleton_lock.setup_done,
+        "setup is not done, cannot run tests!"
+    );
+
+    // test sending mail after the server is has been started
+    let send_mail_ok = application_configuration
+        .configuration_file
+        .email_configuration
+        .send_mail("bob@acme.local", "mail_subject", "mail_body");
+    assert!(
+        matches!(send_mail_ok, Ok(_)),
+        "server should be running, why can I not send mails?"
+    );
+
+    // test sending mail after the server is has been started
+    let send_mail_fail2 = application_configuration
+        .configuration_file
+        .email_configuration
+        .send_mail("wrong mail address", "mail_subject", "mail_body");
+    assert!(
+        matches!(send_mail_fail2, Err(_)),
+        "should not be able to send mails with wrong address"
     );
 
     // looking up existing user by uid in ldap
