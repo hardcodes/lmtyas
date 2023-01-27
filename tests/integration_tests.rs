@@ -1,4 +1,5 @@
 mod common;
+use common::SETUP_SINGLETON;
 use lmtyas::authentication_ldap::LdapSearchResult;
 use lmtyas::configuration::ApplicationConfiguration;
 use std::path::Path;
@@ -7,8 +8,10 @@ use std::path::Path;
 /// so that the ldap server must only be started once.
 #[actix_rt::test]
 async fn test_with_setup() {
+    let mut setup_singleton_lock = SETUP_SINGLETON.lock().await;
     // set up ldap and dummy mail server
-    common::setup();
+    common::setup(&mut setup_singleton_lock);
+    assert_eq!(setup_singleton_lock.setup_done, true, "setup is not done, cannot run tests!");
     // load configuration file with the ldap server connection details
     let application_configuration = ApplicationConfiguration::read_from_file(
         Path::new(common::WORKSPACE_DIR).join("conf.dev/lmtyas-config.json"),
@@ -115,16 +118,16 @@ async fn test_with_setup() {
         "user bob could not login with correct password"
     );
 
-    // ldap login with wrong password
+    // ldap login with wrong user name and password
     let ldap_login_fail = application_configuration
         .configuration_file
         .ldap_configuration
-        .ldap_login("bob", "password")
+        .ldap_login("mary", "peterpaul")
         .await;
     assert!(
         matches!(ldap_login_fail, Err(_)),
         "user bob should not be able to login with wrong password"
     );
 
-    common::teardown();
+    common::teardown(&mut setup_singleton_lock);
 }

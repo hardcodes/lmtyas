@@ -1,12 +1,13 @@
 use lazy_static::lazy_static;
 use std::path::Path;
 use std::process::{Child, Command};
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
+use tokio::sync::{Mutex, MutexGuard};
 
 pub const WORKSPACE_DIR: &str = env!("CARGO_MANIFEST_DIR");
 
 lazy_static! {
-    static ref SETUP_SINGLETON: Arc<Mutex<ExternalHelperApplications>> =
+    pub static ref SETUP_SINGLETON: Arc<Mutex<ExternalHelperApplications>> =
         Arc::new(Mutex::new(ExternalHelperApplications {
             setup_done: false,
             ..Default::default()
@@ -15,16 +16,15 @@ lazy_static! {
 
 #[derive(Default)]
 pub struct ExternalHelperApplications {
-    setup_done: bool,
+    pub setup_done: bool,
     glauth: Option<Child>,
     mail_server: Option<Child>,
 }
 
 /// common setup routine for all tests
-pub fn setup() {
-    //make sure that setup is only done once
-    let mut setup_lock = SETUP_SINGLETON.lock().unwrap();
-    if setup_lock.setup_done != false {
+pub fn setup(setup_lock: &mut MutexGuard<ExternalHelperApplications>) {
+    // this should never happen, since caller must hold a lock.
+    if setup_lock.setup_done {
         return;
     }
     // starting with test setup
@@ -63,8 +63,7 @@ pub fn setup() {
 }
 
 /// common teardown routine for all tests
-pub fn teardown() {
-    let mut teardown_lock = SETUP_SINGLETON.lock().unwrap();
+pub fn teardown(teardown_lock: &mut MutexGuard<ExternalHelperApplications>) {
     teardown_lock
         .glauth
         .as_mut()
