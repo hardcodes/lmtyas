@@ -58,6 +58,8 @@ pub fn setup(setup_lock: &mut MutexGuard<ExternalHelperApplications>) {
         .spawn()
         .expect("cannot start dummy mail server");
     setup_lock.mail_server = Some(mail_server);
+    // give services some time to start up
+    std::thread::sleep(std::time::Duration::from_secs(2));
     // done with setup
     setup_lock.setup_done = true;
 }
