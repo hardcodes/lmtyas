@@ -28,9 +28,11 @@ impl SendEMail for SendEMailConfiguration {
         mail_body: &str
     ) -> Result<(), Box<dyn Error>> {
 
+        let parsed_mail_from = self.mail_from.parse()?;
+        let parsed_mail_to = mail_to.parse()?;
         let email = Message::builder()
-            .from(self.mail_from.parse().unwrap())
-            .to(mail_to.parse().unwrap())
+            .from(parsed_mail_from)
+            .to(parsed_mail_to)
             .subject(mail_subject)
             .body(String::from(mail_body))
             .unwrap();
