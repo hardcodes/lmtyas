@@ -15,6 +15,12 @@ pub struct SharedSecretData {
     pub uuid_context: Context,
 }
 
+impl Default for SharedSecretData {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl SharedSecretData {
     /// Create a new instance by setting the
     /// context for creating unique uuids.

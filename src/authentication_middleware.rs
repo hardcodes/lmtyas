@@ -112,6 +112,12 @@ pub struct SharedRequestData {
     pub uuid_context: Context,
 }
 
+impl Default for SharedRequestData {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl SharedRequestData {
     pub fn new() -> SharedRequestData {
         SharedRequestData {

@@ -18,6 +18,12 @@ pub struct RsaKeys {
     pub rsa_public_key: Option<Rsa<openssl::pkey::Public>>,
 }
 
+impl Default for RsaKeys {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl RsaKeys {
     /// Constructs data struct with
     /// None<> to be able to put it into a
