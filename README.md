@@ -555,6 +555,12 @@ kill $(pidof glauth)
 kill $(ps -aux|grep python3|grep smtpd|awk '{print $2;}')
 ```
 
+A Rsa public and private key with passphrase "12345678901234" are expected to be stored:
+
+- `ignore/lmtyas_rsa_private.key`
+- `ignore/lmtyas_rsa_public.key`
+
+See section *[Security - Data Encryption - RSA Keys](#security---data-encryption---rsa-keys)* how tp create them.
 
 ------
 
