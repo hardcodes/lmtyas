@@ -13,20 +13,17 @@ fn test_rsa_functions() {
     const PLAINTEXT: &str = "plaintext";
 
     let secure_rsa_passphrase = SecStr::from(RSA_PASSPHRASE);
-    let rsa_keys = RsaKeys::new();
-    let loaded_rsa_keys = match rsa_keys.read_from_files(
+    let mut rsa_keys = RsaKeys::new();
+    if let Err(e) = rsa_keys.read_from_files(
         Path::new(WORKSPACE_DIR).join("ignore/lmtyas_rsa_private.key"),
         Path::new(WORKSPACE_DIR).join("ignore/lmtyas_rsa_public.key"),
         &secure_rsa_passphrase,
     ) {
-        Ok(r) => r,
-        Err(e) => {
-            panic!("cannot load rsa keys! {}", &e);
-        }
+        panic!("cannot load rsa keys! {}", &e);
     };
 
-    let rsa_encrytpted = loaded_rsa_keys.encrypt_str(&PLAINTEXT.to_string());
-    let rsa_encrytpted2 = loaded_rsa_keys.encrypt_str(&PLAINTEXT.to_string());
+    let rsa_encrytpted = rsa_keys.encrypt_str(&PLAINTEXT.to_string());
+    let rsa_encrytpted2 = rsa_keys.encrypt_str(&PLAINTEXT.to_string());
     let rsa_encrypted_unwrapped = match rsa_encrytpted {
         Ok(r) => r,
         Err(e) => {
@@ -47,7 +44,7 @@ fn test_rsa_functions() {
         "rsa encrypted data is not converted correctly to base64: {}",
         &rsa_encrypted_unwrapped
     );
-    let decrypted = loaded_rsa_keys.decrypt_str(&rsa_encrypted_unwrapped);
+    let decrypted = rsa_keys.decrypt_str(&rsa_encrypted_unwrapped);
     assert_eq!(
         PLAINTEXT,
         decrypted.unwrap(),

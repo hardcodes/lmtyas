@@ -156,14 +156,11 @@ impl ApplicationConfiguration {
             &self.rsa_password.read().unwrap().rsa_private_key_password
         {
             let mut rsa_write_lock = self.rsa_keys.write().unwrap();
-            let new_rsa_keys = rsa_write_lock.read_from_files(
+            rsa_write_lock.read_from_files(
                 &self.configuration_file.rsa_private_key_file,
                 &self.configuration_file.rsa_public_key_file,
                 rsa_private_key_password,
-            )?;
-            rsa_write_lock.rsa_public_key = new_rsa_keys.rsa_public_key;
-            rsa_write_lock.rsa_private_key = new_rsa_keys.rsa_private_key;
-            Ok(())
+            )
         } else {
             const RSA_PASSWORD_NOT_SET: &str = "Password not set, inform system administrator";
             let boxed_error = Box::<dyn Error + Send + Sync>::from(RSA_PASSWORD_NOT_SET);

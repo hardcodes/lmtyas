@@ -51,11 +51,11 @@ impl RsaKeys {
     ///
     /// - Result<RsaKeys, Box<dyn Error>>
     pub fn read_from_files<P: AsRef<Path>>(
-        &self,
+        &mut self,
         rsa_private_key_path: P,
         rsa_public_key_path: P,
         secure_passphrase: &SecStr,
-    ) -> Result<Self, Box<dyn Error>> {
+    ) -> Result<(), Box<dyn Error>> {
         let rsa_private_key_file = std::fs::read_to_string(rsa_private_key_path)?;
         let mut unsecure_passphrase = secure_passphrase.to_unsecure_string();
         let rsa_private_key = match Rsa::private_key_from_pem_passphrase(
@@ -82,10 +82,9 @@ impl RsaKeys {
             let boxed_error = Box::<dyn Error + Send + Sync>::from(RSA_MIN_MODULUS_ERR);
             return Err(boxed_error);
         }
-        Ok(RsaKeys {
-            rsa_private_key: Some(rsa_private_key),
-            rsa_public_key: Some(rsa_public_key),
-        })
+        self.rsa_private_key = Some(rsa_private_key);
+        self.rsa_public_key = Some(rsa_public_key);
+        Ok(())
     }
 
     /// Encrypt a String slice with stored RSA public key
