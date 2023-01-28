@@ -291,8 +291,7 @@ pub async fn store_secret(
             MAX_FORM_INPUT_LEN
         ));
     }
-    // get the display name of the receiver
-    let display_name = match <UserDataImpl as GetUserData>::get_display_name(
+    let display_name = match <UserDataImpl as GetUserData>::get_receiver_display_name(
         &parsed_form_data.to_email,
         &application_configuration,
     )

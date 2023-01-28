@@ -21,7 +21,7 @@ pub trait GetUserData {
     /// # Returns
     ///
     /// - `Result<String, Box<dyn Error>>`
-    async fn get_display_name(
+    async fn get_receiver_display_name(
         mail: &str,
         application_configuration: &web::Data<ApplicationConfiguration>,
     ) -> Result<String, String>;
