@@ -79,4 +79,5 @@ pub fn teardown(teardown_lock: &mut MutexGuard<ExternalHelperApplications>) {
         .kill()
         .expect("dummy mail server was not running");
     teardown_lock.setup_done = false;
+    std::thread::sleep(std::time::Duration::from_secs(1));
 }
