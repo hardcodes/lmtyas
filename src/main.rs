@@ -14,11 +14,6 @@ use std::io::Write;
 use std::path::Path;
 use timer::Timer;
 
-// const PROGRAM_NAME: &str = env!("CARGO_PKG_NAME");
-// const PROGRAM_VERSION: &str = env!("CARGO_PKG_VERSION");
-// const PROGRAM_AUTHORS: &str = env!("CARGO_PKG_AUTHORS");
-// const PROGRAM_DESCRIPTION: &str = env!("CARGO_PKG_DESCRIPTION");
-
 #[cfg(feature = "ldap-auth")]
 type AuthConfiguration = LdapAuthConfiguration;
 // #[cfg(feature = "ldap-auth")]
