@@ -232,7 +232,7 @@ After a new secret has been entered,
 - A link for the email will be constructed of
     - the id (= file name) of the secret
     - the key/iv that were used to encrypt the secret befor storing it to disk
-- The link will be enrypted by the RSA public key of the web service.
+- The link will be enrypted with the RSA public key of the web service.
 - data is stored on disk (encrypted by web service RSA public key):
     - receiver
     - context
@@ -536,21 +536,21 @@ Really easy to set up:
     ```
 
 
-# Testing
+# Testing the code
 
 Tests are at the moment far from complete.
 
-## Testing - prerequisites
+## Testing the code - prerequisites
 
-- Before some of the tests are executed, a mail dummy mail server and a `glauth` ldap server is started, see section *[Development](#development)*.
-- A Rsa public and private key with passphrase "12345678901234" are expected to be stored:
+- Before some of the tests are executed, a mail dummy mail server and a `glauth` ldap server are started, see section *[Development](#development)*.
+- A Rsa public and private key with passphrase "12345678901234" are expected to exist in the folder `ignore`:
   - `ignore/lmtyas_rsa_private.key`
   - `ignore/lmtyas_rsa_public.key`
 
   See section *[Security - Data Encryption - RSA Keys](#security---data-encryption---rsa-keys)* how to create them.
 
 
-## Testing - running
+## Testing the code - run tests
 
  To run the tests, enter
 
