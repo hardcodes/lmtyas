@@ -538,13 +538,25 @@ Really easy to set up:
 
 # Testing
 
-Tests are at the moment far from complete. To run them, enter
+Tests are at the moment far from complete.
+
+## Testing - prerequisites
+
+- Before some of the tests are executed, a mail dummy mail server and a `glauth` ldap server is started, see section *[Development](#development)*.
+- A Rsa public and private key with passphrase "12345678901234" are expected to be stored:
+  - `ignore/lmtyas_rsa_private.key`
+  - `ignore/lmtyas_rsa_public.key`
+
+  See section *[Security - Data Encryption - RSA Keys](#security---data-encryption---rsa-keys)* how to create them.
+
+
+## Testing - running
+
+ To run the tests, enter
 
 ```bash
 cargo test
 ```
-
-Before some of the tests are executed, a mail dummy mail server and a `glauth` ldap server is started, see section *[Development](#development)*.
 
 If test fails they may still be running. To find and kill them and assuming you have no other processes with these speficics, you can enter
 
@@ -555,12 +567,6 @@ kill $(pidof glauth)
 kill $(ps -aux|grep python3|grep smtpd|awk '{print $2;}')
 ```
 
-A Rsa public and private key with passphrase "12345678901234" are expected to be stored:
-
-- `ignore/lmtyas_rsa_private.key`
-- `ignore/lmtyas_rsa_public.key`
-
-See section *[Security - Data Encryption - RSA Keys](#security---data-encryption---rsa-keys)* how tp create them.
 
 ------
 
