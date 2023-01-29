@@ -14,7 +14,7 @@ use std::sync::{Arc, RwLock};
 
 /// maximum number of authenticated users that are stored in the
 /// hashmap to prevent server overload or a DOS attack.
-const MAX_AUTH_USERS: usize = 512;
+pub const MAX_AUTH_USERS: usize = 512;
 /// Used to build unique uuids for resource requests
 const NODE_ID: &[u8; 6] = &[0x27, 0x9b, 0xbe, 0x13, 0x86, 0x80];
 
