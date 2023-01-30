@@ -540,6 +540,10 @@ Really easy to set up:
 
 Tests are at the moment far from complete.
 
+- Functions that need no running service are covered.
+- Starting the service itself and testing it from outside is still missing.
+
+
 ## Testing the code - prerequisites
 
 - Before some of the tests are executed, a mail dummy mail server and a `glauth` ldap server are started, see section *[Development](#development)*.
@@ -558,7 +562,7 @@ Tests are at the moment far from complete.
 cargo test
 ```
 
-If test fails they may still be running. To find and kill them and assuming you have no other processes with these speficics, you can enter
+If test fails the external processes may still be running. To find and kill them and assuming you have no other processes with these speficics, you can enter
 
 ```bash
 # kill glauth ldap server
