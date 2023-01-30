@@ -5,7 +5,7 @@ use actix_web::{
 
 /// Name of the cookie that is sent to an authenticated user browser
 pub const COOKIE_NAME: &str = env!("CARGO_PKG_NAME");
-const COOKIE_PATH: &str = "/";
+pub const COOKIE_PATH: &str = "/";
 
 /// build a new rsa encrypted authentication cookie
 ///
@@ -51,7 +51,7 @@ pub fn build_new_encrypted_authentication_cookie(
 /// # Returns
 ///
 /// - `actix_web::cookie::Cookie`
-fn build_new_base64_authentication_cookie(
+pub fn build_new_base64_authentication_cookie(
     cookie_value: &str,
     max_age: i64,
     domain: &str,
