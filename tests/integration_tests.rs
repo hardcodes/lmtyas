@@ -52,6 +52,16 @@ async fn test_with_setup() {
         "should not be able to send mails with wrong address"
     );
 
+    // test sending mail after the server is has been started
+    let send_mail_fail3 = application_configuration
+        .configuration_file
+        .email_configuration
+        .send_mail("<bob@acme.local", "mail_subject", "mail_body");
+    assert!(
+        matches!(send_mail_fail3, Err(_)),
+        "should not be able to send mails with wrong address"
+    );
+
     // looking up existing user by uid in ldap
     let user_found_by_uid = application_configuration
         .configuration_file
