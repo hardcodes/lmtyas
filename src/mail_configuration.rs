@@ -33,7 +33,7 @@ pub struct EMailCredetials {
 }
 
 /// This trait is a contract for implementing different
-/// flavors of `send_mail()` implementations.
+/// flavors of `send_mail()`.
 /// The default implementation does not send credentials
 /// and does not use TLS.
 pub trait SendEMail {
@@ -42,5 +42,7 @@ pub trait SendEMail {
     /// # Arguments
     ///
     /// - `mail_to`:          mail address of the receiver of the secret.
+    /// - `mail_subject`:     subject of the mail
+    /// - `mail_body`:        body of the mail
     fn send_mail(&self, mail_to: &str, mail_subject: &str, mail_body: &str) -> Result<(), Box<dyn Error>>;
 }
