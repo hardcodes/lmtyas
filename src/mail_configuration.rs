@@ -13,7 +13,7 @@ pub struct SendEMailConfiguration {
     pub mail_from: String,
     pub mail_subject: String,
     pub mail_template_file: Box<Path>,
-    pub mail_credentails: Option<EMailCredetials>,
+    pub mail_credentails: Option<EMailCredentials>,
 }
 
 impl SendEMailConfiguration {
@@ -27,9 +27,52 @@ impl SendEMailConfiguration {
 /// Holds optional credentials tp
 /// send emails.
 #[derive(Clone, Deserialize, Debug)]
-pub struct EMailCredetials {
+pub struct EMailCredentials {
     pub mail_user: String,
     pub mail_password: String,
+}
+
+/// Used to add details to email address parsing errors
+#[derive(Debug)]
+pub enum ParseMailAddressErrorContext {
+    FromAddress,
+    ToAddress,
+    CCAddress,
+    BCCAddress,
+}
+
+/// This trait adds functionality to the lettre crate
+pub trait ParseMailboxWithContext {
+    /// parse an email address into the lettre `Mailbox` format and
+    /// add a context to the error message if that fails.
+    /// 
+    /// # Arguments
+    /// 
+    /// - `address`:         email address that should be pared into a `Mailbox`
+    /// - `error_context`:   context that shows what the email address should be used for
+    ///                      (from, to, cc, bcc)
+    fn parse_with_context_on_error(
+        address: &str,
+        error_context: ParseMailAddressErrorContext,
+    ) -> Result<lettre::message::Mailbox, Box<dyn Error>>;
+}
+
+impl ParseMailboxWithContext for lettre::message::Mailbox{
+    fn parse_with_context_on_error(
+        address: &str,
+        error_context: ParseMailAddressErrorContext,
+    ) -> Result<lettre::message::Mailbox, Box<dyn Error>>{
+        return match address.parse::<lettre::message::Mailbox>() {
+            Ok(p) => Ok(p),
+            Err(e) => {
+                return Err(Box::<dyn Error + Send + Sync>::from(format!(
+                    "{}, {:?}",
+                    e,
+                    error_context
+                )));
+            }
+        };
+    }
 }
 
 /// This trait is a contract for implementing different
