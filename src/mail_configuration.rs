@@ -57,7 +57,9 @@ pub trait ParseMailboxWithContext {
     ) -> Result<lettre::message::Mailbox, Box<dyn Error>>;
 }
 
+
 impl ParseMailboxWithContext for lettre::message::Mailbox{
+    #[inline(always)]
     fn parse_with_context_on_error(
         address: &str,
         error_context: ParseMailAddressErrorContext,
