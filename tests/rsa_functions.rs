@@ -22,8 +22,8 @@ fn test_rsa_functions() {
         panic!("cannot load rsa keys! {}", &e);
     };
 
-    let rsa_encrytpted = rsa_keys.encrypt_str(&PLAINTEXT.to_string());
-    let rsa_encrytpted2 = rsa_keys.encrypt_str(&PLAINTEXT.to_string());
+    let rsa_encrytpted = rsa_keys.encrypt_str(PLAINTEXT);
+    let rsa_encrytpted2 = rsa_keys.encrypt_str(PLAINTEXT);
     let rsa_encrypted_unwrapped = match rsa_encrytpted {
         Ok(r) => r,
         Err(e) => {

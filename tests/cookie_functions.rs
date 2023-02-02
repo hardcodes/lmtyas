@@ -17,7 +17,7 @@ fn test_cookie_functions() {
 
     let mut rsa_keys = RsaKeys::new();
     let invalid_rsa_cookie =
-        build_new_encrypted_authentication_cookie(&COOKIE, 90, &COOKIE_PATH, &rsa_keys);
+        build_new_encrypted_authentication_cookie(COOKIE, 90, COOKIE_PATH, &rsa_keys);
     assert_eq!(
         invalid_rsa_cookie.to_string(),
         r#"lmtyas=invalid_rsa_cookie; HttpOnly; SameSite=Strict; Secure; Path=/; Domain=/; Max-Age=90"#,
@@ -30,7 +30,7 @@ fn test_cookie_functions() {
         "should not be able to get plaint cookie from this!"
     );
 
-    let base64_cookie = build_new_authentication_cookie(&COOKIE, 90, &COOKIE_PATH, &rsa_keys);
+    let base64_cookie = build_new_authentication_cookie(COOKIE, 90, COOKIE_PATH, &rsa_keys);
     assert_eq!(
         base64_cookie.to_string(),
         r#"lmtyas=bXkgY29va2ll; HttpOnly; SameSite=Strict; Secure; Path=/; Domain=/; Max-Age=90"#,
@@ -53,7 +53,7 @@ fn test_cookie_functions() {
     );
 
     let valid_rsa_cookie =
-        build_new_encrypted_authentication_cookie(&COOKIE, 90, &COOKIE_PATH, &rsa_keys);
+        build_new_encrypted_authentication_cookie(COOKIE, 90, COOKIE_PATH, &rsa_keys);
     let rsa_cookie_as_str = valid_rsa_cookie.to_string();
     let splitted_rsa_cookie_value: Vec<&str> = rsa_cookie_as_str.split(';').collect();
     let splitted_cookie_value: Vec<&str> = splitted_rsa_cookie_value
@@ -62,10 +62,10 @@ fn test_cookie_functions() {
         .split('=')
         .collect();
     let cookie = splitted_cookie_value[1];
-    let plain_cookie = get_plain_cookie_string(&cookie, &rsa_keys);
+    let plain_cookie = get_plain_cookie_string(cookie, &rsa_keys);
     assert_eq!(plain_cookie, COOKIE, "cannot decrypt rsa encrypted cookie!");
 
-    let valid_rsa_cookie = build_new_authentication_cookie(&COOKIE, 90, &COOKIE_PATH, &rsa_keys);
+    let valid_rsa_cookie = build_new_authentication_cookie(COOKIE, 90, COOKIE_PATH, &rsa_keys);
     let rsa_cookie_as_str = valid_rsa_cookie.to_string();
     let splitted_rsa_cookie_value: Vec<&str> = rsa_cookie_as_str.split(';').collect();
     let splitted_cookie_value: Vec<&str> = splitted_rsa_cookie_value
@@ -74,17 +74,17 @@ fn test_cookie_functions() {
         .split('=')
         .collect();
     let cookie = splitted_cookie_value[1];
-    let plain_cookie = get_plain_cookie_string(&cookie, &rsa_keys);
+    let plain_cookie = get_plain_cookie_string(cookie, &rsa_keys);
     assert_eq!(plain_cookie, COOKIE, "cannot decrypt rsa encrypted cookie!");
 
-    let base64_cookie = build_new_base64_authentication_cookie(&COOKIE, 90, &COOKIE_PATH);
+    let base64_cookie = build_new_base64_authentication_cookie(COOKIE, 90, COOKIE_PATH);
     assert_eq!(
         base64_cookie.to_string(),
         r#"lmtyas=bXkgY29va2ll; HttpOnly; SameSite=Strict; Secure; Path=/; Domain=/; Max-Age=90"#,
         "cannot build base64 encoded cookie!"
     );
 
-    let base64_cookie = build_new_base64_authentication_cookie(&COOKIE, 90, &COOKIE_PATH);
+    let base64_cookie = build_new_base64_authentication_cookie(COOKIE, 90, COOKIE_PATH);
     let cookie_response = build_new_cookie_response(&base64_cookie, COOKIE_PATH.to_string());
     assert_eq!(cookie_response.status(), StatusCode::OK);
 }
