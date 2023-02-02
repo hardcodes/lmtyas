@@ -1,4 +1,3 @@
-//#[macro_use]
 extern crate env_logger;
 use crate::authentication_middleware::AuthenticationRedirect;
 use crate::authentication_middleware::PeerIpAddress;

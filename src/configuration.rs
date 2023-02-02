@@ -1,5 +1,3 @@
-//#[macro_use]
-
 use crate::authenticated_user::SharedAuthenticatedUsersHashMap;
 use crate::authentication_ldap::LdapAuthConfiguration;
 use crate::authentication_middleware::SharedRequestData;

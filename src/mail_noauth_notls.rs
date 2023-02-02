@@ -8,8 +8,8 @@ use std::error::Error;
 impl SendEMail for SendEMailConfiguration {
     /// The `SendEMailConfiguration` trait is a contract
     /// for implementing different flavors of `send_mail()`.
-    /// This is the default implementation that does not send
-    /// credentials and does not use TLS.
+    /// This is the default implementation (as in default feature)
+    /// that does not send credentials and does not use TLS.
     ///
     /// # Arguments
     ///

@@ -19,6 +19,7 @@ pub trait Login {
     ///                                more complicated to parse than, e.g. using `web::Form<FormData>`
     ///                                but universal. Future versions might implement SAML and
     ///                                have different needs that can be satisfied this way.
+    /// - `http_request`:              `HttpRequest` with login data.
     /// - `application_configuration`: application configuration
     ///
     /// # Returns

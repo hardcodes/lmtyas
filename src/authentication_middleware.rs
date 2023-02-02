@@ -1,4 +1,3 @@
-//#[macro_use]
 use log::{debug, info, warn};
 extern crate env_logger;
 pub use crate::authentication_ldap::LdapAuthConfiguration;

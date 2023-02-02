@@ -1,4 +1,3 @@
-//#[macro_use]
 use log::{debug, warn};
 extern crate env_logger;
 use crate::authenticated_user::AuthenticatedUser;
