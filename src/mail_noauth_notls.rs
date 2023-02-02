@@ -2,7 +2,7 @@ pub use crate::mail_configuration::{
     ParseMailAddressErrorContext, ParseMailboxWithContext, SendEMail, SendEMailConfiguration,
 };
 use crate::PROGRAM_NAME;
-use lettre::{message::Mailbox, Message, SmtpTransport, Transport};
+use lettre::{message::header::ContentType, message::Mailbox, Message, SmtpTransport, Transport};
 use std::error::Error;
 
 impl SendEMail for SendEMailConfiguration {
@@ -32,6 +32,7 @@ impl SendEMail for SendEMailConfiguration {
             .from(parsed_mail_from)
             .to(parsed_mail_to)
             .subject(mail_subject)
+            .header(ContentType::TEXT_PLAIN)
             .user_agent(PROGRAM_NAME.to_string())
             .body(String::from(mail_body))
         {
