@@ -30,7 +30,7 @@ type UserDataImpl = LdapAuthConfiguration;
 const FRAGMENT: &AsciiSet = &CONTROLS.add(b'/').add(b'=');
 /// max length of form data
 const MAX_FORM_BYTES_LEN: usize = 1024;
-/// max length of form fiels
+/// max length of form fields
 const MAX_FORM_INPUT_LEN: usize = 128;
 
 /// redirect browser to our index page
@@ -285,7 +285,14 @@ pub async fn store_secret(
             MAX_FORM_INPUT_LEN
         ));
     }
-    if parsed_form_data.secret.len() > MAX_FORM_INPUT_LEN {
+    let secret_length = match base64::decode_config(
+        parsed_form_data.secret.trim_matches(char::from(0)),
+        base64::URL_SAFE,
+    ) {
+        Ok(s) => s.len(),
+        Err(_) => MAX_FORM_INPUT_LEN + 1,
+    };
+    if secret_length > MAX_FORM_INPUT_LEN {
         return HttpResponse::err_text_response(format!(
             "ERROR: secret > {} chars",
             MAX_FORM_INPUT_LEN
