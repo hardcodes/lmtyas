@@ -392,7 +392,8 @@ pub async fn store_secret(
     {
         Ok(mail_body_template) => mail_body_template,
         Err(e) => {
-            return HttpResponse::err_text_response(format!("ERROR: {}", &e));
+            warn!("error loading mail template: {}", &e);
+            return HttpResponse::err_text_response("ERROR: cannot send email!");
         }
     };
     let mail_body = &parsed_form_data.build_mail_body(
@@ -416,10 +417,12 @@ pub async fn store_secret(
         .send_mail(&parsed_form_data.to_email, mail_subject, mail_body)
     {
         warn!(
-            "error sending mail to {}: {}",
-            &parsed_form_data.to_email, &e
+            "error sending email to {} for secret {}: {}",
+            &parsed_form_data.to_email,
+            &uuid.to_string(),
+            &e
         );
-        return HttpResponse::err_text_response(format!("ERROR: cannot send mail: {}", &e));
+        return HttpResponse::err_text_response("ERROR: cannot send email!");
     };
     HttpResponse::ok_text_response("OK")
 }
