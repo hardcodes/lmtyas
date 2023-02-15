@@ -1,4 +1,3 @@
-//#[macro_use]
 extern crate env_logger;
 use crate::configuration::ApplicationConfiguration;
 use crate::http_traits::CustomHttpResponse;
