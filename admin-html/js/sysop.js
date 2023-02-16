@@ -1,10 +1,11 @@
-const loginForm = document.getElementById("RsaPasswordForm");
-loginForm.addEventListener('submit', function (e) {
+const rsaForm = document.getElementById("RsaPasswordForm");
+rsaForm.addEventListener('submit', function (e) {
     e.preventDefault();
     setRsaPassword();
 });
 var keepAliveCount = 0;
 var keep_alive_interval = initKeepAliveInterval("/authenticated/keep_session_alive");
+
 queryWebService("/system/is_server_ready", validateSystemStatusLocal, systemIsNotReadyLocal);
 document.getElementById("RsaPassword").focus();
 
@@ -44,14 +45,19 @@ function setRsaPassword() {
         showErrorMessage("ERROR: could not convert password to base64");
     }
     let url = "/authenticated/sysop/set_password_for_rsa_rivate_key/" + rsaPassword;
-    sendToWebService(url, displaySubmission, displaySubmission);
+    sendToWebService(url, displaySubmission, errorOnSubmission, 5);
 }
 
 function displaySubmission(resulttext) {
-    document.getElementById("RsaPasswordForm").style.visibility = "hidden";
+    stopForm(rsaForm, 10);
     if (typeof resulttext !== 'undefined') {
         if (resulttext == "OK") {
             showSuccessMessage("Password for RSA private key is set.");
         }
     }
+}
+
+function errorOnSubmission() {
+    console.log("errorOnSubmission()");
+    stopForm(rsaForm, 6);
 }

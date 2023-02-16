@@ -215,5 +215,24 @@ function startLocationReloadTimer(seconds = 5) {
   }
 }
 
-queryWebService("/system/get/imprint-link", setImprintLink, function(){});
+function disableFormInputs(formId) {
+  if (typeof formId !== 'undefined') {
+    var formInputs = formId.elements;
+    if (typeof formInputs !== 'undefined' && formInputs !== null) {
+      for (var input of formInputs) {
+        input.disabled = true;
+      }
+    }
+  }
+}
+
+function stopForm(formId, backHomeTimerSeconds = 10) {
+  if (typeof keep_alive_interval !== 'undefined') {
+    clearInterval(keep_alive_interval);
+  }
+  disableFormInputs(formId);
+  startBackHomeTimer(backHomeTimerSeconds);
+}
+
+queryWebService("/system/get/imprint-link", setImprintLink, function () { });
 

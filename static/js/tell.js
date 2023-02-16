@@ -6,6 +6,7 @@ secretForm.addEventListener('submit', function (e) {
 var keepAliveCount = 0;
 var keep_alive_interval = initKeepAliveInterval("/authenticated/keep_session_alive");
 keepSessionAlive("/authenticated/keep_session_alive");
+
 queryWebService("/system/is_server_ready", validateSystemStatus, systemIsNotReady);
 queryWebService("/authenticated/user/get/details/from", displayFromData, function () { });
 queryWebService("/system/get/mail-hint", setMailHint, function () { });
@@ -25,10 +26,10 @@ function setMailHint(resulttext) {
 
 function displaySubmission(resulttext) {
     if (typeof resulttext !== 'undefined') {
-        disableInputs();
+        disableFormInputs(secretForm);
         if (resulttext == "OK") {
-            showSuccessMessageWithTimer("Secret saved, the receiver will be notified via email.", 15);
-            startBackHomeTimer(16);
+            showSuccessMessageWithTimer("Secret saved, the receiver will be notified via email.", 5);
+            startBackHomeTimer(6);
         }
     }
 }
@@ -40,12 +41,6 @@ function displayFromData(result) {
         document.getElementById("FromEmail").value = data.Email;
         document.getElementById("ToEmail").focus();
     }
-}
-
-function disableInputs() {
-    ToEmail.disabled = true;
-    Context.disabled = true;
-    Secret.disabled = true;
 }
 
 function sendFormData() {
@@ -68,6 +63,11 @@ function sendFormData() {
     };
     let jsonString = JSON.stringify(jsonObject);
     console.log(jsonString);
-    sendToWebService("/authenticated/secret/tell", displaySubmission, disableInputs, jsonString);
+    sendToWebService("/authenticated/secret/tell", displaySubmission, errorOnSubmission, jsonString, 5);
     document.getElementById("SubmitButton").style.visibility = "hidden";
+}
+
+function errorOnSubmission() {
+    console.log("errorOnSubmission()");
+    stopForm(secretForm, 6);
 }

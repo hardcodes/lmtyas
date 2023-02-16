@@ -51,7 +51,7 @@ function sendLoginData(loginForm) {
         };
         let jsonString = JSON.stringify(jsonObject);
         document.getElementById("SubmitButton").style.visibility = "hidden";
-        sendToWebService("/authentication/login", openUrl, startBackHomeTimer(3), jsonString, 2);
+        sendToWebService("/authentication/login", openUrl, stopForm(loginForm, 6), jsonString, 5);
     }
     else {
         document.getElementById("SubmitButton").style.visibility = "hidden";
@@ -62,3 +62,4 @@ function sendLoginData(loginForm) {
 function openUrl(url) {
     window.open(url, "_self");
 }
+
