@@ -478,7 +478,8 @@ pub async fn reveal_secret(
     let encrypted_secret = match Secret::read_from_disk(&path).await {
         Ok(encrypted_secret) => encrypted_secret,
         Err(e) => {
-            return HttpResponse::err_text_response(format!("ERROR: {}", &e));
+            warn!("secret file {} cannot be read: {}", &path.display(), e);
+            return HttpResponse::err_text_response("ERROR: Secret cannot be read! Already revealed?");
         }
     };
     info!("success, file {} read", &path.display());
