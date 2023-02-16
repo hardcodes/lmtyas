@@ -166,9 +166,9 @@ function keepSessionAlive(url) {
   console.log("keepAliveCount = " + keepAliveCount);
   if (keepAliveCount > 30) {
     console.log("stale session, redirecting to index.html");
-    clearInterval(keep_allive_interval);
+    clearInterval(keep_alive_interval);
     showErrorMessageWithTimer("Session was active for more than 30 minutes, redirecting...", 10);
-    let redirectTimeout = setTimeout(redirectHome, 11000);
+    let redirectTimeout = setTimeout(function () { redirectHome("/index.html"); }, 11000);
   }
   else {
     keepAliveCount++;
