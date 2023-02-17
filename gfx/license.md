@@ -1,6 +1,5 @@
-- 2048px-Twemoji2_1f910.svg.png
+- ![1490616952.svg](./1490616952.svg)
 
-  taken from https://commons.wikimedia.org/wiki/File:Twemoji2_1f910.svg
+  taken from https://freesvg.org/1490616952
 
-  This file is licensed under the Creative Commons Attribution 4.0 International license. Attribution: Twitter.
-  Changes: color, size
+  License: public domain
