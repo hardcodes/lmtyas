@@ -8,6 +8,7 @@ const WORKSPACE_DIR: &str = env!("CARGO_MANIFEST_DIR");
 #[test]
 fn test_rsa_functions() {
     const RSA_PASSPHRASE: &str = "12345678901234";
+    // see https://www.rfc-editor.org/rfc/rfc3548#section-3
     const BASE64_REGEX: &str = r"^[A-Za-z0-9\+/=]+$";
     let base64_regex = Regex::new(BASE64_REGEX).unwrap();
     const PLAINTEXT: &str = "plaintext";
@@ -37,8 +38,6 @@ fn test_rsa_functions() {
         }
     };
 
-    // Check if encrypted value is URL safe
-    // https://www.rfc-editor.org/rfc/rfc3548#section-4
     assert!(
         base64_regex.is_match(&rsa_encrypted_unwrapped),
         "rsa encrypted data is not converted correctly to base64: {}",
