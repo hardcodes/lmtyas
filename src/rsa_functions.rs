@@ -1,4 +1,4 @@
-use crate::base64_trait::{Base64VecU8Conversions, VecU8Base64Conversions};
+use crate::base64_trait::{Base64VecU8Conversions, Base64StringConversions};
 use crate::unsecure_string::SecureStringToUnsecureString;
 use log::{debug, warn};
 use openssl::rsa::{Padding, Rsa};

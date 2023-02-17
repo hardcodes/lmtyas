@@ -22,18 +22,7 @@ impl Base64StringConversions for String {
     }
 }
 
-/// This trait simplifys the use of the base64 Vec<u8> endoding
-/// functions and make them testable so that future changes
-/// induced from the base64 crate can be validated.
-pub trait VecU8Base64Conversions {
-    /// convert a Vec<u8> to a base64 encoded Vec<u8>.
-    fn to_base64_encoded(&self) -> String;
-
-    /// convert a Vec<u8> slice to a url safe base64 encoded Vec<u8>.
-    fn to_base64_urlsafe_encoded(&self) -> String;
-}
-
-impl VecU8Base64Conversions for Vec<u8> {
+impl Base64StringConversions for Vec<u8> {
     fn to_base64_encoded(&self) -> String {
         base64::encode(self)
     }
