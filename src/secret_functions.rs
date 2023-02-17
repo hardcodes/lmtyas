@@ -112,7 +112,7 @@ impl Secret {
     /// # Returns
     ///
     /// - `Result<Secret, &'static str>`: new `Secret` instance or `str` with error message.
-    pub fn to_encrypted(&self, rsa_keys: &RsaKeys) -> Result<Secret, &'static str> {
+    pub fn to_encrypted(&self, rsa_keys: &RsaKeys) -> Result<Secret, Box<dyn Error>> {
         let encrypted_from_email = rsa_keys.encrypt_str(&self.from_email)?;
         let encrypted_from_display_name = rsa_keys.encrypt_str(&self.from_display_name)?;
         let encrypted_to_email = rsa_keys.encrypt_str(&self.to_email)?;
@@ -140,7 +140,7 @@ impl Secret {
     /// # Returns
     ///
     /// - `Result<Secret, &'static str>`: new `Secret` instance or `str` with error message.
-    pub fn to_decrypted(&self, rsa_keys: &RsaKeys) -> Result<Secret, &'static str> {
+    pub fn to_decrypted(&self, rsa_keys: &RsaKeys) -> Result<Secret, Box<dyn Error>> {
         let decrypted_from_email = rsa_keys.decrypt_str(&self.from_email)?;
         let decrypted_from_display_name = rsa_keys.decrypt_str(&self.from_display_name)?;
         let decrypted_to_email = rsa_keys.decrypt_str(&self.to_email)?;

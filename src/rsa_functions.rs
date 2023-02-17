@@ -69,14 +69,13 @@ impl RsaKeys {
                 const RSA_CANNOT_LOAD_KEY: &str = "Cannot load rsa keys!";
                 let boxed_error = Box::<dyn Error + Send + Sync>::from(RSA_CANNOT_LOAD_KEY);
                 return Err(boxed_error);
-                
             }
         };
         unsecure_passphrase.zeroize();
         let rsa_public_key_file = std::fs::read_to_string(rsa_public_key_path)?;
         let rsa_public_key = Rsa::public_key_from_pem(rsa_public_key_file.as_bytes())?;
         debug!("rsa_public_key.size() = {}", &rsa_public_key.size());
-        if rsa_public_key.size() < MIN_RSA_MODULUS_SIZE{
+        if rsa_public_key.size() < MIN_RSA_MODULUS_SIZE {
             warn!("modulus is < {} bytes", MIN_RSA_MODULUS_SIZE);
             const RSA_MIN_MODULUS_ERR: &str = "RSA key size too small";
             let boxed_error = Box::<dyn Error + Send + Sync>::from(RSA_MIN_MODULUS_ERR);
@@ -93,17 +92,17 @@ impl RsaKeys {
     /// # Arguments
     ///
     /// - `plaintext_data`: a String slice with data to encrypt
-    pub fn encrypt_str(&self, plaintext_data: &str) -> Result<String, &'static str> {
-        match &self.rsa_public_key {
-            Some(rsa) => {
-                let mut buf: Vec<u8> = vec![0; rsa.size() as usize];
-                let _ = rsa
-                    .public_encrypt(plaintext_data.as_bytes(), &mut buf, Padding::PKCS1)
-                    .unwrap();
-                let base64_encrypted = base64::encode(&buf);
-                Ok(base64_encrypted)
-            }
-            None => Err("RSA public key is not set!"),
+    pub fn encrypt_str(&self, plaintext_data: &str) -> Result<String, Box<dyn Error>> {
+        if let Some(rsa) = &self.rsa_public_key {
+            let mut buf: Vec<u8> = vec![0; rsa.size() as usize];
+            let _ = rsa
+                .public_encrypt(plaintext_data.as_bytes(), &mut buf, Padding::PKCS1)
+                .unwrap();
+            let base64_encrypted = base64::encode(&buf);
+            Ok(base64_encrypted)
+        } else {
+            let box_err: Box<dyn Error> = "RSA public key is not set!".to_string().into();
+            Err(box_err)
         }
     }
 
@@ -113,14 +112,24 @@ impl RsaKeys {
     /// # Arguments
     ///
     /// - `encrypted_data`: a String slice with data to decrypt
-    pub fn decrypt_str(&self, encrypted_data: &str) -> Result<String, &'static str> {
+    pub fn decrypt_str(&self, encrypted_data: &str) -> Result<String, Box<dyn Error>> {
         match &self.rsa_private_key {
             Some(rsa) => match base64::decode(encrypted_data) {
-                Err(_) => Err("Could not base64 decode given value"),
+                Err(e) => {
+                    warn!("Could not base64 decode given value: {}", &e);
+                    let box_err: Box<dyn Error> =
+                        "Could not base64 decode given value".to_string().into();
+                    Err(box_err)
+                }
                 Ok(raw_data) => {
                     let mut buf: Vec<u8> = vec![0; rsa.size() as usize];
                     match rsa.private_decrypt(&raw_data, &mut buf, Padding::PKCS1) {
-                        Err(_) => Err("Could not rsa decrypt given value"),
+                        Err(e) => {
+                            warn!("Could not rsa decrypt given value: {}", &e);
+                            let box_err: Box<dyn Error> =
+                                "Could not rsa decrypt given value".to_string().into();
+                            Err(box_err)
+                        }
                         Ok(_) => {
                             let decrypted_data =
                                 String::from_utf8(buf).unwrap_or_else(|_| -> String {
@@ -131,7 +140,10 @@ impl RsaKeys {
                     }
                 }
             },
-            None => Err("RSA private key is not set!"),
+            None => {
+                let box_err: Box<dyn Error> = "RSA public key is not set!".to_string().into();
+                Err(box_err)
+            }
         }
     }
 }
