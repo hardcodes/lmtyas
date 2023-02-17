@@ -93,7 +93,6 @@ impl RsaKeys {
     /// # Arguments
     ///
     /// - `plaintext_data`: a String slice with data to encrypt
-    ///
     pub fn encrypt_str(&self, plaintext_data: &str) -> Result<String, &'static str> {
         match &self.rsa_public_key {
             Some(rsa) => {
