@@ -1,4 +1,4 @@
-use crate::base64_trait::{Base64VecU8Conversions, Base64StringConversions};
+use crate::base64_trait::{Base64VecU8Conversions, Base64StringConversions, encode_urlsafe_base64};
 use log::info;
 use openssl::rand::rand_bytes;
 use openssl::symm::{decrypt, encrypt, Cipher};
@@ -39,11 +39,9 @@ impl EncryptAes for String {
                 Err("could not aes encrypt data!")
             }
             Ok(encrypted_data) => {
-                let base64_config = base64::Config::new(base64::CharacterSet::UrlSafe, true);
                 let base64_encrypted_data = encrypted_data.to_base64_urlsafe_encoded();
-                let base64_key = base64::encode_config(key_buf, base64_config);
-                // let base64_key = key_buf.to_base64_urlsafe_encoded();
-                let base64_iv = base64::encode_config(iv_buf, base64_config);
+                let base64_key = encode_urlsafe_base64(key_buf);
+                let base64_iv = encode_urlsafe_base64(iv_buf);
                 let aes_encryption_result = AesEncryptionData {
                     encrypted_data: base64_encrypted_data,
                     encryption_key: base64_key,

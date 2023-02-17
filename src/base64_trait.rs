@@ -56,3 +56,17 @@ impl Base64VecU8Conversions for Vec<u8> {
         )?)
     }
 }
+
+///Encode arbitrary octets as base64.
+pub fn encode_base64<T: AsRef<[u8]>>(input: T) -> String {
+    base64::encode(input)
+}
+
+///Encode arbitrary octets as url safe base64.
+pub fn encode_urlsafe_base64<T: AsRef<[u8]>>(input: T) -> String {
+    let base64_config = base64::Config::new(base64::CharacterSet::UrlSafe, true);
+        base64::encode_config(input, base64_config)
+}
+
+
+

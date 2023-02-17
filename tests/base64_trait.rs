@@ -1,4 +1,4 @@
-use lmtyas::base64_trait::{Base64StringConversions, Base64VecU8Conversions};
+use lmtyas::base64_trait::{Base64StringConversions, Base64VecU8Conversions, encode_base64, encode_urlsafe_base64};
 
 const PLAINTEXT: &str = r#"PASS!"§$%&/()=?ß\´`+*~'#-_.:,;<>|WORD"#;
 const B64: &str = r#"UEFTUyEiwqckJSYvKCk9P8OfXMK0YCsqficjLV8uOiw7PD58V09SRA=="#;
@@ -22,7 +22,9 @@ fn test_base64_trait() {
 
     let plain_vec: Vec<u8> = PLAINTEXT.as_bytes().to_vec();
     let base64_2 = plain_vec.to_base64_encoded();
+    let base64_3 = encode_base64(plain_vec);
     assert_eq!(base64_2, B64, "not the expected base64 encoded value!");
+    assert_eq!(base64_3, B64, "not the expected base64 encoded value!");
 
     let plain_u8 = match Vec::from_base64_encoded(&base64){
         Ok(s) => s,
@@ -40,15 +42,18 @@ fn test_base64_trait() {
     let base64_urlsafe = PLAINTEXT_URLSAFE.to_string().to_base64_urlsafe_encoded();
     assert_eq!(base64_urlsafe, B64_URLSAFE, "not the expected url safe base64 encoded value!");
 
+    let base64_urlsafe_2 = encode_urlsafe_base64(PLAINTEXT_URLSAFE.as_bytes());
+    assert_eq!(base64_urlsafe_2, B64_URLSAFE, "not the expected url safe base64 encoded value!");
+
     let plain_u8_urlsafe = match Vec::from_base64_urlsafe_encoded(&base64_urlsafe){
         Ok(s) => s,
         Err(e) => {
             panic!("can not decode url safe base64 encoded string slice: {}", &e);
         }
     };
-
     let plaintext_urlsafe = String::from_utf8(plain_u8_urlsafe).unwrap();
     assert_eq!(plaintext_urlsafe, PLAINTEXT_URLSAFE, "not the expected url safe plaintext");
+
 
     if Vec::from_base64_urlsafe_encoded(NO_BASE64).is_ok(){
         panic!("should not be able to decode this!");
