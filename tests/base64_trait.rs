@@ -1,4 +1,4 @@
-pub use lmtyas::base64_trait::Base64StringConversions;
+use lmtyas::base64_trait::Base64StringConversions;
 
 const PLAINTEXT: &str = r#"PASS!"§$%&/()=?ß\´`+*~'#-_.:,;<>|WORD"#;
 const B64: &str = r#"UEFTUyEiwqckJSYvKCk9P8OfXMK0YCsqficjLV8uOiw7PD58V09SRA=="#;
