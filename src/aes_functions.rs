@@ -2,6 +2,7 @@ use log::info;
 use openssl::rand::rand_bytes;
 use openssl::symm::{decrypt, encrypt, Cipher};
 use std::error::Error;
+use crate::base64_trait::Base64VecU8Conversions;
 
 const KEY_LENGTH: usize = 32;
 const IV_LENGTH: usize = 16;
@@ -70,10 +71,9 @@ impl DecryptAes for String {
     ///
     /// - `String` - plaintext
     fn decrypt_b64_aes(&self, key_base64: &str, iv_base64: &str) -> Result<String, Box<dyn Error>> {
-        let encrypted_data =
-            base64::decode_config(self.trim_matches(char::from(0)), base64::URL_SAFE)?;
-        let iv = base64::decode_config(iv_base64.trim_matches(char::from(0)), base64::URL_SAFE)?;
-        let key = base64::decode_config(key_base64.trim_matches(char::from(0)), base64::URL_SAFE)?;
+        let encrypted_data = Vec::from_base64_urlsafe_encoded(self.trim_matches(char::from(0)))?;
+        let iv = Vec::from_base64_urlsafe_encoded(iv_base64.trim_matches(char::from(0)))?;
+        let key = Vec::from_base64_urlsafe_encoded(key_base64.trim_matches(char::from(0)))?;
         let cipher = Cipher::aes_256_cbc();
         let plaintext = decrypt(cipher, &key, Some(&iv), &encrypted_data)?;
         let p: String = String::from_utf8(plaintext)?;
