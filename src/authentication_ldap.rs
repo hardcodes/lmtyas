@@ -2,6 +2,7 @@ extern crate env_logger;
 use crate::authentication_middleware::AuthenticationRedirect;
 use crate::authentication_middleware::PeerIpAddress;
 use crate::authentication_middleware::UNKNOWN_PEER_IP;
+use crate::base64_trait::Base64VecU8Conversions;
 use crate::configuration::ApplicationConfiguration;
 use crate::cookie_functions::build_new_authentication_cookie;
 use crate::get_userdata_trait::GetUserData;
@@ -247,9 +248,6 @@ impl Login for LdapAuthConfiguration {
         if !valid_user_regex.is_match(&parsed_form_data.login_name) {
             return HttpResponse::err_text_response("ERROR: invalid login name format");
         }
-        if parsed_form_data.login_password.len() > MAX_PASSWORD_LENGTH {
-            return HttpResponse::err_text_response("ERROR: password is too long!");
-        }
         // what ID was assigned to the resource request?
         let request_id = match Uuid::parse_str(&parsed_form_data.request_id) {
             Ok(request_id) => request_id,
@@ -366,26 +364,45 @@ impl Login for LdapAuthConfiguration {
         // that special characters would be transferred correctly.
         // tested with
         // PASS!"§$%&/()=?ß\´`+*~'#-_.:,;<>|WORD
-        let mut base64_decoded_password =
-            match String::from_utf8(base64::decode(&parsed_form_data.login_password).unwrap()) {
-                Ok(decoded_password) => decoded_password.trim_matches(char::from(0)).to_string(),
+        let base64_decoded_password =
+            match Vec::from_base64_encoded(&parsed_form_data.login_password) {
+                Ok(v) => v,
                 Err(e) => {
                     warn!(
-                        "could not base64 decode password from user {}: {}",
+                        "Cannot decode base64 password from user {}: {}",
                         &parsed_form_data.login_name, &e
                     );
-                    return HttpResponse::err_text_response("ERROR: login not possible");
+                    return HttpResponse::err_text_response("ERROR: login failed");
                 }
             };
+        let mut password = match String::from_utf8(base64_decoded_password) {
+            Ok(decoded_password) => decoded_password.trim_matches(char::from(0)).to_string(),
+            Err(e) => {
+                warn!(
+                    "could not convert to utf8 password from user {}: {}",
+                    &parsed_form_data.login_name, &e
+                );
+                return HttpResponse::err_text_response("ERROR: login not possible");
+            }
+        };
+
+        if password.len() > MAX_PASSWORD_LENGTH {
+            warn!(
+                "password of user {} is too long!",
+                &parsed_form_data.login_name
+            );
+            return HttpResponse::err_text_response("ERROR: password is too long!");
+        }
+
         parsed_form_data.login_password.zeroize();
         match &application_configuration
             .configuration_file
             .ldap_configuration
-            .ldap_login(&parsed_form_data.login_name, &base64_decoded_password)
+            .ldap_login(&parsed_form_data.login_name, &password)
             .await
         {
             Err(e) => {
-                base64_decoded_password.zeroize();
+                password.zeroize();
                 warn!(
                     "user {} could not log in: {}",
                     &parsed_form_data.login_name, &e
@@ -393,7 +410,7 @@ impl Login for LdapAuthConfiguration {
                 return HttpResponse::err_text_response("ERROR: login failed");
             }
             Ok(_) => {
-                base64_decoded_password.zeroize();
+                password.zeroize();
                 info!("login success for user {}", &parsed_form_data.login_name);
 
                 if let Some(cookie_uuid) = application_configuration
