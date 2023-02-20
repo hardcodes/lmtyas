@@ -1,3 +1,4 @@
+use crate::base64_trait::Base64VecU8Conversions;
 use crate::rsa_functions::RsaKeys;
 use actix_web::{
     cookie::time::Duration, cookie::Cookie, cookie::SameSite, http, http::StatusCode, HttpResponse,
@@ -87,7 +88,9 @@ pub fn build_new_authentication_cookie(
     rsa: &RsaKeys,
 ) -> Cookie<'static> {
     let new_cookie = match rsa.rsa_private_key {
-        Some(_) => build_new_encrypted_authentication_cookie(cookie_value, max_age_seconds, domain, rsa),
+        Some(_) => {
+            build_new_encrypted_authentication_cookie(cookie_value, max_age_seconds, domain, rsa)
+        }
         None => build_new_base64_authentication_cookie(cookie_value, max_age_seconds, domain),
     };
     new_cookie
@@ -155,7 +158,7 @@ pub fn get_plain_cookie_string(transmitted_cookie: &str, rsa: &RsaKeys) -> Strin
             .decrypt_str(transmitted_cookie)
             .unwrap_or_else(|_| -> String { "invalid_rsa_cookie_value".to_string() }),
         None => String::from_utf8(
-            base64::decode(transmitted_cookie)
+            Vec::from_base64_encoded(transmitted_cookie)
                 .unwrap_or_else(|_| -> Vec<u8> { "invalid_base64_cookie".as_bytes().to_vec() }),
         )
         .unwrap_or_else(|_| -> String { "invalid_base64_utf8".to_string() }),
