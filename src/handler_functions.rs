@@ -192,8 +192,7 @@ pub async fn set_password_for_rsa_rivate_key(
     // that special characters would be transferred correctly.
     // tested with
     // PASS!"§$%&/()=?ß\´`+*~'#-_.:,;<>|WORD
-    let base64_decoded_password = match Vec::from_base64_encoded(base64_encoded_password.as_str())
-    {
+    let base64_decoded_password = match Vec::from_base64_encoded(base64_encoded_password.as_str()) {
         Ok(v) => v,
         Err(e) => {
             warn!("Cannot decode base64 rsa password: {}", &e);
@@ -216,8 +215,7 @@ pub async fn set_password_for_rsa_rivate_key(
         ));
     }
     if let Ok(mut rsa_password_write_lock) = application_configuration.rsa_password.write() {
-        rsa_password_write_lock.rsa_private_key_password =
-            Some(SecStr::from(decoded_password));
+        rsa_password_write_lock.rsa_private_key_password = Some(SecStr::from(decoded_password));
     } else {
         decoded_password.zeroize();
         return HttpResponse::err_text_response("ERROR: can not acquire a lock on system data!");
@@ -296,13 +294,12 @@ pub async fn store_secret(
             MAX_FORM_INPUT_LEN
         ));
     }
-    let secret_length = match base64::decode_config(
-        parsed_form_data.secret.trim_matches(char::from(0)),
-        base64::URL_SAFE,
-    ) {
-        Ok(s) => s.len(),
-        Err(_) => MAX_FORM_INPUT_LEN + 1,
-    };
+    let secret_length =
+        match Vec::from_base64_urlsafe_encoded(parsed_form_data.secret.trim_matches(char::from(0)))
+        {
+            Ok(s) => s.len(),
+            Err(_) => MAX_FORM_INPUT_LEN + 1,
+        };
     if secret_length > MAX_FORM_INPUT_LEN {
         return HttpResponse::err_text_response(format!(
             "ERROR: secret > {} chars",
