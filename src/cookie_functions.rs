@@ -1,4 +1,4 @@
-use crate::base64_trait::Base64VecU8Conversions;
+use crate::base64_trait::{Base64StringConversions, Base64VecU8Conversions};
 use crate::rsa_functions::RsaKeys;
 use actix_web::{
     cookie::time::Duration, cookie::Cookie, cookie::SameSite, http, http::StatusCode, HttpResponse,
@@ -57,7 +57,7 @@ pub fn build_new_base64_authentication_cookie(
     max_age_seconds: i64,
     domain: &str,
 ) -> Cookie<'static> {
-    let encoded_cookie_value = base64::encode(cookie_value);
+    let encoded_cookie_value = cookie_value.to_string().to_base64_encoded();
     let new_cookie = Cookie::build(COOKIE_NAME, encoded_cookie_value)
         .secure(true)
         .http_only(true)
