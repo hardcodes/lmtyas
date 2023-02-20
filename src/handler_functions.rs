@@ -5,6 +5,7 @@ use crate::authenticated_user::{AuthenticatedAdministrator, AuthenticatedUser};
 use crate::authentication_functions::update_authenticated_user_cookie_lifetime;
 #[cfg(feature = "ldap-auth")]
 use crate::authentication_ldap::LdapAuthConfiguration;
+use crate::base64_trait::Base64VecU8Conversions;
 use crate::configuration::ApplicationConfiguration;
 use crate::get_userdata_trait::GetUserData;
 use crate::http_traits::CustomHttpResponse;
@@ -21,6 +22,7 @@ use serde::{Deserialize, Serialize};
 use std::fs::read_to_string;
 use std::fs::remove_file;
 use std::path::Path;
+use zeroize::Zeroize;
 
 #[cfg(feature = "ldap-auth")]
 type UserDataImpl = LdapAuthConfiguration;
@@ -190,16 +192,24 @@ pub async fn set_password_for_rsa_rivate_key(
     // that special characters would be transferred correctly.
     // tested with
     // PASS!"§$%&/()=?ß\´`+*~'#-_.:,;<>|WORD
-    let base64_decoded_password =
-        match String::from_utf8(base64::decode(base64_encoded_password.as_str()).unwrap()) {
-            Ok(password) => password.trim_matches(char::from(0)).to_string(),
-            Err(e) => {
-                warn!("could not base64 decode password: {}", &e);
-                return HttpResponse::err_text_response("ERROR: password was not set");
-            }
-        };
-    debug!("new rsa password = {}", &base64_decoded_password);
-    if base64_decoded_password.len() > MAX_FORM_INPUT_LEN {
+    let base64_decoded_password = match Vec::from_base64_encoded(base64_encoded_password.as_str())
+    {
+        Ok(v) => v,
+        Err(e) => {
+            warn!("Cannot decode base64 rsa password: {}", &e);
+            return HttpResponse::err_text_response("ERROR: password was not set");
+        }
+    };
+
+    let mut decoded_password = match String::from_utf8(base64_decoded_password) {
+        Ok(password) => password.trim_matches(char::from(0)).to_string(),
+        Err(e) => {
+            warn!("could not base64 decode password: {}", &e);
+            return HttpResponse::err_text_response("ERROR: password was not set");
+        }
+    };
+    debug!("new rsa password = {}", &decoded_password);
+    if decoded_password.len() > MAX_FORM_INPUT_LEN {
         return HttpResponse::err_text_response(format!(
             "ERROR: password > {} chars",
             MAX_FORM_INPUT_LEN
@@ -207,8 +217,9 @@ pub async fn set_password_for_rsa_rivate_key(
     }
     if let Ok(mut rsa_password_write_lock) = application_configuration.rsa_password.write() {
         rsa_password_write_lock.rsa_private_key_password =
-            Some(SecStr::from(base64_decoded_password));
+            Some(SecStr::from(decoded_password));
     } else {
+        decoded_password.zeroize();
         return HttpResponse::err_text_response("ERROR: can not acquire a lock on system data!");
     }
     // the lock must be removed at this point because
@@ -479,7 +490,9 @@ pub async fn reveal_secret(
         Ok(encrypted_secret) => encrypted_secret,
         Err(e) => {
             warn!("secret file {} cannot be read: {}", &path.display(), e);
-            return HttpResponse::err_text_response("ERROR: Secret cannot be read! Already revealed?");
+            return HttpResponse::err_text_response(
+                "ERROR: Secret cannot be read! Already revealed?",
+            );
         }
     };
     info!("success, file {} read", &path.display());
