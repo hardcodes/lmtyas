@@ -294,15 +294,10 @@ pub async fn store_secret(
             MAX_FORM_INPUT_LEN
         ));
     }
-    let secret_length =
-        match Vec::from_base64_urlsafe_encoded(parsed_form_data.secret.trim_matches(char::from(0)))
-        {
-            Ok(s) => s.len(),
-            Err(_) => MAX_FORM_INPUT_LEN + 1,
-        };
+    let secret_length = get_base64_encoded_secret_len(&parsed_form_data.secret);
     if secret_length > MAX_FORM_INPUT_LEN {
         return HttpResponse::err_text_response(format!(
-            "ERROR: secret > {} chars",
+            "ERROR: secret > {} bytes!",
             MAX_FORM_INPUT_LEN
         ));
     }
@@ -433,6 +428,20 @@ pub async fn store_secret(
         return HttpResponse::err_text_response("ERROR: cannot send email!");
     };
     HttpResponse::ok_text_response("OK")
+}
+
+fn get_base64_encoded_secret_len(parsed_secret: &str) -> usize {
+    let decoded_secret = match Vec::from_base64_encoded(&parsed_secret) {
+        Ok(s) => s,
+        Err(e) => {
+            warn!("error decoding secret, assuming input too long: {}", &e);
+            return MAX_FORM_INPUT_LEN + 1;
+        }
+    };
+    if decoded_secret.len() > MAX_FORM_INPUT_LEN{
+        warn!("secret is too large: {} bytes!", &decoded_secret.len());
+    }
+    decoded_secret.len()
 }
 
 /// Loads a stored secret and decrypts it
