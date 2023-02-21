@@ -1,3 +1,8 @@
+use base64::{
+    alphabet,
+    engine::{self, general_purpose},
+    Engine as _,
+};
 use std::error::Error;
 
 /// This trait simplifys the use of the base64 string endoding
@@ -13,23 +18,25 @@ pub trait Base64StringConversions {
 
 impl Base64StringConversions for String {
     fn to_base64_encoded(&self) -> String {
-        base64::encode(self.as_bytes())
+        general_purpose::STANDARD.encode(self.as_bytes())
     }
 
     fn to_base64_urlsafe_encoded(&self) -> String {
-        let base64_config = base64::Config::new(base64::CharacterSet::UrlSafe, true);
-        base64::encode_config(self.as_bytes(), base64_config)
+        const CUSTOM_ENGINE: engine::GeneralPurpose =
+            engine::GeneralPurpose::new(&alphabet::URL_SAFE, general_purpose::PAD);
+        CUSTOM_ENGINE.encode(self.as_bytes())
     }
 }
 
 impl Base64StringConversions for Vec<u8> {
     fn to_base64_encoded(&self) -> String {
-        base64::encode(self)
+        general_purpose::STANDARD.encode(self)
     }
 
     fn to_base64_urlsafe_encoded(&self) -> String {
-        let base64_config = base64::Config::new(base64::CharacterSet::UrlSafe, true);
-        base64::encode_config(self, base64_config)
+        const CUSTOM_ENGINE: engine::GeneralPurpose =
+            engine::GeneralPurpose::new(&alphabet::URL_SAFE, general_purpose::PAD);
+        CUSTOM_ENGINE.encode(self)
     }
 }
 
@@ -46,27 +53,25 @@ pub trait Base64VecU8Conversions {
 
 impl Base64VecU8Conversions for Vec<u8> {
     fn from_base64_encoded(b64: &str) -> Result<Vec<u8>, Box<dyn Error>> {
-        Ok(base64::decode(b64)?)
+        Ok(base64::engine::general_purpose::STANDARD.decode(b64)?)
     }
 
     fn from_base64_urlsafe_encoded(b64: &str) -> Result<Vec<u8>, Box<dyn Error>> {
-        Ok(base64::decode_config(
-            b64.trim_matches(char::from(0)),
-            base64::URL_SAFE,
-        )?)
+        const CUSTOM_ENGINE: engine::GeneralPurpose =
+            engine::GeneralPurpose::new(&alphabet::URL_SAFE, general_purpose::PAD);
+
+        Ok(CUSTOM_ENGINE.decode(b64)?)
     }
 }
 
 ///Encode arbitrary octets as base64.
 pub fn encode_base64<T: AsRef<[u8]>>(input: T) -> String {
-    base64::encode(input)
+    general_purpose::STANDARD.encode(input)
 }
 
 ///Encode arbitrary octets as url safe base64.
 pub fn encode_urlsafe_base64<T: AsRef<[u8]>>(input: T) -> String {
-    let base64_config = base64::Config::new(base64::CharacterSet::UrlSafe, true);
-        base64::encode_config(input, base64_config)
+    const CUSTOM_ENGINE: engine::GeneralPurpose =
+        engine::GeneralPurpose::new(&alphabet::URL_SAFE, general_purpose::PAD);
+    CUSTOM_ENGINE.encode(input)
 }
-
-
-
