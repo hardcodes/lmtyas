@@ -191,7 +191,7 @@ pub async fn set_password_for_rsa_rivate_key(
     // the password was encoded before the transfer to make sure
     // that special characters would be transferred correctly.
     // tested with
-    // PASS!"§$%&/()=?ß\´`+*~'#-_.:,;<>|WORD
+    // PASS!"§$%&/()=?ß\´`+*~'#-_.:,;<>öäü|WORD
     let base64_decoded_password = match Vec::from_base64_encoded(base64_encoded_password.as_str()) {
         Ok(v) => v,
         Err(e) => {

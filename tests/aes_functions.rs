@@ -5,7 +5,7 @@ use regex::Regex;
 fn test_aes_functions() {
     const BASE64_REGEX: &str = "^[A-Za-z0-9-_=]+$";
     let base64_regex = Regex::new(BASE64_REGEX).unwrap();
-    const PLAINTEXT: &str = "plaintext";
+    const PLAINTEXT: &str = r#"PASS!"§$%&/()=?ß\´`+*~'#-_.:,;<>öäü|WORD"#;
     let aes_encrytpted = PLAINTEXT.to_string().to_aes_enrypted_b64();
     let aes_encrytpted2 = PLAINTEXT.to_string().to_aes_enrypted_b64();
     let aes_encrypted_unwrapped = match aes_encrytpted {
