@@ -27,7 +27,7 @@ fn test_cookie_functions() {
     let invalid_plain_base64_cookie = get_plain_cookie_string(COOKIE, &rsa_keys);
     assert_eq!(
         invalid_plain_base64_cookie, "invalid_base64_cookie",
-        "should not be able to get plaint cookie from this!"
+        "should not be able to get plain cookie from this!"
     );
 
     let base64_cookie = build_new_authentication_cookie(COOKIE, 90, COOKIE_PATH, &rsa_keys);
@@ -49,7 +49,7 @@ fn test_cookie_functions() {
     let invalid_plain_rsa_cookie = get_plain_cookie_string(COOKIE, &rsa_keys);
     assert_eq!(
         invalid_plain_rsa_cookie, "invalid_rsa_cookie_value",
-        "should not be able to get plaint cookie from this!"
+        "should not be able to get plain cookie from this!"
     );
 
     let valid_rsa_cookie =
@@ -63,7 +63,7 @@ fn test_cookie_functions() {
         .collect();
     let cookie = splitted_cookie_value[1];
     let plain_cookie = get_plain_cookie_string(cookie, &rsa_keys);
-    assert_eq!(plain_cookie, COOKIE, "cannot decrypt rsa encrypted cookie!");
+    assert_eq!(plain_cookie, COOKIE, "(1) cannot decrypt rsa encrypted cookie!");
 
     let valid_rsa_cookie = build_new_authentication_cookie(COOKIE, 90, COOKIE_PATH, &rsa_keys);
     let rsa_cookie_as_str = valid_rsa_cookie.to_string();
@@ -75,7 +75,7 @@ fn test_cookie_functions() {
         .collect();
     let cookie = splitted_cookie_value[1];
     let plain_cookie = get_plain_cookie_string(cookie, &rsa_keys);
-    assert_eq!(plain_cookie, COOKIE, "cannot decrypt rsa encrypted cookie!");
+    assert_eq!(plain_cookie, COOKIE, "(2) cannot decrypt rsa encrypted cookie!");
 
     let base64_cookie = build_new_base64_authentication_cookie(COOKIE, 90, COOKIE_PATH);
     assert_eq!(
