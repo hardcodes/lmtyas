@@ -309,7 +309,7 @@ pub async fn store_secret(
     {
         Ok(display_name) => display_name,
         Err(e) => {
-            warn!(
+            info!(
                 "cannot find mail address {}, error: {}",
                 &parsed_form_data.to_email, &e
             );

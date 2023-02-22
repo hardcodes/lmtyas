@@ -1,6 +1,6 @@
 use crate::base64_trait::{Base64StringConversions, Base64VecU8Conversions};
 use crate::unsecure_string::SecureStringToUnsecureString;
-use log::{debug, warn};
+use log::{debug, warn , info};
 use openssl::rsa::{Padding, Rsa};
 use secstr::SecStr;
 use serde::Deserialize;
@@ -103,7 +103,7 @@ impl RsaKeys {
         match public_key.public_encrypt(plaintext_data.as_bytes(), &mut buf, Padding::PKCS1) {
             Err(e) => {
                 println!("Could not rsa encrypt given value: {}", &e);
-                warn!("Could not rsa encrypt given value: {}", &e);
+                info!("Could not rsa encrypt given value: {}", &e);
                 let box_err: Box<dyn Error> =
                     "Could not rsa encrypt given value".to_string().into();
                 return Err(box_err);
@@ -145,7 +145,7 @@ impl RsaKeys {
         match private_key.private_decrypt(&raw_data, &mut buf, Padding::PKCS1) {
             Err(e) => {
                 println!("Could not rsa decrypt given value: {}", &e);
-                warn!("Could not rsa decrypt given value: {}", &e);
+                info!("Could not rsa decrypt given value: {}", &e);
                 let box_err: Box<dyn Error> =
                     "Could not rsa decrypt given value".to_string().into();
                 Err(box_err)
@@ -155,7 +155,7 @@ impl RsaKeys {
                     Ok(s) => s,
                     Err(e) => {
                         println!("Could not convert decrypted data to utf8: {}", &e);
-                        warn!("Could not convert decrypted data to utf8: {}", &e);
+                        info!("Could not convert decrypted data to utf8: {}", &e);
                         let box_err: Box<dyn Error> = "Could not convert decrypted data to utf8"
                             .to_string()
                             .into();
