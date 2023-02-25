@@ -231,7 +231,7 @@ After a new secret has been entered,
     - The random key/iv will be encrypted with the RSA public key of the web service.
 - A link for the email will be constructed of
     - the id (= file name) of the secret
-    - the key/iv that were used to encrypt the secret befor storing it to disk
+    - the key/iv that were used to encrypt the secret before storing it to disk
 - The link will be enrypted with the RSA public key of the web service.
 - data is stored on disk (encrypted by web service RSA public key):
     - receiver
