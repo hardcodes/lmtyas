@@ -61,10 +61,3 @@ impl Base64VecU8Conversions for Vec<u8> {
         Ok(CUSTOM_ENGINE.decode(b64)?)
     }
 }
-
-///Encode arbitrary octets as url safe base64.
-pub fn encode_urlsafe_base64<T: AsRef<[u8]>>(input: T) -> String {
-    const CUSTOM_ENGINE: engine::GeneralPurpose =
-        engine::GeneralPurpose::new(&alphabet::URL_SAFE, general_purpose::PAD);
-    CUSTOM_ENGINE.encode(input)
-}
