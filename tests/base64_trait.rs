@@ -1,4 +1,4 @@
-use lmtyas::base64_trait::{Base64StringConversions, Base64VecU8Conversions, encode_base64, encode_urlsafe_base64};
+use lmtyas::base64_trait::{Base64StringConversions, Base64VecU8Conversions, encode_urlsafe_base64};
 
 const PLAINTEXT: &str = r#"PASS!"§$%&/()=?ß\´`+*~'#-_.:,;<>|WORD"#;
 const B64: &str = r#"UEFTUyEiwqckJSYvKCk9P8OfXMK0YCsqficjLV8uOiw7PD58V09SRA=="#;
@@ -22,9 +22,7 @@ fn test_base64_trait() {
 
     let plain_vec: Vec<u8> = PLAINTEXT.as_bytes().to_vec();
     let base64_2 = plain_vec.to_base64_encoded();
-    let base64_3 = encode_base64(plain_vec);
     assert_eq!(base64_2, B64, "not the expected base64 encoded value!");
-    assert_eq!(base64_3, B64, "not the expected base64 encoded value!");
 
     let plain_u8 = match Vec::from_base64_encoded(&base64){
         Ok(s) => s,

@@ -3,12 +3,13 @@ use base64::{
     engine::{self, general_purpose},
     Engine as _,
 };
+use core::convert::AsRef;
 use std::error::Error;
 
 /// This trait simplifys the use of the base64 string endoding
 /// functions and make them testable so that future changes
 /// induced from the base64 crate can be validated.
-pub trait Base64StringConversions {
+pub trait Base64StringConversions<T> {
     /// convert a string slice to a base64 encoded String.
     fn to_base64_encoded(&self) -> String;
 
@@ -16,24 +17,21 @@ pub trait Base64StringConversions {
     fn to_base64_urlsafe_encoded(&self) -> String;
 }
 
-impl Base64StringConversions for String {
-    fn to_base64_encoded(&self) -> String {
-        general_purpose::STANDARD.encode(self.as_bytes())
-    }
-
-    fn to_base64_urlsafe_encoded(&self) -> String {
-        const CUSTOM_ENGINE: engine::GeneralPurpose =
-            engine::GeneralPurpose::new(&alphabet::URL_SAFE, general_purpose::PAD);
-        CUSTOM_ENGINE.encode(self.as_bytes())
-    }
-}
-
-impl Base64StringConversions for Vec<u8> {
-    fn to_base64_encoded(&self) -> String {
+impl<T> Base64StringConversions<T> for T
+where
+    T: AsRef<[u8]>,
+{
+    fn to_base64_encoded(&self) -> String
+    where
+        T: AsRef<[u8]>,
+    {
         general_purpose::STANDARD.encode(self)
     }
 
-    fn to_base64_urlsafe_encoded(&self) -> String {
+    fn to_base64_urlsafe_encoded(&self) -> String
+    where
+        T: AsRef<[u8]>,
+    {
         const CUSTOM_ENGINE: engine::GeneralPurpose =
             engine::GeneralPurpose::new(&alphabet::URL_SAFE, general_purpose::PAD);
         CUSTOM_ENGINE.encode(self)
@@ -62,11 +60,6 @@ impl Base64VecU8Conversions for Vec<u8> {
 
         Ok(CUSTOM_ENGINE.decode(b64)?)
     }
-}
-
-///Encode arbitrary octets as base64.
-pub fn encode_base64<T: AsRef<[u8]>>(input: T) -> String {
-    general_purpose::STANDARD.encode(input)
 }
 
 ///Encode arbitrary octets as url safe base64.
