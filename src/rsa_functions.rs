@@ -106,11 +106,11 @@ impl RsaKeys {
                 info!("Could not rsa encrypt given value: {}", &e);
                 let box_err: Box<dyn Error> =
                     "Could not rsa encrypt given value".to_string().into();
-                return Err(box_err);
+                Err(box_err)
             }
             Ok(_) => {
                 let base64_encrypted = buf.to_base64_encoded();
-                return Ok(base64_encrypted);
+                Ok(base64_encrypted)
             }
         }
     }

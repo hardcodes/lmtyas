@@ -431,7 +431,7 @@ pub async fn store_secret(
 }
 
 fn get_base64_encoded_secret_len(parsed_secret: &str) -> usize {
-    let decoded_secret = match Vec::from_base64_encoded(&parsed_secret) {
+    let decoded_secret = match Vec::from_base64_encoded(parsed_secret) {
         Ok(s) => s,
         Err(e) => {
             warn!("error decoding secret, assuming input too long: {}", &e);
