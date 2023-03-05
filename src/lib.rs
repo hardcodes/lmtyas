@@ -4,6 +4,8 @@ pub mod authenticated_user;
 pub mod authentication_functions;
 #[cfg(feature = "ldap-auth")]
 pub mod authentication_ldap;
+#[cfg(feature = "ldap-auth")]
+pub mod ldap_common;
 pub mod authentication_middleware;
 pub mod base64_trait;
 pub mod cli_parser;

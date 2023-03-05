@@ -1,5 +1,6 @@
 mod common;
 use common::SETUP_SINGLETON;
+pub use lmtyas::authentication_ldap::LdapLogin;
 use lmtyas::authentication_ldap::LdapSearchResult;
 use lmtyas::configuration::ApplicationConfiguration;
 #[cfg(feature = "mail-noauth-notls")]
