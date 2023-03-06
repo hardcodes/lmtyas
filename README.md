@@ -102,7 +102,6 @@ sudo apt install libssl-dev # only needed on dev machine
 git clone git@github.com:hardcodes/lmtyas.git
 cd lmtyas
 cargo build --release
-strip target/release/lmtyas
 # create user for running the service
 groupadd lmtyas
 sudo adduser --disabled-login --home /opt/lmtyas --no-create-home --system  --shell /usr/sbin/nologin --ingroup lmtyas lmtyas
