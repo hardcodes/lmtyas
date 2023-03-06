@@ -35,7 +35,8 @@ zeroize = "1.5.7"
 
 [features]
 default =["ldap-auth", "mail-noauth-notls"]
-ldap-auth = []
+ldap-auth = ["ldap-common"]
+ldap-common = []
 mail-noauth-notls = []
 
 [dev-dependencies]

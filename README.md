@@ -176,7 +176,8 @@ sudo systemctl start lmtyas.service
 So far only the default features have been developed.
 
 - Default: **ldap-auth**, **mail-noauth-notls**
-- **ldap-auth**: authenticate and query users with an external ldap server.
+- **ldap-auth**: authenticate users with an external ldap server. Makes use of of the **ldap-common** feature.
+- **ldap-common**: holds the ldap configuration file and brings basic ldap functions to query users by name or email address.
 - **mail-noauth-notls**: send mails to user via mail server that does not need authentication and uses no encrypted transport.
 
 
