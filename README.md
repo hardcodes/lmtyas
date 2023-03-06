@@ -576,4 +576,4 @@ kill $(ps -aux|grep python3|grep smtpd|awk '{print $2;}')
 
 # License
 
-The code is licensed under the [MIT License](./LICENSE-MIT).
+The code is dual licensed under the [MIT License](./LICENSE-MIT) **or** the [APACHE 2.0 License](http://www.apache.org/licenses/LICENSE-2.0), which ever suits you better.
