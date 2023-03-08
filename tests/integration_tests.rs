@@ -9,7 +9,7 @@ use std::path::Path;
 
 /// testing the functions that need external services in one go.
 #[actix_rt::test]
-async fn test_with_setup() {
+async fn with_setup() {
     // load configuration file with the ldap server connection details
     let application_configuration = ApplicationConfiguration::read_from_file(
         Path::new(common::WORKSPACE_DIR).join("conf.dev/lmtyas-config.json"),

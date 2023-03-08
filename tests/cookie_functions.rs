@@ -11,7 +11,7 @@ use std::path::Path;
 const WORKSPACE_DIR: &str = env!("CARGO_MANIFEST_DIR");
 
 #[test]
-fn test_cookie_functions() {
+fn cookie_functions() {
     const RSA_PASSPHRASE: &str = "12345678901234";
     const COOKIE: &str = "my cookie";
 

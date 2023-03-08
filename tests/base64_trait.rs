@@ -7,7 +7,7 @@ const B64_URLSAFE: &str = r#"c3ViamVjdHM_X2Q9MQ=="#;
 const NO_BASE64: &str = "this is not base64 encoded";
 
 #[test]
-fn test_base64_trait() {
+fn base64_trait() {
     let base64 = PLAINTEXT.to_string().to_base64_encoded();
     assert_eq!(base64, B64, "not the expected base64 encoded value!");
 

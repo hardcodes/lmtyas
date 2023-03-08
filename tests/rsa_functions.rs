@@ -6,7 +6,7 @@ use std::path::Path;
 const WORKSPACE_DIR: &str = env!("CARGO_MANIFEST_DIR");
 
 #[test]
-fn test_rsa_functions() {
+fn rsa_functions() {
     const RSA_PASSPHRASE: &str = "12345678901234";
     // see https://www.rfc-editor.org/rfc/rfc3548#section-3
     const BASE64_REGEX: &str = r"^[A-Za-z0-9\+/=]+$";

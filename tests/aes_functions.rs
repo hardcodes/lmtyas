@@ -2,7 +2,7 @@ use lmtyas::aes_functions::{DecryptAes, EncryptAes};
 use regex::Regex;
 
 #[test]
-fn test_aes_functions() {
+fn aes_functions() {
     const BASE64_REGEX: &str = "^[A-Za-z0-9-_=]+$";
     let base64_regex = Regex::new(BASE64_REGEX).unwrap();
     const PLAINTEXT: &str = r#"PASS!"§$%&/()=?ß\´`+*~'#-_.:,;<>öäü|WORD"#;
