@@ -3,6 +3,7 @@ use log::info;
 use openssl::rand::rand_bytes;
 use openssl::symm::{decrypt, encrypt, Cipher};
 use std::error::Error;
+use std::fmt;
 
 const KEY_LENGTH: usize = 32;
 const IV_LENGTH: usize = 16;
@@ -16,8 +17,19 @@ pub struct AesEncryptionData {
 
 /// This trait is used to AES encrypt a `String`
 pub trait EncryptAes {
-    fn to_aes_enrypted_b64(&self) -> Result<AesEncryptionData, &'static str>;
+    fn to_aes_enrypted_b64(&self) -> Result<AesEncryptionData, AesEncryptionError>;
 }
+
+/// custom error type
+#[derive(Debug, Clone)]
+pub struct AesEncryptionError;
+/// custom formatter for our own error type
+impl fmt::Display for AesEncryptionError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "could not aes encrypt data!")
+    }
+}
+
 
 impl EncryptAes for String {
     /// AES encrypt a `String`with randomly chosen key and iv.
@@ -27,7 +39,7 @@ impl EncryptAes for String {
     /// # Returns
     ///
     /// - `AesEncryptionData`
-    fn to_aes_enrypted_b64(&self) -> Result<AesEncryptionData, &'static str> {
+    fn to_aes_enrypted_b64(&self) -> Result<AesEncryptionData, AesEncryptionError> {
         let cipher = Cipher::aes_256_cbc();
         let mut key_buf = [0; KEY_LENGTH];
         rand_bytes(&mut key_buf).unwrap();
@@ -35,8 +47,8 @@ impl EncryptAes for String {
         rand_bytes(&mut iv_buf).unwrap();
         match encrypt(cipher, &key_buf, Some(&iv_buf), self.as_bytes()) {
             Err(e) => {
-                info!("could not aes encrypt data: {:?}", &e);
-                Err("could not aes encrypt data!")
+                info!("{}: {:?}", AesEncryptionError, &e);
+                Err(AesEncryptionError)
             }
             Ok(encrypted_data) => {
                 let base64_encrypted_data = encrypted_data.to_base64_urlsafe_encoded();
