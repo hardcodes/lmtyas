@@ -214,14 +214,14 @@ If the service is (re-)started, a valid administrator (see `admin_accounts` in s
 
 # Security
 
-## Security - Data Encyrption
+## Security - Data Encryption
 
 The web service uses RSA public key encryption to secure the data. Only encryted data is stored on the disk. For security reasons the password for the RSA private key is not stored in the configuration file. It must be entered by the administrator every time the web service has been started. The password is stored in a secure string so that even a memory dump would not help. It only lives in plain text for the short time it is needed to decrypt data.
 
 **NOTE**: Even the secure string can be circumvented, an attacker that can access your system and create a dump has all time in the world to analyse and/or reconstruct the password. 
 
 
-## Security - Data Encyrption - Workflow 
+## Security - Data Encryption - Workflow 
 
 After a new secret has been entered,
 
