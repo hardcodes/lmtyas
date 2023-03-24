@@ -103,6 +103,15 @@ input {
     padding: 20px 20px;
 }
 
+.lmtyas-company-image{
+    float: left;
+}
+
+.lmtyas-favicon{
+    padding: 20px 20px;
+    float: left;
+}
+
 input:read-only {
     background-color: var(--input-ro-bg);
 }
@@ -276,6 +285,7 @@ button:enabled{
     background-color: var(--footer-bg);
     color: var(--footer-font);
     width: 100%;
+    margin-top: 5em;
     padding-top: 80px;
     padding-bottom: 80px;
     font-weight: bold;
