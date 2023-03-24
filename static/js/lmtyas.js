@@ -7,11 +7,12 @@ function showErrorMessage(messagetext) {
     document.body.appendChild(div);
   }
   document.getElementById("ErrorMessage").innerHTML = messagetext;
-  document.getElementById("ErrorMessage").style.visibility = "visible";
+  document.getElementById("ErrorMessage").classList.add("lmtyas-visible");
 }
 
 function hideErrorMessage() {
-  document.getElementById("ErrorMessage").style.visibility = "hidden";
+  document.getElementById("ErrorMessage").classList.remove("lmtyas-visible");
+  document.getElementById("ErrorMessage").classList.add("lmtyas-hidden");
 }
 
 function showErrorMessageWithTimer(messagetext, seconds = 0) {
@@ -30,11 +31,12 @@ function showSuccessMessage(messagetext) {
     document.body.appendChild(div);
   }
   document.getElementById("SuccessMessage").innerHTML = messagetext;
-  document.getElementById("SuccessMessage").style.visibility = "visible";
+  document.getElementById("SuccessMessage").classList.add("lmtyas-visible");
 }
 
 function hideSuccessMessage() {
-  document.getElementById("SuccessMessage").style.visibility = "hidden";
+  document.getElementById("SuccessMessage").classList.remove("lmtyas-visible");
+  document.getElementById("SuccessMessage").classList.add("lmtyas-hidden");
 }
 
 function showSuccessMessageWithTimer(messagetext, seconds = 0) {
@@ -52,8 +54,8 @@ function showNotifyMessage(messagetext) {
     document.body.appendChild(div);
   }
   document.getElementById("NotifyMessage").innerHTML = messagetext;
-  document.getElementById("NotifyMessage").style.display = "inline-block";
-  document.getElementById("NotifyMessage").style.visibility = "visible";
+    document.getElementById("NotifyMessage").classList.add("lmtyas-inline-block");
+  document.getElementById("NotifyMessage").classList.add("lmtyas-visible");
 }
 
 function startProgressSpinner() {
@@ -63,11 +65,12 @@ function startProgressSpinner() {
     div.setAttribute('id', 'ProgressSpinner');
     document.body.appendChild(div);
   }
-  document.getElementById("ProgressSpinner").style.visibility = "visible";
+  document.getElementById("ProgressSpinner").classList.add("lmtyas-visible");
 }
 
 function stopProgressSpinner() {
-  document.getElementById("ProgressSpinner").style.visibility = "hidden";
+  document.getElementById("ProgressSpinner").classList.remove("lmtyas-visible");
+  document.getElementById("ProgressSpinner").classList.add("lmtyas-hidden");
 }
 
 
@@ -123,7 +126,8 @@ function validateSystemStatus(resulttext) {
   try {
     var data = JSON.parse(resulttext);
     if (data.isReady) {
-      document.getElementById("ServiceIsReady").style.display = "block";
+      document.getElementById("ServiceIsReady").classList.remove("lmtyas-none");
+      document.getElementById("ServiceIsReady").classList.add("lmtyas-block");
     }
     else {
       systemIsNotReady();
@@ -137,8 +141,12 @@ function validateSystemStatus(resulttext) {
 
 function systemIsNotReady() {
   console.log("hiding content")
-  document.getElementById("ServiceIsReady").style.display = "none";
-  document.getElementById("ServiceIsNotReady").style.display = "block";
+  document.getElementById("ServiceIsReady").classList.remove("lmtyas-block");
+  document.getElementById("ServiceIsReady").classList.add("lmtyas-none");
+
+  document.getElementById("ServiceIsNotReady").classList.remove("lmtyas-none");
+  document.getElementById("ServiceIsNotReady").classList.add("lmtyas-block");
+
 }
 
 function startBackHomeTimer(seconds = 15, url = '/index.html') {

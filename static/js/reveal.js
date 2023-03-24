@@ -34,6 +34,7 @@ function displaySecret(resulttext) {
             showErrorMessage("ERROR: could not convert secret from base64");
         }
         document.getElementById("Secret").value = secret;
-        document.getElementById("RevealSecretForm").style.display = "block";
+        document.getElementById("RevealSecretForm").classList.remove("lmtyas-none");
+        document.getElementById("RevealSecretForm").classList.add("lmtyas-block");
     }
 }

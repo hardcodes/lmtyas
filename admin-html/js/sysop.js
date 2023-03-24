@@ -25,13 +25,19 @@ function validateSystemStatusLocal(resulttext) {
 }
 
 function systemIsNotReadyLocal() {
-    document.getElementById("ServiceIsNotReady").style.display = "block";
-    document.getElementById("ServiceIsReady").style.display = "none";
+    document.getElementById("ServiceIsNotReady").classList.remove("lmtyas-none");
+    document.getElementById("ServiceIsNotReady").classList.add("lmtyas-block");
+
+    document.getElementById("ServiceIsReady").classList.remove("lmtyas-block");
+    document.getElementById("ServiceIsReady").classList.add("lmtyas-none");
 }
 
 function systemIsReadyLocal() {
-    document.getElementById("ServiceIsNotReady").style.display = "none";
-    document.getElementById("ServiceIsReady").style.display = "block";  
+    document.getElementById("ServiceIsNotReady").classList.remove("lmtyas-block");
+    document.getElementById("ServiceIsNotReady").classList.add("lmtyas-none");
+
+    document.getElementById("ServiceIsReady").classList.remove("lmtyas-none");
+    document.getElementById("ServiceIsReady").classList.add("lmtyas-block");
 }
 
 function setRsaPassword() {

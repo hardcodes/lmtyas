@@ -73,7 +73,7 @@ async fn main() -> std::io::Result<()> {
     // values for the csp-header
     let content_security_policy = concat!(
         "script-src 'self';",
-        "style-src 'self' 'unsafe-inline';",
+        "style-src 'self';",
         "connect-src 'self';",
         "default-src 'self';",
         "frame-ancestors 'none';"

@@ -64,7 +64,7 @@ function sendFormData() {
     let jsonString = JSON.stringify(jsonObject);
     console.log(jsonString);
     sendToWebService("/authenticated/secret/tell", displaySubmission, errorOnSubmission, jsonString, 5);
-    document.getElementById("SubmitButton").style.visibility = "hidden";
+    document.getElementById("SubmitButton").classList.add("lmtyas-hidden");
 }
 
 function errorOnSubmission() {

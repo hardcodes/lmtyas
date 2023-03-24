@@ -22,7 +22,8 @@ function validateSystemStatusLocal(resulttext) {
 }
 
 function systemIsNotReadyLocal() {
-    document.getElementById("ServiceIsNotReady").style.display = "block";
+    document.getElementById("ServiceIsNotReady").classList.remove("lmtyas-none");
+    document.getElementById("ServiceIsNotReady").classList.add("lmtyas-block");
 }
 
 function showLoginHint(resulttext) {
@@ -50,11 +51,11 @@ function sendLoginData(loginForm) {
             RequestId: requestId
         };
         let jsonString = JSON.stringify(jsonObject);
-        document.getElementById("SubmitButton").style.visibility = "hidden";
+        document.getElementById("SubmitButton").classList.add("lmtyas-hidden");
         sendToWebService("/authentication/login", openUrl, stopForm(loginForm, 6), jsonString, 5);
     }
     else {
-        document.getElementById("SubmitButton").style.visibility = "hidden";
+        document.getElementById("SubmitButton").classList.add("lmtyas-hidden");
         showErrorMessageWithTimer("ERROR: could not find request id", 10);
     }
 }

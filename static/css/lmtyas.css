@@ -224,6 +224,26 @@ input:valid {
     z-index: 256;
     visibility: visible;
 }
+
+.lmtyas-visible{
+    visibility: visible;
+}
+
+.lmtyas-hidden{
+    visibility: hidden;
+}
+
+.lmtyas-block{
+    display: block;
+}
+
+.lmtyas-inline-block{
+    display: inline-block;
+}
+
+.lmtyas-none{
+    display: none;
+}
   
   /* Safari */
 @-webkit-keyframes spin {
