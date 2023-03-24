@@ -101,7 +101,8 @@ async fn main() -> std::io::Result<()> {
                         "max-age=31536000; includeSubDomains",
                     ))
                     .add(("Content-Security-Policy", content_security_policy))
-                    .add(("X-Frame-Options", "DENY")),
+                    .add(("X-Frame-Options", "DENY"))
+                    .add(("X-Content-Type-Options", "nosniff")),
             )
             // clone of the application configuration
             .app_data(web::Data::new(application_configuration.clone()))
