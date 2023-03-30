@@ -85,7 +85,7 @@ An installed `openssl` library is needed on the server side, the header files ar
 
 # Compile and install
 
-Compiling problay works on any system that has a Rust compiler and recent OpenSSL packages including header files available.
+Compiling probably works on any system that has a Rust compiler and recent OpenSSL packages including header files available.
 
 Here is an example that works for Ubutu 20.04, it should also work on Ubuntu 22.04:
 
