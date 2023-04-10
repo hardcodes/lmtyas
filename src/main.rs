@@ -72,11 +72,12 @@ async fn main() -> std::io::Result<()> {
         });
     // values for the csp-header
     let content_security_policy = concat!(
-        "script-src 'self';",
-        "style-src 'self';",
+        "form-action 'self';",
+        "frame-ancestors 'none';",
         "connect-src 'self';",
         "default-src 'self';",
-        "frame-ancestors 'none';"
+        "script-src 'self';",
+        "style-src 'self';",       
     );
     info!(
         "{} {} will bind to {}",
