@@ -438,7 +438,7 @@ fn get_base64_encoded_secret_len(parsed_secret: &str) -> usize {
             return MAX_FORM_INPUT_LEN + 1;
         }
     };
-    if decoded_secret.len() > MAX_FORM_INPUT_LEN{
+    if decoded_secret.len() > MAX_FORM_INPUT_LEN {
         warn!("secret is too large: {} bytes!", &decoded_secret.len());
     }
     decoded_secret.len()
@@ -610,5 +610,7 @@ pub async fn not_found_404() -> HttpResponse {
     let file_path = Path::new("static/404.html");
     let file_content =
         read_to_string(file_path).unwrap_or_else(|_| -> String { "404 not found".to_string() });
-    HttpResponse::build(StatusCode::NOT_FOUND).body(file_content)
+    HttpResponse::build(StatusCode::NOT_FOUND)
+        .content_type("text/html; charset=UTF-8")
+        .body(file_content)
 }
