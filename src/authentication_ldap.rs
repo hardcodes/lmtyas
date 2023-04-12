@@ -357,7 +357,6 @@ impl AuthenticationRedirect for LdapAuthConfiguration {
         );
         let authentication_redirect_response = HttpResponse::build(StatusCode::SEE_OTHER)
             .append_header((http::header::LOCATION, redirect_url))
-            .append_header(("Access-Control-Allow-Origin", "*"))
             .finish();
         authentication_redirect_response
     }

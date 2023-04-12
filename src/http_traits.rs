@@ -124,8 +124,6 @@ impl CustomHttpResponse for HttpResponse {
     {
         return HttpResponse::Ok()
             .content_type("application/json; charset=UTF-8")
-            .append_header(("X-Content-Type-Options", "nosniff"))
-            .append_header(("Access-Control-Allow-Origin", "*"))
             .body(body);
     }
 
@@ -135,8 +133,6 @@ impl CustomHttpResponse for HttpResponse {
     {
         return HttpResponse::BadRequest()
             .content_type("application/text; charset=UTF-8")
-            .append_header(("X-Content-Type-Options", "nosniff"))
-            .append_header(("Access-Control-Allow-Origin", "*"))
             .body(body);
     }
 }
