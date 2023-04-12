@@ -3,6 +3,8 @@ use crate::PROGRAM_DESCRIPTION;
 use crate::PROGRAM_NAME;
 use crate::PROGRAM_VERSION;
 
+pub const ARG_CONFIG_FILE: &str ="configfile";
+
 /// Parse the command line parameters with help of clap.
 pub fn parse_cli_parameters() -> clap::ArgMatches {
     clap::Command::new(PROGRAM_NAME)
@@ -10,7 +12,7 @@ pub fn parse_cli_parameters() -> clap::ArgMatches {
         .author(PROGRAM_AUTHORS)
         .about(PROGRAM_DESCRIPTION)
         .arg(
-            clap::Arg::new("configfile")
+            clap::Arg::new(ARG_CONFIG_FILE)
                 .short('c')
                 .long("config-file")
                 .value_name("json configuration file")

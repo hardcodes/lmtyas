@@ -4,7 +4,7 @@ use lmtyas::authenticated_user::cleanup_authenticated_users_hashmap;
 #[cfg(feature = "ldap-auth")]
 use lmtyas::authentication_ldap::LdapAuthConfiguration;
 use lmtyas::authentication_middleware::{cleanup_authentication_state_hashmap, CheckAuthentication};
-use lmtyas::cli_parser::parse_cli_parameters;
+use lmtyas::cli_parser::{parse_cli_parameters, ARG_CONFIG_FILE};
 use lmtyas::configuration::ApplicationConfiguration;
 use lmtyas::handler_functions::*;
 use log::info;
@@ -33,7 +33,7 @@ async fn main() -> std::io::Result<()> {
     // parse cli parameters and load the configuration
     let clap_arg_matches = parse_cli_parameters();
     let config_file: String = clap_arg_matches
-        .get_one::<String>("configfile")
+        .get_one::<String>(ARG_CONFIG_FILE)
         .unwrap()
         .to_string();
     let application_configuration =
