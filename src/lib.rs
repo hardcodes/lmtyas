@@ -30,4 +30,8 @@ pub const PROGRAM_AUTHORS: &str = env!("CARGO_PKG_AUTHORS");
 pub const PROGRAM_DESCRIPTION: &str = env!("CARGO_PKG_DESCRIPTION");
 
 #[cfg(feature = "ldap-auth")]
-pub const AUTH_PAGE: &str = "nothing-here.html";
+pub mod authentication_url{
+    pub const AUTH_ROUTE: &str = "/login";
+    pub const AUTH_PATH: &str = "./authentication-ldap/";
+    pub const AUTH_INDEX_PAGE: &str = "nothing-here.html";
+}

@@ -3,13 +3,16 @@ use actix_web::{guard, middleware, web, App, HttpResponse, HttpServer};
 use lmtyas::authenticated_user::cleanup_authenticated_users_hashmap;
 #[cfg(feature = "ldap-auth")]
 use lmtyas::authentication_ldap::LdapAuthConfiguration;
-use lmtyas::authentication_middleware::{cleanup_authentication_state_hashmap, CheckAuthentication};
+use lmtyas::authentication_middleware::{
+    cleanup_authentication_state_hashmap, CheckAuthentication,
+};
+use lmtyas::authentication_url;
 use lmtyas::cli_parser::{parse_cli_parameters, ARG_CONFIG_FILE};
 use lmtyas::configuration::ApplicationConfiguration;
 use lmtyas::handler_functions::*;
-use log::info;
 use lmtyas::log_functions::extract_request_path;
 use lmtyas::login_user_trait::Login;
+use log::info;
 use std::io::Write;
 use std::path::Path;
 use timer::Timer;
@@ -77,11 +80,13 @@ async fn main() -> std::io::Result<()> {
         "connect-src 'self';",
         "default-src 'self';",
         "script-src 'self';",
-        "style-src 'self';",       
+        "style-src 'self';",
     );
     info!(
         "{} {} will bind to {}",
-        &lmtyas::PROGRAM_NAME, &lmtyas::PROGRAM_VERSION, &web_bind_address
+        &lmtyas::PROGRAM_NAME,
+        &lmtyas::PROGRAM_VERSION,
+        &web_bind_address
     );
     HttpServer::new(move || {
         App::new()
@@ -163,14 +168,22 @@ async fn main() -> std::io::Result<()> {
             .service(
                 web::scope("authentication")
                     .route(
-                        "/login",
+                        // the `const AUTH_ROUTE` selects the route
+                        // where the authentication is processed.
+                        authentication_url::AUTH_ROUTE,
                         // the `AuthConfiguration` type is defined by a selected
-                        // feature that implements the `Login` trait.
+                        // feature that implements the `Login` trait. This trait
+                        // can process posted form data or other means of login
+                        // data, e.g. saml2 oder oauth2 resonses.
                         web::post().to(<AuthConfiguration as Login>::login_user),
                     )
-                    // the `const AUTH_PAGE` is defined by a selected
-                    // feature that points to the login page
-                    .service(Files::new("/", "./authentication/").index_file(lmtyas::AUTH_PAGE)),
+                    // the `const AUTH_PATH` and `const AUTH_INDEX_PAGE`
+                    // are defined by a selected authentication feature that
+                    // points to a possible login or index page.
+                    .service(
+                        Files::new("/", authentication_url::AUTH_PATH)
+                            .index_file(authentication_url::AUTH_INDEX_PAGE),
+                    ),
             )
             // serve custom favicon if it exists
             .route("/gfx/favicon.png", web::get().to(get_favicon))

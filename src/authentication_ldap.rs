@@ -347,7 +347,7 @@ impl AuthenticationRedirect for LdapAuthConfiguration {
         application_configuration: &ApplicationConfiguration,
     ) -> HttpResponse {
         let redirect_url = format!(
-            "https://{}/authentication/ldap/ldap.html?request={}",
+            "https://{}/authentication/ldap.html?request={}",
             &application_configuration.configuration_file.fqdn,
             &request_uuid.to_string()
         );
