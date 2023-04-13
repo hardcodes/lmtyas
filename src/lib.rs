@@ -4,8 +4,6 @@ pub mod authenticated_user;
 pub mod authentication_functions;
 #[cfg(feature = "ldap-auth")]
 pub mod authentication_ldap;
-#[cfg(feature = "ldap-common")]
-pub mod ldap_common;
 pub mod authentication_middleware;
 pub mod base64_trait;
 pub mod cli_parser;
@@ -15,11 +13,15 @@ pub mod get_userdata_trait;
 pub mod handler_functions;
 pub mod header_value_trait;
 pub mod http_traits;
+#[cfg(feature = "ldap-common")]
+pub mod ldap_common;
 pub mod log_functions;
 pub mod login_user_trait;
 pub mod mail_configuration;
 #[cfg(feature = "mail-noauth-notls")]
 pub mod mail_noauth_notls;
+#[cfg(feature = "oauth2-common")]
+pub mod oauth2_common;
 pub mod rsa_functions;
 pub mod secret_functions;
 pub mod unsecure_string;
@@ -30,8 +32,15 @@ pub const PROGRAM_AUTHORS: &str = env!("CARGO_PKG_AUTHORS");
 pub const PROGRAM_DESCRIPTION: &str = env!("CARGO_PKG_DESCRIPTION");
 
 #[cfg(feature = "ldap-auth")]
-pub mod authentication_url{
+pub mod authentication_url {
     pub const AUTH_ROUTE: &str = "/login";
     pub const AUTH_PATH: &str = "./authentication-ldap/";
+    pub const AUTH_INDEX_PAGE: &str = "nothing-here.html";
+}
+
+#[cfg(feature = "oauth2-auth")]
+pub mod authentication_url {
+    pub const AUTH_ROUTE: &str = "/oauth2";
+    pub const AUTH_PATH: &str = "./authentication-oauth2/";
     pub const AUTH_INDEX_PAGE: &str = "nothing-here.html";
 }

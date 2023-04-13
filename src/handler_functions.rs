@@ -9,6 +9,8 @@ use crate::base64_trait::Base64VecU8Conversions;
 use crate::configuration::ApplicationConfiguration;
 use crate::get_userdata_trait::GetUserData;
 use crate::http_traits::CustomHttpResponse;
+#[cfg(feature = "oauth2-auth")]
+use crate::ldap_common::LdapAuthConfiguration;
 #[cfg(feature = "mail-noauth-notls")]
 pub use crate::mail_noauth_notls::SendEMail;
 use crate::secret_functions::Secret;
@@ -25,6 +27,8 @@ use std::path::Path;
 use zeroize::Zeroize;
 
 #[cfg(feature = "ldap-auth")]
+type UserDataImpl = LdapAuthConfiguration;
+#[cfg(feature = "oauth2-auth")]
 type UserDataImpl = LdapAuthConfiguration;
 
 /// Characters that will be percent encoded

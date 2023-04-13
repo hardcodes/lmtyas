@@ -1,8 +1,14 @@
 use crate::authenticated_user::SharedAuthenticatedUsersHashMap;
+#[cfg(feature = "ldap-auth")]
 use crate::authentication_ldap::LdapAuthConfiguration;
 use crate::authentication_middleware::SharedRequestData;
+#[cfg(feature = "oauth2-auth")]
+use crate::ldap_common::LdapAuthConfiguration;
+#[cfg(any(feature = "ldap-auth", feature = "oauth2-auth"))]
 use crate::login_user_trait::Login;
 use crate::mail_configuration::SendEMailConfiguration;
+#[cfg(feature = "oauth2-auth")]
+use crate::oauth2_common::Oauth2Configuration;
 use crate::rsa_functions::{RsaKeys, RsaPrivateKeyPassword};
 use crate::secret_functions::SharedSecretData;
 use openssl::ssl::{SslAcceptor, SslAcceptorBuilder, SslFiletype, SslMethod, SslOptions};
@@ -43,18 +49,20 @@ pub struct ConfigurationFile {
     pub max_authrequest_age_seconds: i64,
     pub max_cookie_age_seconds: i64,
     pub fqdn: String,
-    #[cfg(feature = "ldap-auth")]
+    #[cfg(any(feature = "ldap-auth", feature = "oauth2-auth"))]
     pub ldap_configuration: LdapAuthConfiguration,
+    #[cfg(feature = "oauth2-auth")]
+    pub oauth2_configuration: Oauth2Configuration,
     pub login_hint: String,
     pub mail_hint: Option<String>,
     pub imprint: Imprint,
 }
 
-impl ConfigurationFile{
+impl ConfigurationFile {
     /// get the domain part of the stored fqdn
     /// which contains the <domain>:<port>
-    pub fn get_domain(&self) -> String{
-        match self.fqdn.split_once(':'){
+    pub fn get_domain(&self) -> String {
+        match self.fqdn.split_once(':') {
             Some((domain, _)) => String::from(domain),
             None => self.fqdn.clone(),
         }
@@ -88,6 +96,10 @@ impl ConfigurationFile {
         }
         #[cfg(feature = "ldap-auth")]
         parsed_config.ldap_configuration.build_valid_user_regex()?;
+        #[cfg(feature = "oauth2-auth")]
+        parsed_config
+            .oauth2_configuration
+            .build_valid_user_regex()?;
         Ok(parsed_config)
     }
 }

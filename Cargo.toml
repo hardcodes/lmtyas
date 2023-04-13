@@ -35,9 +35,11 @@ uuid = { version = "1", features = ["v1"] }
 zeroize = "1.5.7"
 
 [features]
-default =["ldap-auth", "mail-noauth-notls"]
+default =["oauth2-auth", "mail-noauth-notls"]
 ldap-auth = ["ldap-common"]
 ldap-common = []
+oauth2-common = []
+oauth2-auth = ["oauth2-common", "ldap-common"]
 mail-noauth-notls = []
 
 [dev-dependencies]

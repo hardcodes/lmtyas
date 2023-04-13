@@ -3,6 +3,8 @@ use actix_web::{guard, middleware, web, App, HttpResponse, HttpServer};
 use lmtyas::authenticated_user::cleanup_authenticated_users_hashmap;
 #[cfg(feature = "ldap-auth")]
 use lmtyas::authentication_ldap::LdapAuthConfiguration;
+#[cfg(feature = "oauth2-auth")]
+use lmtyas::oauth2_common::Oauth2Configuration;
 use lmtyas::authentication_middleware::{
     cleanup_authentication_state_hashmap, CheckAuthentication,
 };
@@ -19,8 +21,8 @@ use timer::Timer;
 
 #[cfg(feature = "ldap-auth")]
 type AuthConfiguration = LdapAuthConfiguration;
-// #[cfg(feature = "ldap-auth")]
-// const AUTH_PAGE: &str = "ldap.html";
+#[cfg(feature = "oauth2-auth")]
+type AuthConfiguration = Oauth2Configuration;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {

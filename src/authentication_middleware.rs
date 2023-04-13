@@ -1,5 +1,6 @@
 use log::{debug, info, warn};
 extern crate env_logger;
+#[cfg(feature = "ldap-auth")]
 pub use crate::authentication_ldap::LdapAuthConfiguration;
 use crate::configuration::ApplicationConfiguration;
 use crate::cookie_functions::{get_plain_cookie_string, COOKIE_NAME};

@@ -107,20 +107,17 @@ impl Login for LdapAuthConfiguration {
         debug!("parsed_form_data={:?}", &parsed_form_data);
         // is the login_name valid?
         // prevent sending bogus data to the ldap server.
-        if !&application_configuration
+        let valid_user_regex = match &application_configuration
             .configuration_file
             .ldap_configuration
             .user_regex
-            .is_some()
         {
-            return HttpResponse::err_text_response("ERROR: valid user regex is not defined");
-        }
-        let valid_user_regex = application_configuration
-            .configuration_file
-            .ldap_configuration
-            .user_regex
-            .as_ref()
-            .unwrap();
+            Some(r) => r,
+            None => {
+                warn!("valid user regex is not defined");
+                return HttpResponse::err_text_response("ERROR: valid user regex is not defined");
+            }
+        };
         if !valid_user_regex.is_match(&parsed_form_data.login_name) {
             return HttpResponse::err_text_response("ERROR: invalid login name format");
         }
@@ -175,15 +172,12 @@ impl Login for LdapAuthConfiguration {
             }
         }
 
-        // input data is validated and
+        // at this point input data is validated and
         // uuid of the request has been found
-        // let ldap_search_result;
-        // {
+        //
         // 2. check if user exists
         // keep it in a block to make the compiler happy
         // because of the result lifetime
-        //
-        //
         let ldap_search_result = match &application_configuration
             .configuration_file
             .ldap_configuration
