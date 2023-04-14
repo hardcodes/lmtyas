@@ -178,6 +178,8 @@ sudo systemctl start lmtyas.service
 Also see [Cargo.toml](./Cargo.toml), section `[features]`.
 
 - Default: **oauth2-auth**, **mail-noauth-notls** (users are authenticated with an external oauth2 server, user details are queried from an external ldap server and emails are sent through a smtp server with no authentication and no encryption)
+
+  You may ask why we need oauth2 when we have a ldap server, we use to query user details: when an oauth2 server is available, your users know the look and feel of the login page. This way they may be more confidend to enter their credentials. Maybe you even use 2FA for your oauth2 solution.
 - **ldap-auth**: authenticate users with an external ldap server. Makes use of of the **ldap-common** and **get-userdata-ldap** feature.
 - **ldap-common**: holds the ldap configuration file and brings basic ldap functions to query users by name or email address.
 - **oauth2-auth**: authenticate users with an external oauth2 server. Makes use of of the **oauth2-common**, **ldap-common** and **get-userdata-ldap** feature.
