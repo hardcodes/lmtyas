@@ -179,7 +179,7 @@ Also see [Cargo.toml](./Cargo.toml), section `[features]`.
 - Default: **oauth2-auth**, **mail-noauth-notls** (users are authenticated with an external oauth2 server, user details are queried from an external ldap server and emails are sent through a smtp server with no authentication and no encryption)
 - **ldap-auth**: authenticate users with an external ldap server. Makes use of of the **ldap-common** and **get-userdata-ldap** feature.
 - **ldap-common**: holds the ldap configuration file and brings basic ldap functions to query users by name or email address.
-- **oauth2-auth**: authenticate users with an external oauth2 server. Makes use of of the **oauth2-common**, **ldap-common* and **get-userdata-ldap** feature.
+- **oauth2-auth**: authenticate users with an external oauth2 server. Makes use of of the **oauth2-common**, **ldap-common** and **get-userdata-ldap** feature.
 - **oauth2-common**: holds the basic oauth2 implementation.
 - **mail-noauth-notls**: send mails to user via mail server that does not need authentication and uses no encrypted transport.
 - **get-userdata-ldap**: query userdata (frist and last name by email address of secret receiver) from a ldap server.
