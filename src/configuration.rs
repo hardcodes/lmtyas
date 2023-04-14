@@ -1,7 +1,9 @@
 use crate::authenticated_user::SharedAuthenticatedUsersHashMap;
+use crate::authentication_middleware::SharedRequestData;
+#[cfg(feature = "oauth2-auth")]
+use crate::authentication_url::AUTH_ROUTE;
 #[cfg(feature = "ldap-common")]
 use crate::ldap_common::LdapCommonConfiguration;
-use crate::authentication_middleware::SharedRequestData;
 #[cfg(any(feature = "ldap-auth", feature = "oauth2-auth"))]
 use crate::login_user_trait::Login;
 use crate::mail_configuration::SendEMailConfiguration;
@@ -9,6 +11,8 @@ use crate::mail_configuration::SendEMailConfiguration;
 use crate::oauth2_common::Oauth2Configuration;
 use crate::rsa_functions::{RsaKeys, RsaPrivateKeyPassword};
 use crate::secret_functions::SharedSecretData;
+#[cfg(feature = "oauth2-auth")]
+use oauth2::{basic::BasicClient, AuthUrl, ClientId, ClientSecret, RedirectUrl, TokenUrl};
 use openssl::ssl::{SslAcceptor, SslAcceptorBuilder, SslFiletype, SslMethod, SslOptions};
 use serde::{Deserialize, Serialize};
 use std::error::Error;
@@ -93,7 +97,9 @@ impl ConfigurationFile {
             );
         }
         #[cfg(feature = "ldap-auth")]
-        parsed_config.ldap_common_configuration.build_valid_user_regex()?;
+        parsed_config
+            .ldap_common_configuration
+            .build_valid_user_regex()?;
         #[cfg(feature = "oauth2-auth")]
         parsed_config
             .oauth2_configuration
@@ -117,6 +123,9 @@ pub struct ApplicationConfiguration {
     pub shared_authenticated_users: Arc<RwLock<SharedAuthenticatedUsersHashMap>>,
     /// stores every incoming resource request
     pub shared_request_data: Arc<RwLock<SharedRequestData>>,
+    /// stores the optional oauth2 cliet configuration
+    #[cfg(feature = "oauth2-auth")]
+    pub oauth2_client: Arc<BasicClient>,
 }
 
 /// Build a new instance of ApplicationConfiguration
@@ -148,6 +157,25 @@ impl ApplicationConfiguration {
                 SharedAuthenticatedUsersHashMap::new(config_file.admin_accounts),
             )),
             shared_request_data: Arc::new(RwLock::new(SharedRequestData::new())),
+            oauth2_client: Arc::new(
+                BasicClient::new(
+                    ClientId::new(config_file.oauth2_configuration.client_id),
+                    Some(ClientSecret::new(
+                        config_file.oauth2_configuration.client_secret,
+                    )),
+                    AuthUrl::new(config_file.oauth2_configuration.auth_url)
+                        .expect("cannot set oauth2 auth url"),
+                    Some(
+                        TokenUrl::new(config_file.oauth2_configuration.token_url)
+                            .expect("cannot set oauth2 token url"),
+                    ),
+                )
+                // Set the URL the user will be redirected to after the authorization process.
+                .set_redirect_uri(
+                    RedirectUrl::new(format!("{}{}", &config_file.fqdn, AUTH_ROUTE))
+                        .expect("cannot set oquth 2 redirect url"),
+                ),
+            ),
         }
     }
 

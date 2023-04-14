@@ -29,6 +29,13 @@
             "valid_user_regex": "^[\\w\\d\\-]{3,8}$"
         }
     },
+    "oauth2_configuration": {
+        "client_id": "todo",
+        "client_secret": "",
+        "auth_url": "",
+        "token_url": "",
+        "valid_user_regex": "^[\\w\\d\\-]{3,8}$"
+    },
     "login_hint": "A.C.M.E. LDAP account",
     "mail_hint": "hint:firstname.lastname@acme.local",
     "imprint": {
