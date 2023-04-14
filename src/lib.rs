@@ -22,6 +22,8 @@ pub mod mail_configuration;
 pub mod mail_noauth_notls;
 #[cfg(feature = "oauth2-common")]
 pub mod oauth2_common;
+#[cfg(feature = "get-userdata-ldap")]
+pub mod get_userdata_ldap;
 pub mod rsa_functions;
 pub mod secret_functions;
 pub mod unsecure_string;

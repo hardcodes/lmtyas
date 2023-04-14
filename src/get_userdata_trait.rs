@@ -26,3 +26,14 @@ pub trait GetUserData {
         application_configuration: &web::Data<ApplicationConfiguration>,
     ) -> Result<String, String>;
 }
+
+pub struct NoUserDataBackend;
+
+#[async_trait]
+impl GetUserData for NoUserDataBackend {
+    async fn get_receiver_display_name(_mail: &str,
+        _application_configuration: &web::Data<ApplicationConfiguration>,
+    ) -> Result<String, String>{
+        Ok("".to_string())
+    }
+}

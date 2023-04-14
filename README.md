@@ -25,41 +25,43 @@ Yes, identities can be stolen and/or hacked - but then you have got bigger probl
 
 See [lmtyas-config.json](conf.dev/lmtyas-config.json) for an example configuration binding to `127.0.0.1:8844`.
 
-| config item                    | config data                                                                                               |
-|--------------------------------|-----------------------------------------------------------------------------------------------------------|
-| "web_bind_address"             | ip address and port to bind to, e.g. `"127.0.0.1:8844"`                                                   |
-| "ssl_private_key_file"         | path/filename of the SSL private key, e.g. `"/etc/lmtyas/lmtyas-selfsigned.key"`                          |
-| "ssl_certificate_chain_file"   | path/filename of the SSL certificate chain, e.g. `"/etc/lmtyas/lmtyas-selfsigned-cert.pem"`               |
-| "rsa_private_key_file"         | path/filename of the RSA private key file, e.g. `"/etc/lmtyas/lmtyas_rsa_private.key"`                    |
-| "rsa_public_key_file"          | path/filename of the RSA public key file, e.g. `"ignore/lmtyas_rsa_public.key"`                           |
-| "secret_directory"             | path to store the secret files, e.g. `"output/secrets"`                                                   |
-| "email_configuration" : {      | ==> array with email configuration details                                                                |
-|     "mail_server_address"      | name or ip address of mail server, e.g.`"127.0.0.1"`                                                      |
-|     "mail_server_port"         | port number of mail server, e.g. `2525`                                                                   |
-|     "mail_from"                | mail address that sends secrets, e.g. `"IT-department <do-not-reply@acme.local>"`                         |
-|     "mail_subject"             | subject used in mails, e.g. `"Your new password for {Context}"`                                           |
-|     "mail_template_file"       | path/filename of mail template, e.g. `"etc/lmtas/mailtemplate.txt"`                                       |
-| },                             | <== end of array                                                                                          |
-| "admin_accounts"               | array with valid admin accounts to set password, e.g. `["walter"]`                                        |
-| "max_authrequest_age_seconds"  | time in seconds an authentiction attempt is valid, e.g. `300`                                             |
-| "max_cookie_age_seconds"       | time in seconds an account is still logged in, e.g. `90` (forms keep accounts alive)                      |
-| "fqdn"                         | fqdn to use in redirects, e,g, `"my-server.local:8844"`                                                   |
-| "ldap_configuration": {        | ==> array with ldap configuration                                                                         |
-|     "ldap_url"                 | url to connect to ldap server, e.g. `"ldap://127.0.0.1:3893"`                                             |
-|     "ldap_base_ou"             | ou where user accounts are stored, e.g. `"ou=superheros,dc=acme,dc=local"`                                |
-|     "ldap_bind_passwd"         | password to bind to the ldap server, e.g. `"ldapsecr3t"`                                                  |
-|     "ldap_bind_dn"             | dn of user that is allowed to query the ldap, e.g. `"cn=ldap-tec-user,ou=svcaccts,dc=acme,dc=local"`      |
-|     "ldap_user_filter"         | filter to used to query accounts, `{0}` is replaced with login name, e.g. `"(uid={0})"`                   |
-|     "ldap_mail_filter"         | filter to used to query accounts, `{0}` is replaced with mail address, e.g. `"(mail={0})"`                |
-|     "ldap_bind_user_dn"        | dn of users logging in, `{0}` is replaced with login name, e.g. `"cn={0},ou=superheros,dc=acme,dc=local"` |
-|     "valid_user_regex"         | regex of valid user names, e.g. `"^[\\w\\d\\-]{3,8}"`                                                     |
-| },                             | <== end of array                                                                                          |
-| "login_hint"                   | hint for users which account to use for login, e.g. `"A.C.M.E. LDAP account"`                             |
-| "mail_hint"                    | optional hint what mail address format should be used, e.g. `givenname.surname@acme.local`                |
-| "imprint": {                   | ==> array with imprint link data                                                                          |
-| "href"                         | link to an imprint page, e.g. `"https://www.acme.local"`                                                  |
-| "target"                       | target window for imprint, one out of `"_self"`, `"_blank"`, `"_parent"`, `"_top"`                        |
-| }                              | <== end of array                                                                                          |
+| config item                      | config data                                                                                               |
+|----------------------------------|-----------------------------------------------------------------------------------------------------------|
+| "web_bind_address"               | ip address and port to bind to, e.g. `"127.0.0.1:8844"`                                                   |
+| "ssl_private_key_file"           | path/filename of the SSL private key, e.g. `"/etc/lmtyas/lmtyas-selfsigned.key"`                          |
+| "ssl_certificate_chain_file"     | path/filename of the SSL certificate chain, e.g. `"/etc/lmtyas/lmtyas-selfsigned-cert.pem"`               |
+| "rsa_private_key_file"           | path/filename of the RSA private key file, e.g. `"/etc/lmtyas/lmtyas_rsa_private.key"`                    |
+| "rsa_public_key_file"            | path/filename of the RSA public key file, e.g. `"ignore/lmtyas_rsa_public.key"`                           |
+| "secret_directory"               | path to store the secret files, e.g. `"output/secrets"`                                                   |
+| "email_configuration" : {        | ==> array with email configuration details                                                                |
+|     "mail_server_address"        | name or ip address of mail server, e.g.`"127.0.0.1"`                                                      |
+|     "mail_server_port"           | port number of mail server, e.g. `2525`                                                                   |
+|     "mail_from"                  | mail address that sends secrets, e.g. `"IT-department <do-not-reply@acme.local>"`                         |
+|     "mail_subject"               | subject used in mails, e.g. `"Your new password for {Context}"`                                           |
+|     "mail_template_file"         | path/filename of mail template, e.g. `"etc/lmtas/mailtemplate.txt"`                                       |
+| },                               | <== end of array                                                                                          |
+| "admin_accounts"                 | array with valid admin accounts to set password, e.g. `["walter"]`                                        |
+| "max_authrequest_age_seconds"    | time in seconds an authentiction attempt is valid, e.g. `300`                                             |
+| "max_cookie_age_seconds"         | time in seconds an account is still logged in, e.g. `90` (forms keep accounts alive)                      |
+| "fqdn"                           | fqdn to use in redirects, e,g, `"my-server.local:8844"`                                                   |
+| "ldap_common_configuration": {   | ==> array with common ldapconfiguration                                                                   |
+|     "ldap_url"                   | url to connect to ldap server, e.g. `"ldap://127.0.0.1:3893"`                                             |
+|     "ldap_base_ou"               | ou where user accounts are stored, e.g. `"ou=superheros,dc=acme,dc=local"`                                |
+|     "ldap_bind_passwd"           | password to bind to the ldap server, e.g. `"ldapsecr3t"`                                                  |
+|     "ldap_bind_dn"               | dn of user that is allowed to query the ldap, e.g. `"cn=ldap-tec-user,ou=svcaccts,dc=acme,dc=local"`      |
+|     "ldap_user_filter"           | filter to used to query accounts, `{0}` is replaced with login name, e.g. `"(uid={0})"`                   |
+|     "ldap_mail_filter"           | filter to used to query accounts, `{0}` is replaced with mail address, e.g. `"(mail={0})"`                |
+|     "ldap_auth_configuration": { | array with ldap auth configuration                                                                        |
+|     "ldap_bind_user_dn"          | dn of users logging in, `{0}` is replaced with login name, e.g. `"cn={0},ou=superheros,dc=acme,dc=local"` |
+|     "valid_user_regex"           | regex of valid user names, e.g. `"^[\\w\\d\\-]{3,8}"`                                                     |
+|     },                           | <== end of array                                                                                          |
+| },                               | <== end of array                                                                                          |
+| "login_hint"                     | hint for users which account to use for login, e.g. `"A.C.M.E. LDAP account"`                             |
+| "mail_hint"                      | optional hint what mail address format should be used, e.g. `givenname.surname@acme.local`                |
+| "imprint": {                     | ==> array with imprint link data                                                                          |
+| "href"                           | link to an imprint page, e.g. `"https://www.acme.local"`                                                  |
+| "target"                         | target window for imprint, one out of `"_self"`, `"_blank"`, `"_parent"`, `"_top"`                        |
+| }                                | <== end of array                                                                                          |
 
 - **NOTE  1**
     - "mail_subject": `{Context}` is replaced with the context entered in the web form.
@@ -172,12 +174,16 @@ sudo systemctl start lmtyas.service
 
 ## Compile and install - features
 
-So far only the default features have been developed.
+Also see [Cargo.toml](./Cargo.toml), section `[features]`.
 
-- Default: **ldap-auth**, **mail-noauth-notls**
-- **ldap-auth**: authenticate users with an external ldap server. Makes use of of the **ldap-common** feature.
+- Default: **oauth2-auth**, **mail-noauth-notls** (users are authenticated with an external oauth2 server, user details are queried from an external ldap server and emails are sent through a smtp server with no authentication and no encryption)
+- **ldap-auth**: authenticate users with an external ldap server. Makes use of of the **ldap-common** and **get-userdata-ldap** feature.
 - **ldap-common**: holds the ldap configuration file and brings basic ldap functions to query users by name or email address.
+- **oauth2-auth**: authenticate users with an external oauth2 server. Makes use of of the **oauth2-common**, **ldap-common* and **get-userdata-ldap** feature.
+- **oauth2-common**: holds the basic oauth2 implementation.
 - **mail-noauth-notls**: send mails to user via mail server that does not need authentication and uses no encrypted transport.
+- **get-userdata-ldap**: query userdata (frist and last name by email address of secret receiver) from a ldap server.
+- **no-userdata-backend**: use this, when there is no backend (like e.g., a ldap server) to query userdata.
 
 
 # Customization
@@ -558,9 +564,16 @@ Tests are at the moment far from complete.
 
  To run the tests, enter
 
-```bash
-cargo test
-```
+- **default features (oauth2 authentication)**
+
+  ```bash
+  cargo test
+  ```
+- **ldap authentication**
+
+  ```bash
+  cargo test --no-default-features --features ldap-auth,mail-noauth-notls
+  ```
 
 If test fails the external processes may still be running. To find and kill them and assuming you have no other processes with these speficics, you can enter
 

@@ -1,8 +1,10 @@
 mod common;
 use common::SETUP_SINGLETON;
+#[cfg(feature = "ldap-auth")]
 pub use lmtyas::authentication_ldap::LdapLogin;
-use lmtyas::authentication_ldap::LdapSearchResult;
 use lmtyas::configuration::ApplicationConfiguration;
+#[cfg(any(feature = "ldap-auth", feature = "oauth2-auth"))]
+use lmtyas::ldap_common::LdapSearchResult;
 #[cfg(feature = "mail-noauth-notls")]
 pub use lmtyas::mail_noauth_notls::SendEMail;
 use std::path::Path;
@@ -66,13 +68,13 @@ async fn with_setup() {
     // looking up existing user by uid in ldap
     let user_found_by_uid = application_configuration
         .configuration_file
-        .ldap_configuration
+        .ldap_common_configuration
         .ldap_search_by_uid(
             "bob",
             Some(
                 &application_configuration
                     .configuration_file
-                    .ldap_configuration
+                    .ldap_common_configuration
                     .ldap_user_filter,
             ),
         )
@@ -89,13 +91,13 @@ async fn with_setup() {
     // lookin up non existing user by uid in ldap
     let user_not_found_by_uid = application_configuration
         .configuration_file
-        .ldap_configuration
+        .ldap_common_configuration
         .ldap_search_by_uid(
             "b0b",
             Some(
                 &application_configuration
                     .configuration_file
-                    .ldap_configuration
+                    .ldap_common_configuration
                     .ldap_user_filter,
             ),
         )
@@ -111,13 +113,13 @@ async fn with_setup() {
     // looking up existing user by mail in ldap
     let user_found_by_mail = application_configuration
         .configuration_file
-        .ldap_configuration
+        .ldap_common_configuration
         .ldap_search_by_mail(
             "bob@acme.local",
             Some(
                 &application_configuration
                     .configuration_file
-                    .ldap_configuration
+                    .ldap_common_configuration
                     .ldap_mail_filter,
             ),
         )
@@ -134,13 +136,13 @@ async fn with_setup() {
     // lookin up non existing user by mail in ldap
     let user_not_found_by_mail = application_configuration
         .configuration_file
-        .ldap_configuration
+        .ldap_common_configuration
         .ldap_search_by_mail(
             "b0b@acme.local",
             Some(
                 &application_configuration
                     .configuration_file
-                    .ldap_configuration
+                    .ldap_common_configuration
                     .ldap_user_filter,
             ),
         )
@@ -153,27 +155,30 @@ async fn with_setup() {
         "expected not to find user b0b in ldap server by mail"
     );
 
-    // ldap login with correct password
-    let ldap_login_success = application_configuration
-        .configuration_file
-        .ldap_configuration
-        .ldap_login("bob", "passw0rd")
-        .await;
-    assert!(
-        matches!(ldap_login_success, Ok(_)),
-        "user bob could not login with correct password"
-    );
+    #[cfg(feature = "ldap-auth")]
+    {
+        // ldap login with correct password
+        let ldap_login_success = application_configuration
+            .configuration_file
+            .ldap_common_configuration
+            .ldap_login("bob", "passw0rd")
+            .await;
+        assert!(
+            matches!(ldap_login_success, Ok(_)),
+            "user bob could not login with correct password"
+        );
 
-    // ldap login with wrong user name and password
-    let ldap_login_fail = application_configuration
-        .configuration_file
-        .ldap_configuration
-        .ldap_login("mary", "peterpaul")
-        .await;
-    assert!(
-        matches!(ldap_login_fail, Err(_)),
-        "user bob should not be able to login with wrong password"
-    );
+        // ldap login with wrong user name and password
+        let ldap_login_fail = application_configuration
+            .configuration_file
+            .ldap_common_configuration
+            .ldap_login("mary", "peterpaul")
+            .await;
+        assert!(
+            matches!(ldap_login_fail, Err(_)),
+            "user bob should not be able to login with wrong password"
+        );
+    }
 
     common::teardown(&mut setup_singleton_lock);
 }

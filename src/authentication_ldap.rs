@@ -5,9 +5,8 @@ use crate::authentication_middleware::UNKNOWN_PEER_IP;
 use crate::base64_trait::Base64VecU8Conversions;
 use crate::configuration::ApplicationConfiguration;
 use crate::cookie_functions::build_new_authentication_cookie;
-use crate::get_userdata_trait::GetUserData;
 use crate::http_traits::CustomHttpResponse;
-pub use crate::ldap_common::{LdapAuthConfiguration, LdapSearchResult};
+pub use crate::ldap_common::{LdapCommonConfiguration, LdapSearchResult};
 pub use crate::login_user_trait::Login;
 use actix_web::{http, http::StatusCode, web, web::Bytes, HttpRequest, HttpResponse};
 use async_trait::async_trait;
@@ -24,13 +23,24 @@ const MAX_BYTES: usize = 384;
 // maximum length of a password
 const MAX_PASSWORD_LENGTH: usize = 128;
 
+/// Holds the configuration to access an LDAP server
+/// extending the common ldap configuration with
+/// data needed for authentication
+#[derive(Clone, Deserialize, Debug)]
+pub struct LdapAuthConfiguration {
+    pub ldap_bind_user_dn: String,
+    pub valid_user_regex: String,
+    #[serde(skip_deserializing)]
+    pub user_regex: Option<Regex>,
+}
+
 #[async_trait(?Send)]
 pub trait LdapLogin {
     async fn ldap_login(&self, user_name: &str, password: &str) -> Result<(), Box<dyn Error>>;
 }
 
 #[async_trait(?Send)]
-impl LdapLogin for LdapAuthConfiguration {
+impl LdapLogin for LdapCommonConfiguration {
     /// Bind to the ldap server with the given user and password,
     /// AKA login
     ///
@@ -47,9 +57,7 @@ impl LdapLogin for LdapAuthConfiguration {
         ldap3::drive!(conn);
         debug!("Connected to {}", &&self.ldap_url);
         ldap.simple_bind(
-            &self
-                .ldap_bind_user_dn
-                .replace("{0}", &ldap_escape(user_name)),
+            &self.ldap_auth_configuration.ldap_bind_user_dn.replace("{0}", &ldap_escape(user_name)),
             password,
         )
         .await?
@@ -72,7 +80,7 @@ pub struct LoginData {
 }
 
 #[async_trait(?Send)]
-impl Login for LdapAuthConfiguration {
+impl Login for LdapCommonConfiguration {
     async fn login_user(
         bytes: Bytes,
         request: HttpRequest,
@@ -109,7 +117,8 @@ impl Login for LdapAuthConfiguration {
         // prevent sending bogus data to the ldap server.
         let valid_user_regex = match &application_configuration
             .configuration_file
-            .ldap_configuration
+            .ldap_common_configuration
+            .ldap_auth_configuration
             .user_regex
         {
             Some(r) => r,
@@ -144,7 +153,10 @@ impl Login for LdapAuthConfiguration {
                 .get_mut(&request_id)
             {
                 None => {
-                    warn!("login with invalid request id {}", &request_id);
+                    warn!(
+                        "login attempt with expired or invalid authentication request id {}",
+                        &request_id
+                    );
                     return HttpResponse::err_text_response(
                         "ERROR: invalid request id, login expired",
                     );
@@ -153,7 +165,7 @@ impl Login for LdapAuthConfiguration {
             };
             if auth_request.has_been_used {
                 warn!(
-                    "id {} has already been used, possible replay attack!",
+                    "authentication request id {} has already been used, possible replay attack!",
                     &request_id
                 );
                 return HttpResponse::err_text_response("ERROR: login failed");
@@ -180,13 +192,13 @@ impl Login for LdapAuthConfiguration {
         // because of the result lifetime
         let ldap_search_result = match &application_configuration
             .configuration_file
-            .ldap_configuration
+            .ldap_common_configuration
             .ldap_search_by_uid(
                 &parsed_form_data.login_name,
                 Some(
                     &application_configuration
                         .configuration_file
-                        .ldap_configuration
+                        .ldap_common_configuration
                         .ldap_user_filter,
                 ),
             )
@@ -267,7 +279,7 @@ impl Login for LdapAuthConfiguration {
         parsed_form_data.login_password.zeroize();
         match &application_configuration
             .configuration_file
-            .ldap_configuration
+            .ldap_common_configuration
             .ldap_login(&parsed_form_data.login_name, &password)
             .await
         {
@@ -328,13 +340,13 @@ impl Login for LdapAuthConfiguration {
     }
 
     fn build_valid_user_regex(&mut self) -> Result<(), Box<dyn Error>> {
-        let user_regex = Regex::new(&self.valid_user_regex)?;
-        self.user_regex = Some(user_regex);
+        let user_regex = Regex::new(&self.ldap_auth_configuration.valid_user_regex)?;
+        self.ldap_auth_configuration.user_regex = Some(user_regex);
         Ok(())
     }
 }
 
-impl AuthenticationRedirect for LdapAuthConfiguration {
+impl AuthenticationRedirect for LdapCommonConfiguration {
     fn get_authentication_redirect_response(
         _request_path_with_query: &str,
         request_uuid: &Uuid,
@@ -353,54 +365,6 @@ impl AuthenticationRedirect for LdapAuthConfiguration {
             .append_header((http::header::LOCATION, redirect_url))
             .finish();
         authentication_redirect_response
-    }
-}
-
-#[async_trait]
-impl GetUserData for LdapAuthConfiguration {
-    async fn get_receiver_display_name(
-        mail: &str,
-        application_configuration: &web::Data<ApplicationConfiguration>,
-    ) -> Result<String, String> {
-        // 2. check if user exists
-        let ldap_search_result = match &application_configuration
-            .configuration_file
-            .ldap_configuration
-            .ldap_search_by_mail(
-                mail,
-                Some(
-                    &application_configuration
-                        .configuration_file
-                        .ldap_configuration
-                        .ldap_mail_filter,
-                ),
-            )
-            .await
-        {
-            Err(e) => {
-                let error_message =
-                    format!("error while looking up user by mail {}: {}", &mail, &e);
-                warn!("{}", &error_message);
-                return Err(error_message);
-            }
-            Ok(ldap_search_result) => ldap_search_result.clone(),
-        };
-        // dirty hack to build a json string from the ldap query result,
-        // so it can be serialized.
-        let ldap_result = match serde_json::from_str(&ldap_search_result.replace(['[', ']'], ""))
-            as Result<LdapSearchResult, _>
-        {
-            Err(e) => {
-                let error_message = format!(
-                    "can not serde_json::from_str({}): {}",
-                    &ldap_search_result, &e
-                );
-                return Err(error_message);
-            }
-            Ok(r) => r,
-        };
-        let display_name = format!("{} {}", &ldap_result.first_name, &ldap_result.last_name);
-        Ok(display_name)
     }
 }
 

@@ -1,24 +1,29 @@
 use log::{debug, info, warn};
 extern crate env_logger;
 #[cfg(feature = "ldap-auth")]
-pub use crate::authentication_ldap::LdapAuthConfiguration;
+pub use crate::authentication_ldap::LdapCommonConfiguration;
 use crate::configuration::ApplicationConfiguration;
 use crate::cookie_functions::{get_plain_cookie_string, COOKIE_NAME};
 use crate::header_value_trait::HeaderValueExctractor;
-#[cfg(feature = "ldap-auth")]
+#[cfg(feature = "oauth2-auth")]
+use crate::oauth2_common::Oauth2Configuration;
+#[cfg(any(feature = "ldap-auth", feature = "oauth2-auth"))]
 use actix_web::dev::{forward_ready, Service, ServiceRequest, ServiceResponse, Transform};
 use actix_web::{body::EitherBody, http, http::StatusCode, web, Error, HttpRequest, HttpResponse};
+use chrono::Duration;
 use chrono::{DateTime, Utc};
 use futures_util::future::LocalBoxFuture;
 use std::collections::HashMap;
 use std::fmt;
 use std::future::{ready, Ready};
+use std::sync::{Arc, RwLock};
 use uuid::v1::{Context, Timestamp};
 use uuid::Uuid;
+
 #[cfg(feature = "ldap-auth")]
-type AuthenticationRedirectType = LdapAuthConfiguration;
-use chrono::Duration;
-use std::sync::{Arc, RwLock};
+type AuthenticationRedirectType = LdapCommonConfiguration;
+#[cfg(feature = "oauth2-auth")]
+type AuthenticationRedirectType = Oauth2Configuration;
 
 /// maximum number of authentication requests that are stored in the
 /// hashmap to prevent a DOS attack.

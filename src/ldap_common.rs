@@ -3,29 +3,29 @@ pub use crate::login_user_trait::Login;
 use crate::unsecure_string::SecureStringToUnsecureString;
 use ldap3::{ldap_escape, LdapConnAsync, Scope, SearchEntry};
 use log::debug;
-use regex::Regex;
 use secstr::SecStr;
 use serde::Deserialize;
 use std::error::Error;
 use zeroize::Zeroize;
+#[cfg(feature = "ldap-auth")]
+use crate::authentication_ldap::LdapAuthConfiguration;
+
 
 /// Holds the configuration to access an LDAP server
-/// for user authentication
+/// to query user details
 #[derive(Clone, Deserialize, Debug)]
-pub struct LdapAuthConfiguration {
+pub struct LdapCommonConfiguration {
     pub ldap_url: String,
     pub ldap_base_ou: String,
     pub ldap_bind_passwd: SecStr,
     pub ldap_bind_dn: String,
     pub ldap_user_filter: String,
     pub ldap_mail_filter: String,
-    pub ldap_bind_user_dn: String,
-    pub valid_user_regex: String,
-    #[serde(skip_deserializing)]
-    pub user_regex: Option<Regex>,
+    #[cfg(feature = "ldap-auth")]
+    pub ldap_auth_configuration: LdapAuthConfiguration,
 }
 
-impl LdapAuthConfiguration {
+impl LdapCommonConfiguration {
     /// Performs a generic ldap search
     ///
     /// # Arguments

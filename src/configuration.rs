@@ -1,9 +1,9 @@
 use crate::authenticated_user::SharedAuthenticatedUsersHashMap;
-#[cfg(feature = "ldap-auth")]
-use crate::authentication_ldap::LdapAuthConfiguration;
+#[cfg(feature = "ldap-common")]
+use crate::ldap_common::LdapCommonConfiguration;
 use crate::authentication_middleware::SharedRequestData;
 #[cfg(feature = "oauth2-auth")]
-use crate::ldap_common::LdapAuthConfiguration;
+use crate::ldap_common::LdapCommonConfiguration;
 #[cfg(any(feature = "ldap-auth", feature = "oauth2-auth"))]
 use crate::login_user_trait::Login;
 use crate::mail_configuration::SendEMailConfiguration;
@@ -49,8 +49,8 @@ pub struct ConfigurationFile {
     pub max_authrequest_age_seconds: i64,
     pub max_cookie_age_seconds: i64,
     pub fqdn: String,
-    #[cfg(any(feature = "ldap-auth", feature = "oauth2-auth"))]
-    pub ldap_configuration: LdapAuthConfiguration,
+    #[cfg(feature = "ldap-common")]
+    pub ldap_common_configuration: LdapCommonConfiguration,
     #[cfg(feature = "oauth2-auth")]
     pub oauth2_configuration: Oauth2Configuration,
     pub login_hint: String,
@@ -95,7 +95,7 @@ impl ConfigurationFile {
             );
         }
         #[cfg(feature = "ldap-auth")]
-        parsed_config.ldap_configuration.build_valid_user_regex()?;
+        parsed_config.ldap_common_configuration.build_valid_user_regex()?;
         #[cfg(feature = "oauth2-auth")]
         parsed_config
             .oauth2_configuration

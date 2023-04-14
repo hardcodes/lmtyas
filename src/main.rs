@@ -2,7 +2,7 @@ use actix_files::Files;
 use actix_web::{guard, middleware, web, App, HttpResponse, HttpServer};
 use lmtyas::authenticated_user::cleanup_authenticated_users_hashmap;
 #[cfg(feature = "ldap-auth")]
-use lmtyas::authentication_ldap::LdapAuthConfiguration;
+use lmtyas::authentication_ldap::LdapCommonConfiguration;
 #[cfg(feature = "oauth2-auth")]
 use lmtyas::oauth2_common::Oauth2Configuration;
 use lmtyas::authentication_middleware::{
@@ -20,7 +20,7 @@ use std::path::Path;
 use timer::Timer;
 
 #[cfg(feature = "ldap-auth")]
-type AuthConfiguration = LdapAuthConfiguration;
+type AuthConfiguration = LdapCommonConfiguration;
 #[cfg(feature = "oauth2-auth")]
 type AuthConfiguration = Oauth2Configuration;
 

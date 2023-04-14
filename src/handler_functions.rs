@@ -3,14 +3,14 @@ extern crate env_logger;
 use crate::aes_functions::{DecryptAes, EncryptAes};
 use crate::authenticated_user::{AuthenticatedAdministrator, AuthenticatedUser};
 use crate::authentication_functions::update_authenticated_user_cookie_lifetime;
-#[cfg(feature = "ldap-auth")]
-use crate::authentication_ldap::LdapAuthConfiguration;
 use crate::base64_trait::Base64VecU8Conversions;
 use crate::configuration::ApplicationConfiguration;
+#[cfg(feature = "get-userdata-ldap")]
+use crate::get_userdata_ldap::GetUserDataLdapBackend;
 use crate::get_userdata_trait::GetUserData;
+#[cfg(feature = "no-userdata-backend")]
+use crate::get_userdata_trait::NoUserDataBackend;
 use crate::http_traits::CustomHttpResponse;
-#[cfg(feature = "oauth2-auth")]
-use crate::ldap_common::LdapAuthConfiguration;
 #[cfg(feature = "mail-noauth-notls")]
 pub use crate::mail_noauth_notls::SendEMail;
 use crate::secret_functions::Secret;
@@ -26,10 +26,10 @@ use std::fs::remove_file;
 use std::path::Path;
 use zeroize::Zeroize;
 
-#[cfg(feature = "ldap-auth")]
-type UserDataImpl = LdapAuthConfiguration;
-#[cfg(feature = "oauth2-auth")]
-type UserDataImpl = LdapAuthConfiguration;
+#[cfg(feature = "no-userdata-backend")]
+type UserDataImpl = NoUserDataBackend;
+#[cfg(feature = "get-userdata-ldap")]
+type UserDataImpl = GetUserDataLdapBackend;
 
 /// Characters that will be percent encoded
 /// https://url.spec.whatwg.org/#fragment-percent-encode-set
