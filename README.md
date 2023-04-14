@@ -185,6 +185,11 @@ Also see [Cargo.toml](./Cargo.toml), section `[features]`.
 - **get-userdata-ldap**: query userdata (frist and last name by email address of secret receiver) from a ldap server.
 - **no-userdata-backend**: use this, when there is no backend (like e.g., a ldap server) to query userdata.
 
+So far these combinations make sene:
+
+- **oauth2-auth**, **mail-noauth-notls**
+- **ldap-auth**, **mail-noauth-notls**
+
 
 # Customization
 
