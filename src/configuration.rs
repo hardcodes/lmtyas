@@ -2,8 +2,6 @@ use crate::authenticated_user::SharedAuthenticatedUsersHashMap;
 #[cfg(feature = "ldap-common")]
 use crate::ldap_common::LdapCommonConfiguration;
 use crate::authentication_middleware::SharedRequestData;
-#[cfg(feature = "oauth2-auth")]
-use crate::ldap_common::LdapCommonConfiguration;
 #[cfg(any(feature = "ldap-auth", feature = "oauth2-auth"))]
 use crate::login_user_trait::Login;
 use crate::mail_configuration::SendEMailConfiguration;
