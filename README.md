@@ -45,13 +45,14 @@ See [lmtyas-config.json](conf.dev/lmtyas-config.json) for an example configurati
 | "max_cookie_age_seconds"         | time in seconds an account is still logged in, e.g. `90` (forms keep accounts alive)                      |
 | "fqdn"                           | fqdn to use in redirects, e,g, `"my-server.local:8844"`                                                   |
 | "ldap_common_configuration": {   | ==> array with common ldapconfiguration                                                                   |
-|     "ldap_url"                   | url to connect to ldap server, e.g. `"ldap://127.0.0.1:3893"`                                             |
-|     "ldap_base_ou"               | ou where user accounts are stored, e.g. `"ou=superheros,dc=acme,dc=local"`                                |
-|     "ldap_bind_passwd"           | password to bind to the ldap server, e.g. `"ldapsecr3t"`                                                  |
-|     "ldap_bind_dn"               | dn of user that is allowed to query the ldap, e.g. `"cn=ldap-tec-user,ou=svcaccts,dc=acme,dc=local"`      |
-|     "ldap_user_filter"           | filter to used to query accounts, `{0}` is replaced with login name, e.g. `"(uid={0})"`                   |
-|     "ldap_mail_filter"           | filter to used to query accounts, `{0}` is replaced with mail address, e.g. `"(mail={0})"`                |
-|     "ldap_auth_configuration": { | array with ldap auth configuration                                                                        |
+|     "url"                        | url to connect to ldap server, e.g. `"ldap://127.0.0.1:3893"`                                             |
+|     "base_ou"                    | ou where user accounts are stored, e.g. `"ou=superheros,dc=acme,dc=local"`                                |
+|     "bind_passwd"                | password to bind to the ldap server, e.g. `"ldapsecr3t"`                                                  |
+|     "bind_dn"                    | dn of user that is allowed to query the ldap, e.g. `"cn=ldap-tec-user,ou=svcaccts,dc=acme,dc=local"`      |
+|     "user_filter"                | filter to used to query accounts, `{0}` is replaced with login name, e.g. `"(uid={0})"`                   |
+|     "mail_filter"                | filter to used to query accounts, `{0}` is replaced with mail address, e.g. `"(mail={0})"`                |
+|     "authentication:wq
+": { | array with ldap auth configuration                                                                        |
 |     "ldap_bind_user_dn"          | dn of users logging in, `{0}` is replaced with login name, e.g. `"cn={0},ou=superheros,dc=acme,dc=local"` |
 |     "valid_user_regex"           | regex of valid user names, e.g. `"^[\\w\\d\\-]{3,8}"`                                                     |
 |     },                           | <== end of array                                                                                          |

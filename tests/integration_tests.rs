@@ -75,7 +75,7 @@ async fn with_setup() {
                 &application_configuration
                     .configuration_file
                     .ldap_common_configuration
-                    .ldap_user_filter,
+                    .user_filter,
             ),
         )
         .await;
@@ -98,7 +98,7 @@ async fn with_setup() {
                 &application_configuration
                     .configuration_file
                     .ldap_common_configuration
-                    .ldap_user_filter,
+                    .user_filter,
             ),
         )
         .await;
@@ -120,7 +120,7 @@ async fn with_setup() {
                 &application_configuration
                     .configuration_file
                     .ldap_common_configuration
-                    .ldap_mail_filter,
+                    .mail_filter,
             ),
         )
         .await;
@@ -143,7 +143,7 @@ async fn with_setup() {
                 &application_configuration
                     .configuration_file
                     .ldap_common_configuration
-                    .ldap_user_filter,
+                    .user_filter,
             ),
         )
         .await;

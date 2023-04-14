@@ -15,14 +15,14 @@ use crate::authentication_ldap::LdapAuthConfiguration;
 /// to query user details
 #[derive(Clone, Deserialize, Debug)]
 pub struct LdapCommonConfiguration {
-    pub ldap_url: String,
-    pub ldap_base_ou: String,
-    pub ldap_bind_passwd: SecStr,
-    pub ldap_bind_dn: String,
-    pub ldap_user_filter: String,
-    pub ldap_mail_filter: String,
+    pub url: String,
+    pub base_ou: String,
+    pub bind_passwd: SecStr,
+    pub bind_dn: String,
+    pub user_filter: String,
+    pub mail_filter: String,
     #[cfg(feature = "ldap-auth")]
-    pub ldap_auth_configuration: LdapAuthConfiguration,
+    pub authentication: LdapAuthConfiguration,
 }
 
 impl LdapCommonConfiguration {
@@ -41,23 +41,23 @@ impl LdapCommonConfiguration {
         filter: &str,
         attributes: Vec<S>,
     ) -> Result<String, Box<dyn Error>> {
-        let (conn, mut ldap) = LdapConnAsync::new(&self.ldap_url).await?;
+        let (conn, mut ldap) = LdapConnAsync::new(&self.url).await?;
         ldap3::drive!(conn);
-        debug!("Connected to {}", &&self.ldap_url);
+        debug!("Connected to {}", &&self.url);
         // the password is stored in a secure string,
         // so that a 3rd party can not scan the memory
         // to gather the precious data.
         // Nevertheless the LDAP library wants the password
         // in plaintext. It is converted here and lives only
         // for the short time of a query.
-        let bind_pw = &mut self.ldap_bind_passwd.to_unsecure_string();
-        ldap.simple_bind(&self.ldap_bind_dn, bind_pw)
+        let bind_pw = &mut self.bind_passwd.to_unsecure_string();
+        ldap.simple_bind(&self.bind_dn, bind_pw)
             .await?
             .success()?;
         bind_pw.zeroize();
         debug!("ldap.simple_bind() -> OK");
         let (rs, _res) = ldap
-            .search(&self.ldap_base_ou, Scope::Subtree, filter, attributes)
+            .search(&self.base_ou, Scope::Subtree, filter, attributes)
             .await?
             .success()?;
         let mut result = String::new();
@@ -93,7 +93,7 @@ impl LdapCommonConfiguration {
     ) -> Result<String, Box<dyn Error>> {
         let ldap_filter = match filter {
             Some(f) => f,
-            None => &self.ldap_user_filter,
+            None => &self.user_filter,
         };
         let filterstring = &ldap_filter.replace("{0}", &ldap_escape(user_name));
         self.ldap_search(filterstring, vec!["uid", "givenName", "sn", "mail"])
@@ -119,7 +119,7 @@ impl LdapCommonConfiguration {
     ) -> Result<String, Box<dyn Error>> {
         let ldap_filter = match filter {
             Some(f) => f,
-            None => &self.ldap_mail_filter,
+            None => &self.mail_filter,
         };
         let filterstring = &ldap_filter.replace("{0}", &ldap_escape(mail));
         self.ldap_search(filterstring, vec!["uid", "givenName", "sn", "mail"])

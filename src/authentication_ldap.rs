@@ -53,11 +53,11 @@ impl LdapLogin for LdapCommonConfiguration {
     ///
     /// - `Result<(), Box<dyn Error>>` - either Ok() or an error
     async fn ldap_login(&self, user_name: &str, password: &str) -> Result<(), Box<dyn Error>> {
-        let (conn, mut ldap) = LdapConnAsync::new(&self.ldap_url).await?;
+        let (conn, mut ldap) = LdapConnAsync::new(&self.url).await?;
         ldap3::drive!(conn);
-        debug!("Connected to {}", &&self.ldap_url);
+        debug!("Connected to {}", &&self.url);
         ldap.simple_bind(
-            &self.ldap_auth_configuration.ldap_bind_user_dn.replace("{0}", &ldap_escape(user_name)),
+            &self.authentication.ldap_bind_user_dn.replace("{0}", &ldap_escape(user_name)),
             password,
         )
         .await?
@@ -118,7 +118,7 @@ impl Login for LdapCommonConfiguration {
         let valid_user_regex = match &application_configuration
             .configuration_file
             .ldap_common_configuration
-            .ldap_auth_configuration
+            .authentication
             .user_regex
         {
             Some(r) => r,
@@ -199,7 +199,7 @@ impl Login for LdapCommonConfiguration {
                     &application_configuration
                         .configuration_file
                         .ldap_common_configuration
-                        .ldap_user_filter,
+                        .user_filter,
                 ),
             )
             .await
@@ -340,8 +340,8 @@ impl Login for LdapCommonConfiguration {
     }
 
     fn build_valid_user_regex(&mut self) -> Result<(), Box<dyn Error>> {
-        let user_regex = Regex::new(&self.ldap_auth_configuration.valid_user_regex)?;
-        self.ldap_auth_configuration.user_regex = Some(user_regex);
+        let user_regex = Regex::new(&self.authentication.valid_user_regex)?;
+        self.authentication.user_regex = Some(user_regex);
         Ok(())
     }
 }

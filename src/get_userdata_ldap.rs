@@ -23,7 +23,7 @@ impl GetUserData for GetUserDataLdapBackend {
                     &application_configuration
                         .configuration_file
                         .ldap_common_configuration
-                        .ldap_mail_filter,
+                        .mail_filter,
                 ),
             )
             .await
