@@ -177,12 +177,12 @@ sudo systemctl start lmtyas.service
 
 Also see [Cargo.toml](./Cargo.toml), section `[features]`.
 
-- Default: **oauth2-auth**, **mail-noauth-notls** (users are authenticated with an external oauth2 server, user details are queried from an external ldap server and emails are sent through a smtp server with no authentication and no encryption)
+- Default: **oauth2-auth-ldap**, **mail-noauth-notls** (users are authenticated with an external oauth2 server, user details are queried from an external ldap server and emails are sent through a smtp server with no authentication and no encryption)
 
-  You may ask why we need oauth2 when we have a ldap server, we use to query user details: when an oauth2 server is available, your users know the look and feel of the login page. This way they may be more confidend to enter their credentials. Maybe you even use 2FA for your oauth2 solution.
+  You may ask why we need oauth2 when we have a ldap server, we use to query user details: when an oauth2 server is available, your users know the look and feel of the login page. This way they may be more confidend to enter their credentials. Maybe you even use 2FA for your oauth2 solution, so why not benefit?
 - **ldap-auth**: authenticate users with an external ldap server. Makes use of of the **ldap-common** and **get-userdata-ldap** feature.
 - **ldap-common**: holds the ldap configuration file and brings basic ldap functions to query users by name or email address.
-- **oauth2-auth**: authenticate users with an external oauth2 server. Makes use of of the **oauth2-common**, **ldap-common** and **get-userdata-ldap** feature.
+- **oauth2-auth-ldap**: authenticate users with an external oauth2 server. Makes use of of the **oauth2-common**, **ldap-common** and **get-userdata-ldap** feature.
 - **oauth2-common**: holds the basic oauth2 implementation.
 - **mail-noauth-notls**: send mails to user via mail server that does not need authentication and uses no encrypted transport.
 - **get-userdata-ldap**: query userdata (frist and last name by email address of secret receiver) from a ldap server.

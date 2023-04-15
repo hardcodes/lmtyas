@@ -1,17 +1,17 @@
 use crate::authenticated_user::SharedAuthenticatedUsersHashMap;
 use crate::authentication_middleware::SharedRequestData;
-#[cfg(feature = "oauth2-auth")]
+#[cfg(feature = "oauth2-auth-ldap")]
 use crate::authentication_url::AUTH_ROUTE;
 #[cfg(feature = "ldap-common")]
 use crate::ldap_common::LdapCommonConfiguration;
-#[cfg(any(feature = "ldap-auth", feature = "oauth2-auth"))]
+#[cfg(any(feature = "ldap-auth", feature = "oauth2-auth-ldap"))]
 use crate::login_user_trait::Login;
 use crate::mail_configuration::SendEMailConfiguration;
-#[cfg(feature = "oauth2-auth")]
+#[cfg(feature = "oauth2-auth-ldap")]
 use crate::oauth2_common::Oauth2Configuration;
 use crate::rsa_functions::{RsaKeys, RsaPrivateKeyPassword};
 use crate::secret_functions::SharedSecretData;
-#[cfg(feature = "oauth2-auth")]
+#[cfg(feature = "oauth2-auth-ldap")]
 use oauth2::{basic::BasicClient, AuthUrl, ClientId, ClientSecret, RedirectUrl, TokenUrl};
 use openssl::ssl::{SslAcceptor, SslAcceptorBuilder, SslFiletype, SslMethod, SslOptions};
 use serde::{Deserialize, Serialize};
@@ -53,7 +53,7 @@ pub struct ConfigurationFile {
     pub fqdn: String,
     #[cfg(feature = "ldap-common")]
     pub ldap_common_configuration: LdapCommonConfiguration,
-    #[cfg(feature = "oauth2-auth")]
+    #[cfg(feature = "oauth2-auth-ldap")]
     pub oauth2_configuration: Oauth2Configuration,
     pub login_hint: String,
     pub mail_hint: Option<String>,
@@ -100,7 +100,7 @@ impl ConfigurationFile {
         parsed_config
             .ldap_common_configuration
             .build_valid_user_regex()?;
-        #[cfg(feature = "oauth2-auth")]
+        #[cfg(feature = "oauth2-auth-ldap")]
         parsed_config
             .oauth2_configuration
             .build_valid_user_regex()?;
@@ -124,7 +124,7 @@ pub struct ApplicationConfiguration {
     /// stores every incoming resource request
     pub shared_request_data: Arc<RwLock<SharedRequestData>>,
     /// stores the optional oauth2 cliet configuration
-    #[cfg(feature = "oauth2-auth")]
+    #[cfg(feature = "oauth2-auth-ldap")]
     pub oauth2_client: Arc<BasicClient>,
 }
 

@@ -3,7 +3,7 @@ use actix_web::{guard, middleware, web, App, HttpResponse, HttpServer};
 use lmtyas::authenticated_user::cleanup_authenticated_users_hashmap;
 #[cfg(feature = "ldap-auth")]
 use lmtyas::authentication_ldap::LdapCommonConfiguration;
-#[cfg(feature = "oauth2-auth")]
+#[cfg(feature = "oauth2-auth-ldap")]
 use lmtyas::oauth2_common::Oauth2Configuration;
 use lmtyas::authentication_middleware::{
     cleanup_authentication_state_hashmap, CheckAuthentication,
@@ -21,7 +21,7 @@ use timer::Timer;
 
 #[cfg(feature = "ldap-auth")]
 type AuthConfiguration = LdapCommonConfiguration;
-#[cfg(feature = "oauth2-auth")]
+#[cfg(feature = "oauth2-auth-ldap")]
 type AuthConfiguration = Oauth2Configuration;
 
 #[actix_web::main]
