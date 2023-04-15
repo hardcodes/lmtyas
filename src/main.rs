@@ -3,8 +3,6 @@ use actix_web::{guard, middleware, web, App, HttpResponse, HttpServer};
 use lmtyas::authenticated_user::cleanup_authenticated_users_hashmap;
 #[cfg(feature = "ldap-auth")]
 use lmtyas::authentication_ldap::LdapCommonConfiguration;
-#[cfg(feature = "oauth2-auth-ldap")]
-use lmtyas::oauth2_common::Oauth2Configuration;
 use lmtyas::authentication_middleware::{
     cleanup_authentication_state_hashmap, CheckAuthentication,
 };
@@ -14,6 +12,8 @@ use lmtyas::configuration::ApplicationConfiguration;
 use lmtyas::handler_functions::*;
 use lmtyas::log_functions::extract_request_path;
 use lmtyas::login_user_trait::Login;
+#[cfg(feature = "oauth2-auth-ldap")]
+use lmtyas::oauth2_common::{cleanup_oauth2_authentication_state_hashmap, Oauth2Configuration};
 use log::info;
 use std::io::Write;
 use std::path::Path;
@@ -63,6 +63,24 @@ async fn main() -> std::io::Result<()> {
         .schedule_repeating(chrono::Duration::seconds(15), move || {
             cleanup_authentication_state_hashmap(&authentication_state_hashmap, auth_duration)
         });
+
+    // timer that calls a cleanup routine every 15 seconds
+    // and removes used or aged oauth2authentication requests
+    // TODO: make this conditional
+    let cleanup_oauth2_authentication_state_hashmap_timer = Timer::new();
+    let shared_oauth2_verfication_data = application_configuration
+        .shared_oauth2_verfication_data
+        .clone();
+    let _cleanup_shared_oauth2_verfication_data_guard =
+        cleanup_oauth2_authentication_state_hashmap_timer.schedule_repeating(
+            chrono::Duration::seconds(15),
+            move || {
+                cleanup_oauth2_authentication_state_hashmap(
+                    &shared_oauth2_verfication_data,
+                    auth_duration,
+                )
+            },
+        );
 
     // timer that calls a cleanup routine every 15 seconds
     // and removes expired user sessions

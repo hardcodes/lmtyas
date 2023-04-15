@@ -3,7 +3,7 @@ use common::SETUP_SINGLETON;
 #[cfg(feature = "ldap-auth")]
 pub use lmtyas::authentication_ldap::LdapLogin;
 use lmtyas::configuration::ApplicationConfiguration;
-#[cfg(any(feature = "ldap-auth", feature = "oauth2-auth"))]
+#[cfg(any(feature = "ldap-auth", feature = "oauth2-auth-ldap"))]
 use lmtyas::ldap_common::LdapSearchResult;
 #[cfg(feature = "mail-noauth-notls")]
 pub use lmtyas::mail_noauth_notls::SendEMail;

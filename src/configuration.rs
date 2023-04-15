@@ -8,7 +8,7 @@ use crate::ldap_common::LdapCommonConfiguration;
 use crate::login_user_trait::Login;
 use crate::mail_configuration::SendEMailConfiguration;
 #[cfg(feature = "oauth2-auth-ldap")]
-use crate::oauth2_common::Oauth2Configuration;
+use crate::oauth2_common::{Oauth2Configuration, SharedOauth2VerificationDataHashMap};
 use crate::rsa_functions::{RsaKeys, RsaPrivateKeyPassword};
 use crate::secret_functions::SharedSecretData;
 #[cfg(feature = "oauth2-auth-ldap")]
@@ -126,6 +126,9 @@ pub struct ApplicationConfiguration {
     /// stores the optional oauth2 cliet configuration
     #[cfg(feature = "oauth2-auth-ldap")]
     pub oauth2_client: Arc<BasicClient>,
+    /// stores the optiinal oauth2 verification data
+    #[cfg(feature = "oauth2-auth-ldap")]
+    pub shared_oauth2_verfication_data: Arc<RwLock<SharedOauth2VerificationDataHashMap>>,
 }
 
 /// Build a new instance of ApplicationConfiguration
@@ -176,6 +179,9 @@ impl ApplicationConfiguration {
                         .expect("cannot set oquth 2 redirect url"),
                 ),
             ),
+            shared_oauth2_verfication_data: Arc::new(RwLock::new(
+                SharedOauth2VerificationDataHashMap::new(),
+            )),
         }
     }
 
