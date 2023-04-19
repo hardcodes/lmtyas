@@ -35,8 +35,8 @@ pub trait Login {
             "application_configuration.configuration_file = {:?}",
             &application_configuration.configuration_file
         );
-        error!("login_user() - default implementaion, no login possible");
-        HttpResponse::err_text_response("ERROR: default implementaion, no login possible")
+        error!("login_user() - default implementation, no login possible");
+        HttpResponse::err_text_response("ERROR: default implementation, no login possible")
     }
     /// Hook for login implementations that need to load the
     /// user database from a file.

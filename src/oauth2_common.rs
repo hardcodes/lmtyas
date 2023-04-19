@@ -4,18 +4,18 @@ use crate::authentication_middleware::PeerIpAddress;
 use crate::authentication_middleware::UNKNOWN_PEER_IP;
 use crate::configuration::ApplicationConfiguration;
 pub use crate::login_user_trait::Login;
-use actix_web::{http, http::StatusCode, web, web::Bytes, HttpRequest, HttpResponse};
+use actix_web::{http, http::Method, http::StatusCode, web, web::Bytes, HttpRequest, HttpResponse};
 use async_trait::async_trait;
+use chrono::Duration;
+use chrono::{DateTime, Utc};
 use log::{debug, info};
 use oauth2::{CsrfToken, PkceCodeChallenge, PkceCodeVerifier, Scope};
 use regex::Regex;
 use serde::Deserialize;
-use std::error::Error;
-use uuid::Uuid;
 use std::collections::HashMap;
-use chrono::{DateTime, Utc};
+use std::error::Error;
 use std::sync::{Arc, RwLock};
-use chrono::Duration;
+use uuid::Uuid;
 
 /// Holds the configuration to access an oauth server
 /// for user authentication
@@ -40,8 +40,6 @@ pub struct Oauth2VerificationData {
     pub time_stamp: DateTime<Utc>,
 }
 
-pub type SharedOauth2VerificationDataHashMap = HashMap<Uuid, Oauth2VerificationData>;
-
 impl Oauth2VerificationData {
     pub fn new(pkce_verifier: PkceCodeVerifier, csrf_token: CsrfToken) -> Self {
         Self {
@@ -52,6 +50,8 @@ impl Oauth2VerificationData {
     }
 }
 
+pub type SharedOauth2VerificationDataHashMap = HashMap<Uuid, Oauth2VerificationData>;
+
 /// Removes aged authentication requests
 #[inline]
 pub fn cleanup_oauth2_authentication_state_hashmap(
@@ -61,31 +61,37 @@ pub fn cleanup_oauth2_authentication_state_hashmap(
     let time_to_delete = Utc::now() - Duration::seconds(max_age_in_seconds);
     let shared_oauth2_verfication_data_read_lock = shared_oauth2_verfication_data.read().unwrap();
     let mut items_to_remove: Vec<uuid::Uuid> = Vec::new();
-    shared_oauth2_verfication_data_read_lock.iter().for_each(|(k, v)| {
-        // remove authentication requests that already have been used
-        // or were not used in a timely manner
-        if v.time_stamp < time_to_delete {
-            info!("removing oauth2 authentication request {}", &k.to_string());
-            items_to_remove.push(*k);
-        }
-    });
+    shared_oauth2_verfication_data_read_lock
+        .iter()
+        .for_each(|(k, v)| {
+            // remove authentication requests that already have been used
+            // or were not used in a timely manner
+            if v.time_stamp < time_to_delete {
+                info!("removing oauth2 authentication request {}", &k.to_string());
+                items_to_remove.push(*k);
+            }
+        });
     drop(shared_oauth2_verfication_data_read_lock);
 
-    let mut shared_oauth2_verfication_data_write_lock = shared_oauth2_verfication_data.write().unwrap();
+    let mut shared_oauth2_verfication_data_write_lock =
+        shared_oauth2_verfication_data.write().unwrap();
     for item in items_to_remove {
-        shared_oauth2_verfication_data_write_lock
-            .remove(&item);
+        shared_oauth2_verfication_data_write_lock.remove(&item);
     }
 }
-
 
 #[async_trait(?Send)]
 impl Login for Oauth2Configuration {
     async fn login_user(
         _bytes: Bytes,
-        _request: HttpRequest,
+        request: HttpRequest,
         _application_configuration: web::Data<ApplicationConfiguration>,
     ) -> HttpResponse {
+        debug!("oauth2 response:\n\n{:?}", request);
+        // accept GET method only
+        if Method::GET != request.method() {
+            return HttpResponse::Forbidden().finish();
+        }
         HttpResponse::Forbidden().finish()
     }
 
@@ -109,8 +115,7 @@ impl AuthenticationRedirect for Oauth2Configuration {
             .oauth2_client
             .authorize_url(CsrfToken::new_random)
             // Set the desired scopes.
-            .add_scope(Scope::new("read".to_string()))
-            .add_scope(Scope::new("write".to_string()))
+            .add_scope(Scope::new("email".to_string()))
             // Set the PKCE code challenge.
             .set_pkce_challenge(pkce_challenge)
             .url();
@@ -119,7 +124,10 @@ impl AuthenticationRedirect for Oauth2Configuration {
             "get_authentication_redirect_response() => {}",
             &redirect_url
         );
-        let mut shared_oauth2_verfication_data_write_lock = application_configuration.shared_oauth2_verfication_data.write().unwrap();
+        let mut shared_oauth2_verfication_data_write_lock = application_configuration
+            .shared_oauth2_verification_data
+            .write()
+            .unwrap();
         // use the same uuid as in the AuthenticationState, so we can find it later on
         let uuid = request_uuid.to_owned();
         shared_oauth2_verfication_data_write_lock.insert(uuid, verification_data);

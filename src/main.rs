@@ -68,15 +68,15 @@ async fn main() -> std::io::Result<()> {
     // and removes used or aged oauth2authentication requests
     // TODO: make this conditional
     let cleanup_oauth2_authentication_state_hashmap_timer = Timer::new();
-    let shared_oauth2_verfication_data = application_configuration
-        .shared_oauth2_verfication_data
+    let shared_oauth2_verification_data = application_configuration
+        .shared_oauth2_verification_data
         .clone();
     let _cleanup_shared_oauth2_verfication_data_guard =
         cleanup_oauth2_authentication_state_hashmap_timer.schedule_repeating(
             chrono::Duration::seconds(15),
             move || {
                 cleanup_oauth2_authentication_state_hashmap(
-                    &shared_oauth2_verfication_data,
+                    &shared_oauth2_verification_data,
                     auth_duration,
                 )
             },
@@ -195,7 +195,15 @@ async fn main() -> std::io::Result<()> {
                         // feature that implements the `Login` trait. This trait
                         // can process posted form data or other means of login
                         // data, e.g. saml2 oder oauth2 resonses.
+                        //
+                        // Exclude POST in `Login` trait implementation if needed!
                         web::post().to(<AuthConfiguration as Login>::login_user),
+                    )
+                    .route(
+                        // See explanation above.
+                        authentication_url::AUTH_ROUTE,
+                        // Exclude GET in `Login` trait implementation if needed!
+                        web::get().to(<AuthConfiguration as Login>::login_user),
                     )
                     // the `const AUTH_PATH` and `const AUTH_INDEX_PAGE`
                     // are defined by a selected authentication feature that
