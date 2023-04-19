@@ -126,9 +126,9 @@ pub struct ApplicationConfiguration {
     /// stores the optional oauth2 cliet configuration
     #[cfg(feature = "oauth2-auth-ldap")]
     pub oauth2_client: Arc<BasicClient>,
-    /// stores the optiinal oauth2 verification data
+    /// stores the optional oauth2 verification data
     #[cfg(feature = "oauth2-auth-ldap")]
-    pub shared_oauth2_verfication_data: Arc<RwLock<SharedOauth2VerificationDataHashMap>>,
+    pub shared_oauth2_verification_data: Arc<RwLock<SharedOauth2VerificationDataHashMap>>,
 }
 
 /// Build a new instance of ApplicationConfiguration
@@ -160,6 +160,7 @@ impl ApplicationConfiguration {
                 SharedAuthenticatedUsersHashMap::new(config_file.admin_accounts),
             )),
             shared_request_data: Arc::new(RwLock::new(SharedRequestData::new())),
+            #[cfg(feature = "oauth2-auth-ldap")]
             oauth2_client: Arc::new(
                 BasicClient::new(
                     ClientId::new(config_file.oauth2_configuration.client_id),
@@ -175,11 +176,12 @@ impl ApplicationConfiguration {
                 )
                 // Set the URL the user will be redirected to after the authorization process.
                 .set_redirect_uri(
-                    RedirectUrl::new(format!("{}{}", &config_file.fqdn, AUTH_ROUTE))
+                    RedirectUrl::new(format!("https://{}/authentication{}", &config_file.fqdn, AUTH_ROUTE))
                         .expect("cannot set oquth 2 redirect url"),
                 ),
             ),
-            shared_oauth2_verfication_data: Arc::new(RwLock::new(
+            #[cfg(feature = "oauth2-auth-ldap")]
+            shared_oauth2_verification_data: Arc::new(RwLock::new(
                 SharedOauth2VerificationDataHashMap::new(),
             )),
         }
