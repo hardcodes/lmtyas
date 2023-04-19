@@ -8,7 +8,7 @@ use crate::cookie_functions::build_new_authentication_cookie;
 use crate::http_traits::CustomHttpResponse;
 pub use crate::ldap_common::{LdapCommonConfiguration, LdapSearchResult};
 pub use crate::login_user_trait::Login;
-use actix_web::{http, http::StatusCode, web, web::Bytes, HttpRequest, HttpResponse};
+use actix_web::{http, http::Method, http::StatusCode, web, web::Bytes, HttpRequest, HttpResponse};
 use async_trait::async_trait;
 use ldap3::{ldap_escape, LdapConnAsync};
 use log::{debug, info, warn};
@@ -57,7 +57,10 @@ impl LdapLogin for LdapCommonConfiguration {
         ldap3::drive!(conn);
         debug!("Connected to {}", &&self.url);
         ldap.simple_bind(
-            &self.authentication.ldap_bind_user_dn.replace("{0}", &ldap_escape(user_name)),
+            &self
+                .authentication
+                .ldap_bind_user_dn
+                .replace("{0}", &ldap_escape(user_name)),
             password,
         )
         .await?
@@ -90,6 +93,10 @@ impl Login for LdapCommonConfiguration {
         debug!("request = {:?}", &request);
         let peer_ip = Peer::get_peer_ip_address(&request);
         debug!("peer_address = {:?}", &peer_ip);
+        // accept POST method only
+        if Method::POST != request.method() {
+            return HttpResponse::Forbidden().finish();
+        }
         // 1. validate input
         //
         //
