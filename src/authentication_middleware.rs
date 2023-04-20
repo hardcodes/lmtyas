@@ -46,7 +46,7 @@ pub trait AuthenticationRedirect {
 /// Holds the information about a resoure request
 #[derive(Clone, Debug)]
 pub struct AuthenticationState {
-    /// will be set to true when a (possible) assertion has arrived
+    /// will be set to true when a (possible) login request/response has arrived
     pub has_been_used: bool,
     /// url that was requested when entering the web service
     pub url_requested: String,

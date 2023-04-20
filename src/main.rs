@@ -13,7 +13,7 @@ use lmtyas::handler_functions::*;
 use lmtyas::log_functions::extract_request_path;
 use lmtyas::login_user_trait::Login;
 #[cfg(feature = "oauth2-auth-ldap")]
-use lmtyas::oauth2_common::{cleanup_oauth2_authentication_state_hashmap, Oauth2Configuration};
+use lmtyas::oauth2_common::{cleanup_oauth2_authentication_data_hashmap, Oauth2Configuration};
 use log::info;
 use std::io::Write;
 use std::path::Path;
@@ -75,7 +75,7 @@ async fn main() -> std::io::Result<()> {
         cleanup_oauth2_authentication_state_hashmap_timer.schedule_repeating(
             chrono::Duration::seconds(15),
             move || {
-                cleanup_oauth2_authentication_state_hashmap(
+                cleanup_oauth2_authentication_data_hashmap(
                     &shared_oauth2_verification_data,
                     auth_duration,
                 )
@@ -93,6 +93,7 @@ async fn main() -> std::io::Result<()> {
         .schedule_repeating(chrono::Duration::seconds(15), move || {
             cleanup_authenticated_users_hashmap(&authenticated_users_hashmap, cookie_duration)
         });
+
     // values for the csp-header
     let content_security_policy = concat!(
         "form-action 'self';",

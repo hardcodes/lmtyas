@@ -168,16 +168,19 @@ impl ApplicationConfiguration {
                         config_file.oauth2_configuration.client_secret,
                     )),
                     AuthUrl::new(config_file.oauth2_configuration.auth_url)
-                        .expect("cannot set oauth2 auth url"),
+                        .expect("Invalid authorization endpoint URL"),
                     Some(
                         TokenUrl::new(config_file.oauth2_configuration.token_url)
-                            .expect("cannot set oauth2 token url"),
+                            .expect("Invalid token endpoint URL"),
                     ),
                 )
                 // Set the URL the user will be redirected to after the authorization process.
                 .set_redirect_uri(
-                    RedirectUrl::new(format!("https://{}/authentication{}", &config_file.fqdn, AUTH_ROUTE))
-                        .expect("cannot set oquth 2 redirect url"),
+                    RedirectUrl::new(format!(
+                        "https://{}/authentication{}",
+                        &config_file.fqdn, AUTH_ROUTE
+                    ))
+                    .expect("Invalid redirect URL"),
                 ),
             ),
             #[cfg(feature = "oauth2-auth-ldap")]

@@ -42,7 +42,7 @@ pub mod authentication_url {
 
 #[cfg(feature = "oauth2-auth-ldap")]
 pub mod authentication_url {
-    pub const AUTH_ROUTE: &str = "/oauth2";
+    pub const AUTH_ROUTE: &str = "/callback";
     pub const AUTH_PATH: &str = "./authentication-oauth2/";
     pub const AUTH_INDEX_PAGE: &str = "nothing-here.html";
 }
