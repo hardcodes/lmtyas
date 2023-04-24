@@ -1,18 +1,22 @@
 use crate::authenticated_user::SharedAuthenticatedUsersHashMap;
 use crate::authentication_middleware::SharedRequestData;
-#[cfg(feature = "oauth2-auth-ldap")]
+#[cfg(feature = "authentication-oidc")]
+use crate::authentication_oidc::{OidcConfiguration, SharedOidcVerificationDataHashMap};
+#[cfg(feature = "oidc-auth-ldap")]
 use crate::authentication_url::AUTH_ROUTE;
 #[cfg(feature = "ldap-common")]
 use crate::ldap_common::LdapCommonConfiguration;
-#[cfg(any(feature = "ldap-auth", feature = "oauth2-auth-ldap"))]
+#[cfg(any(feature = "ldap-auth", feature = "authentication-oidc"))]
 use crate::login_user_trait::Login;
 use crate::mail_configuration::SendEMailConfiguration;
-#[cfg(feature = "oauth2-auth-ldap")]
-use crate::oauth2_common::{Oauth2Configuration, SharedOauth2VerificationDataHashMap};
 use crate::rsa_functions::{RsaKeys, RsaPrivateKeyPassword};
 use crate::secret_functions::SharedSecretData;
-#[cfg(feature = "oauth2-auth-ldap")]
-use oauth2::{basic::BasicClient, AuthUrl, ClientId, ClientSecret, RedirectUrl, TokenUrl};
+#[cfg(feature = "authentication-oidc")]
+use openidconnect::{
+    core::{CoreClient, CoreProviderMetadata},
+    reqwest::async_http_client,
+    ClientId, ClientSecret, IssuerUrl, RedirectUrl,
+};
 use openssl::ssl::{SslAcceptor, SslAcceptorBuilder, SslFiletype, SslMethod, SslOptions};
 use serde::{Deserialize, Serialize};
 use std::error::Error;
@@ -53,8 +57,8 @@ pub struct ConfigurationFile {
     pub fqdn: String,
     #[cfg(feature = "ldap-common")]
     pub ldap_common_configuration: LdapCommonConfiguration,
-    #[cfg(feature = "oauth2-auth-ldap")]
-    pub oauth2_configuration: Oauth2Configuration,
+    #[cfg(feature = "oidc-auth-ldap")]
+    pub oidc_configuration: OidcConfiguration,
     pub login_hint: String,
     pub mail_hint: Option<String>,
     pub imprint: Imprint,
@@ -100,10 +104,8 @@ impl ConfigurationFile {
         parsed_config
             .ldap_common_configuration
             .build_valid_user_regex()?;
-        #[cfg(feature = "oauth2-auth-ldap")]
-        parsed_config
-            .oauth2_configuration
-            .build_valid_user_regex()?;
+        #[cfg(feature = "oidc-auth-ldap")]
+        parsed_config.oidc_configuration.build_valid_user_regex()?;
         Ok(parsed_config)
     }
 }
@@ -123,12 +125,12 @@ pub struct ApplicationConfiguration {
     pub shared_authenticated_users: Arc<RwLock<SharedAuthenticatedUsersHashMap>>,
     /// stores every incoming resource request
     pub shared_request_data: Arc<RwLock<SharedRequestData>>,
-    /// stores the optional oauth2 cliet configuration
-    #[cfg(feature = "oauth2-auth-ldap")]
-    pub oauth2_client: Arc<BasicClient>,
-    /// stores the optional oauth2 verification data
-    #[cfg(feature = "oauth2-auth-ldap")]
-    pub shared_oauth2_verification_data: Arc<RwLock<SharedOauth2VerificationDataHashMap>>,
+    /// stores the optional oidc cliet configuration
+    #[cfg(feature = "oidc-auth-ldap")]
+    pub oidc_client: Arc<CoreClient>,
+    /// stores the optional oidc verification data
+    #[cfg(feature = "oidc-auth-ldap")]
+    pub shared_oidc_verification_data: Arc<RwLock<SharedOidcVerificationDataHashMap>>,
 }
 
 /// Build a new instance of ApplicationConfiguration
@@ -146,9 +148,16 @@ impl ApplicationConfiguration {
     /// # Returns
     ///
     /// - `ApplicationConfiguration`
-    pub fn read_from_file<P: AsRef<Path>>(configuration_file_path: P) -> ApplicationConfiguration {
+    pub async fn read_from_file<P: AsRef<Path>>(configuration_file_path: P) -> ApplicationConfiguration {
         let config_file = ConfigurationFile::read_from_file(configuration_file_path)
-            .expect("can not load the json configuration file!");
+            .expect("Cannot load the json configuration file!");
+        #[cfg(feature = "authentication-oidc")]
+        let provider_metadata = CoreProviderMetadata::discover_async(
+            IssuerUrl::new(config_file.oidc_configuration.provider_metadata_url.clone())
+                .expect("Cannot build provider metadata url!"),
+                async_http_client,
+        ).await
+        .expect("Cannot load oidc provider metadata");
         ApplicationConfiguration {
             configuration_file: config_file.clone(),
             rsa_password: Arc::new(RwLock::new(RsaPrivateKeyPassword {
@@ -160,19 +169,14 @@ impl ApplicationConfiguration {
                 SharedAuthenticatedUsersHashMap::new(config_file.admin_accounts),
             )),
             shared_request_data: Arc::new(RwLock::new(SharedRequestData::new())),
-            #[cfg(feature = "oauth2-auth-ldap")]
-            oauth2_client: Arc::new(
-                BasicClient::new(
-                    ClientId::new(config_file.oauth2_configuration.client_id),
+            #[cfg(feature = "authentication-oidc")]
+            oidc_client: Arc::new(
+                CoreClient::from_provider_metadata(
+                    provider_metadata,
+                    ClientId::new(config_file.oidc_configuration.client_id),
                     Some(ClientSecret::new(
-                        config_file.oauth2_configuration.client_secret,
+                        config_file.oidc_configuration.client_secret,
                     )),
-                    AuthUrl::new(config_file.oauth2_configuration.auth_url)
-                        .expect("Invalid authorization endpoint URL"),
-                    Some(
-                        TokenUrl::new(config_file.oauth2_configuration.token_url)
-                            .expect("Invalid token endpoint URL"),
-                    ),
                 )
                 // Set the URL the user will be redirected to after the authorization process.
                 .set_redirect_uri(
@@ -183,9 +187,9 @@ impl ApplicationConfiguration {
                     .expect("Invalid redirect URL"),
                 ),
             ),
-            #[cfg(feature = "oauth2-auth-ldap")]
-            shared_oauth2_verification_data: Arc::new(RwLock::new(
-                SharedOauth2VerificationDataHashMap::new(),
+            #[cfg(feature = "oidc-auth-ldap")]
+            shared_oidc_verification_data: Arc::new(RwLock::new(
+                SharedOidcVerificationDataHashMap::new(),
             )),
         }
     }

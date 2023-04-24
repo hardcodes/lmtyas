@@ -12,8 +12,8 @@ use lmtyas::configuration::ApplicationConfiguration;
 use lmtyas::handler_functions::*;
 use lmtyas::log_functions::extract_request_path;
 use lmtyas::login_user_trait::Login;
-#[cfg(feature = "oauth2-auth-ldap")]
-use lmtyas::oauth2_common::{cleanup_oauth2_authentication_data_hashmap, Oauth2Configuration};
+#[cfg(feature = "oidc-auth-ldap")]
+use lmtyas::authentication_oidc::{cleanup_oidc_authentication_data_hashmap, OidcConfiguration};
 use log::info;
 use std::io::Write;
 use std::path::Path;
@@ -21,8 +21,8 @@ use timer::Timer;
 
 #[cfg(feature = "ldap-auth")]
 type AuthConfiguration = LdapCommonConfiguration;
-#[cfg(feature = "oauth2-auth-ldap")]
-type AuthConfiguration = Oauth2Configuration;
+#[cfg(feature = "oidc-auth-ldap")]
+type AuthConfiguration = OidcConfiguration;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -42,7 +42,7 @@ async fn main() -> std::io::Result<()> {
         .unwrap()
         .to_string();
     let application_configuration =
-        ApplicationConfiguration::read_from_file(Path::new(&config_file));
+        ApplicationConfiguration::read_from_file(Path::new(&config_file)).await;
     // make a clone of the web_bind_address since it will be used
     // after moving application_configuration into the webservice
     let web_bind_address = application_configuration
@@ -65,18 +65,18 @@ async fn main() -> std::io::Result<()> {
         });
 
     // timer that calls a cleanup routine every 15 seconds
-    // and removes used or aged oauth2authentication requests
+    // and removes used or aged oidc authentication requests
     // TODO: make this conditional
-    let cleanup_oauth2_authentication_state_hashmap_timer = Timer::new();
-    let shared_oauth2_verification_data = application_configuration
-        .shared_oauth2_verification_data
+    let cleanup_oidc_authentication_state_hashmap_timer = Timer::new();
+    let shared_oidc_verification_data = application_configuration
+        .shared_oidc_verification_data
         .clone();
-    let _cleanup_shared_oauth2_verfication_data_guard =
-        cleanup_oauth2_authentication_state_hashmap_timer.schedule_repeating(
+    let _cleanup_shared_oidc_verfication_data_guard =
+        cleanup_oidc_authentication_state_hashmap_timer.schedule_repeating(
             chrono::Duration::seconds(15),
             move || {
-                cleanup_oauth2_authentication_data_hashmap(
-                    &shared_oauth2_verification_data,
+                cleanup_oidc_authentication_data_hashmap(
+                    &shared_oidc_verification_data,
                     auth_duration,
                 )
             },
@@ -195,7 +195,7 @@ async fn main() -> std::io::Result<()> {
                         // the `AuthConfiguration` type is defined by a selected
                         // feature that implements the `Login` trait. This trait
                         // can process posted form data or other means of login
-                        // data, e.g. saml2 oder oauth2 resonses.
+                        // data, e.g. saml2 oder oidc resonses.
                         //
                         // Exclude POST in `Login` trait implementation if needed!
                         web::post().to(<AuthConfiguration as Login>::login_user),

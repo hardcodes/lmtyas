@@ -5,9 +5,9 @@ pub use crate::authentication_ldap::LdapCommonConfiguration;
 use crate::configuration::ApplicationConfiguration;
 use crate::cookie_functions::{get_plain_cookie_string, COOKIE_NAME};
 use crate::header_value_trait::HeaderValueExctractor;
-#[cfg(feature = "oauth2-auth-ldap")]
-use crate::oauth2_common::Oauth2Configuration;
-#[cfg(any(feature = "ldap-auth", feature = "oauth2-auth-ldap"))]
+#[cfg(feature = "oidc-auth-ldap")]
+use crate::authentication_oidc::OidcConfiguration;
+#[cfg(any(feature = "ldap-auth", feature = "oidc-auth-ldap"))]
 use actix_web::dev::{forward_ready, Service, ServiceRequest, ServiceResponse, Transform};
 use actix_web::{body::EitherBody, http, http::StatusCode, web, Error, HttpRequest, HttpResponse};
 use chrono::Duration;
@@ -22,8 +22,8 @@ use uuid::Uuid;
 
 #[cfg(feature = "ldap-auth")]
 type AuthenticationRedirectType = LdapCommonConfiguration;
-#[cfg(feature = "oauth2-auth-ldap")]
-type AuthenticationRedirectType = Oauth2Configuration;
+#[cfg(feature = "oidc-auth-ldap")]
+type AuthenticationRedirectType = OidcConfiguration;
 
 /// maximum number of authentication requests that are stored in the
 /// hashmap to prevent a DOS attack.

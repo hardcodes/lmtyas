@@ -12,10 +12,15 @@ use async_trait::async_trait;
 use chrono::Duration;
 use chrono::{DateTime, Utc};
 use log::{debug, info, warn};
-use oauth2::TokenResponse;
-use oauth2::{
-    reqwest::async_http_client, AuthorizationCode, CsrfToken, PkceCodeChallenge, PkceCodeVerifier,
-    Scope,
+use openidconnect::CodeTokenRequest;
+use openidconnect::{
+    core::{
+        CoreAuthenticationFlow, CoreClient, CoreProviderMetadata, CoreResponseType,
+        CoreUserInfoClaims,
+    },
+    reqwest::async_http_client,
+    AccessTokenHash, AuthenticationFlow, AuthorizationCode, ClientId, ClientSecret, CsrfToken,
+    IssuerUrl, Nonce, PkceCodeChallenge, PkceCodeVerifier, RedirectUrl, Scope, TokenResponse,
 };
 use regex::Regex;
 use serde::Deserialize;
@@ -25,36 +30,37 @@ use std::fmt;
 use std::sync::{Arc, RwLock};
 use uuid::Uuid;
 
-/// Holds the configuration to access an oauth server
+/// Holds the configuration to access an oidc server
 /// for user authentication
 #[derive(Clone, Deserialize, Debug)]
-pub struct Oauth2Configuration {
+pub struct OidcConfiguration {
+    pub provider_metadata_url: String,
     pub client_id: String,
     pub client_secret: String,
-    pub auth_url: String,
-    pub token_url: String,
     pub valid_user_regex: String,
     #[serde(skip_deserializing)]
     pub user_regex: Option<Regex>,
 }
 
 /// Stores the information that is needed
-/// to validate a response from the oauth2
+/// to validate a response from the oidc
 /// server
-pub struct Oauth2VerificationData {
+pub struct OidcVerificationData {
     pub pkce_verifier: PkceCodeVerifier,
     pub csrf_token: CsrfToken,
+    pub nonce: Nonce,
     /// when was the request made, used to prune old entries
     pub time_stamp: DateTime<Utc>,
     /// will be set to true when a (possible) assertion has arrived
     pub has_been_used: bool,
 }
 
-impl Oauth2VerificationData {
-    pub fn new(pkce_verifier: PkceCodeVerifier, csrf_token: CsrfToken) -> Self {
+impl OidcVerificationData {
+    pub fn new(pkce_verifier: PkceCodeVerifier, csrf_token: CsrfToken, nonce: Nonce) -> Self {
         Self {
             pkce_verifier,
             csrf_token,
+            nonce,
             time_stamp: Utc::now(),
             has_been_used: false,
         }
@@ -62,7 +68,7 @@ impl Oauth2VerificationData {
 }
 
 /// custom formatter to suppress secrets
-impl fmt::Display for Oauth2VerificationData {
+impl fmt::Display for OidcVerificationData {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
@@ -74,48 +80,47 @@ impl fmt::Display for Oauth2VerificationData {
     }
 }
 
-pub type SharedOauth2VerificationDataHashMap = HashMap<Uuid, Oauth2VerificationData>;
+pub type SharedOidcVerificationDataHashMap = HashMap<Uuid, OidcVerificationData>;
 
 /// Removes aged authentication requests
 #[inline]
-pub fn cleanup_oauth2_authentication_data_hashmap(
-    shared_oauth2_verfication_data: &Arc<RwLock<SharedOauth2VerificationDataHashMap>>,
+pub fn cleanup_oidc_authentication_data_hashmap(
+    shared_oidc_verfication_data: &Arc<RwLock<SharedOidcVerificationDataHashMap>>,
     max_age_in_seconds: i64,
 ) {
     let time_to_delete = Utc::now() - Duration::seconds(max_age_in_seconds);
-    let shared_oauth2_verfication_data_read_lock = shared_oauth2_verfication_data.read().unwrap();
+    let shared_oidc_verfication_data_read_lock = shared_oidc_verfication_data.read().unwrap();
     let mut items_to_remove: Vec<uuid::Uuid> = Vec::new();
-    shared_oauth2_verfication_data_read_lock
+    shared_oidc_verfication_data_read_lock
         .iter()
         .for_each(|(k, v)| {
             // remove authentication requests that already have been used
             // or were not used in a timely manner
             if v.has_been_used || v.time_stamp < time_to_delete {
                 info!(
-                    "removing oauth2 authentication data {} {}",
+                    "removing oidc authentication data {} {}",
                     &k.to_string(),
                     &v.to_string()
                 );
                 items_to_remove.push(*k);
             }
         });
-    drop(shared_oauth2_verfication_data_read_lock);
+    drop(shared_oidc_verfication_data_read_lock);
 
-    let mut shared_oauth2_verfication_data_write_lock =
-        shared_oauth2_verfication_data.write().unwrap();
+    let mut shared_oidc_verfication_data_write_lock = shared_oidc_verfication_data.write().unwrap();
     for item in items_to_remove {
-        shared_oauth2_verfication_data_write_lock.remove(&item);
+        shared_oidc_verfication_data_write_lock.remove(&item);
     }
 }
 
 #[async_trait(?Send)]
-impl Login for Oauth2Configuration {
+impl Login for OidcConfiguration {
     async fn login_user(
         _bytes: Bytes,
         request: HttpRequest,
         application_configuration: web::Data<ApplicationConfiguration>,
     ) -> HttpResponse {
-        debug!("oauth2 response:\n\n{:?}", request);
+        debug!("oidc response:\n\n{:?}", request);
         // accept GET method only
         if Method::GET != request.method() {
             return HttpResponse::Forbidden().finish();
@@ -128,7 +133,7 @@ impl Login for Oauth2Configuration {
             Ok(q) => q,
             Err(e) => {
                 warn!(
-                    "cannot create hashmap from oauth response parameters: {}",
+                    "cannot create hashmap from oidc response parameters: {}",
                     &e
                 );
                 return HttpResponse::err_text_response("ERROR: invalid response");
@@ -137,14 +142,14 @@ impl Login for Oauth2Configuration {
         let response_code = match query.get("code") {
             Some(c) => c,
             None => {
-                warn!("no 'code' in oauth response");
+                warn!("no 'code' in oidc response");
                 return HttpResponse::err_text_response("ERROR: invalid response");
             }
         };
         let response_state = match query.get("state") {
             Some(s) => s,
             None => {
-                warn!("no 'state' in oauth response");
+                warn!("no 'state' in oidc response");
                 return HttpResponse::err_text_response("ERROR: invalid response");
             }
         };
@@ -207,53 +212,105 @@ impl Login for Oauth2Configuration {
         // At this point we made sure that the response refers to a resource
         // request that we've already seen.
         // Next: verify that the response is valid = get the access token
-        let mut shared_oauth2_verfication_data_write_lock = application_configuration
-            .shared_oauth2_verification_data
-            .write()
-            .unwrap();
-        let oauth2_verification_data = match shared_oauth2_verfication_data_write_lock
-            .get_mut(&request_id)
+        let pkce_verifier_secret;
+        let nonce;
         {
-            None => {
-                warn!(
-                    "oauth login attempt with expired or invalid oauth verification data id {}",
+            let mut shared_oidc_verfication_data_write_lock = application_configuration
+                .shared_oidc_verification_data
+                .write()
+                .unwrap();
+            let oidc_verification_data =
+                match shared_oidc_verfication_data_write_lock.get_mut(&request_id) {
+                    None => {
+                        warn!(
+                    "oidc login attempt with expired or invalid oidc verification data id {}",
                     &request_id
                 );
-                return HttpResponse::err_text_response("ERROR: invalid request id, login expired");
+                        return HttpResponse::err_text_response(
+                            "ERROR: invalid request id, login expired",
+                        );
+                    }
+                    Some(a) => a,
+                };
+            if oidc_verification_data.has_been_used {
+                warn!(
+                    "oidc verification data id {} has already been used, possible replay attack!",
+                    &request_id
+                );
+                return HttpResponse::err_text_response("ERROR: login failed");
+            } else {
+                // mark oidc verification data as used so that this ID cannot be used anymore
+                // This should not even be possible since the request id has already been
+                // validated, but better safe than sorry.
+                oidc_verification_data.has_been_used = true;
             }
-            Some(a) => a,
-        };
-        if oauth2_verification_data.has_been_used {
-            warn!(
-                "oauth verification data id {} has already been used, possible replay attack!",
-                &request_id
-            );
-            return HttpResponse::err_text_response("ERROR: login failed");
-        } else {
-            // mark oauth verification data as used so that this ID cannot be used anymore
-            // This should not even be possible since the request id has already been
-            // validated, but better safe than sorry.
-            oauth2_verification_data.has_been_used = true;
+            // PkceCodeVerifier does not implement the copy trait
+            pkce_verifier_secret = oidc_verification_data.pkce_verifier.secret().to_owned();
+            nonce = oidc_verification_data.nonce.to_owned();
+
         }
-        // PkceCodeVerifier does not implement the copy trait
-        let pkce_verifier_secret = oauth2_verification_data.pkce_verifier.secret().to_owned();
-        drop(shared_oauth2_verfication_data_write_lock);
-        info!("Getting access token for request_id {}", &request_id);
-        let token_result = match application_configuration
-            .oauth2_client
+        let pkce_verifier = PkceCodeVerifier::new(pkce_verifier_secret);
+        info!("Getting ID token for request_id {}", &request_id);
+        let token_response = match application_configuration
+            .oidc_client
             .exchange_code(code)
-            .set_pkce_verifier(PkceCodeVerifier::new(pkce_verifier_secret))
+            .set_pkce_verifier(pkce_verifier)
             .request_async(async_http_client)
             .await
         {
             Ok(t) => t,
             Err(e) => {
-                warn!("Token request failed: {}", &e);
+                warn!("ID token request failed: {}", &e);
                 return HttpResponse::err_text_response("ERROR: login failed");
             }
         };
-        info!("Received access token for request_id {}", &request_id);
-        debug!("token_result = {:?}", &token_result.access_token().secret());
+
+        debug!("token_response = {:?}", &token_response);
+        // Extract the ID token.
+        let id_token = match token_response.id_token() {
+            Some(t) => t,
+            None => {
+                warn!("ID token cannot be extracted");
+                return HttpResponse::err_text_response("ERROR: login failed");
+            }
+        };
+        info!("Received ID token for request_id {}", &request_id);
+
+        let claims = match id_token.claims(
+            &application_configuration.oidc_client.id_token_verifier(),
+            &nonce,
+        ) {
+            Ok(c) => c,
+            Err(e) => {
+                warn!("Cannot extract claims from ID token: {}", &e);
+                return HttpResponse::err_text_response("ERROR: login failed");
+            }
+        };
+
+        let access_token_hash = match claims.access_token_hash() {
+            Some(a) => a,
+            None => {
+                warn!("Cannot extract access token hash from claims");
+                return HttpResponse::err_text_response("ERROR: login failed");
+            }
+        };
+
+        debug!("access_token_hash = {:?}", &access_token_hash);
+
+        let _signing_algorithm = match id_token.signing_alg() {
+            Ok(a) => a,
+            Err(e) => {
+                warn!("Cannot extract signing algorithm from ID token: {}", &e);
+                return HttpResponse::err_text_response("ERROR: login failed");
+            }
+        };
+
+        // let actual_access_token_hash = AccessTokenHash::from_token(
+        //     token_response.  .access_token(),
+        //     &signing_algorithm
+        // )?;
+
+        // debug!("token_result = {:?}", &token_result.access_token().secret());
 
         // At this point the user has authorized us to access the wanted information,
         // we still do not know who he/she/it is.
@@ -267,39 +324,45 @@ impl Login for Oauth2Configuration {
     }
 }
 
-impl AuthenticationRedirect for Oauth2Configuration {
+impl AuthenticationRedirect for OidcConfiguration {
     fn get_authentication_redirect_response(
         _request_path_with_query: &str,
         request_uuid: &Uuid,
         application_configuration: &ApplicationConfiguration,
     ) -> HttpResponse {
         // Generate a PKCE challenge, so that we can validate the response from the
-        // oauth2 server later on.
+        // oidc server later on.
         let (pkce_challenge, pkce_verifier) = PkceCodeChallenge::new_random_sha256();
         // use our request_uuid as csrf token. It can be revealed since
         // the response is validated by requesting an access token.
         let csrf_token = CsrfToken::new(request_uuid.to_string());
-        let (redirect_url, csrf_token) = &application_configuration
-            .oauth2_client
-            .authorize_url(move || csrf_token)
+        let (redirect_url, csrf_token, nonce) = &application_configuration
+            .oidc_client
+            .authorize_url(
+                CoreAuthenticationFlow::AuthorizationCode,
+                move || csrf_token,
+                Nonce::new_random,
+            )
             // Set the desired scopes.
             .add_scope(Scope::new("email".to_string()))
+            .add_scope(Scope::new("profile".to_string()))
             // Set the PKCE code challenge.
             .set_pkce_challenge(pkce_challenge)
             .url();
-        let verification_data = Oauth2VerificationData::new(pkce_verifier, csrf_token.to_owned());
+        let verification_data =
+            OidcVerificationData::new(pkce_verifier, csrf_token.to_owned(), nonce.to_owned());
         debug!(
             "get_authentication_redirect_response() => {}",
             &redirect_url
         );
-        let mut shared_oauth2_verfication_data_write_lock = application_configuration
-            .shared_oauth2_verification_data
+        let mut shared_oidc_verfication_data_write_lock = application_configuration
+            .shared_oidc_verification_data
             .write()
             .unwrap();
         // use the same uuid as in the AuthenticationState, so we can find it later on
         let uuid = request_uuid.to_owned();
-        shared_oauth2_verfication_data_write_lock.insert(uuid, verification_data);
-        drop(shared_oauth2_verfication_data_write_lock);
+        shared_oidc_verfication_data_write_lock.insert(uuid, verification_data);
+        drop(shared_oidc_verfication_data_write_lock);
         HttpResponse::build(StatusCode::SEE_OTHER)
             .append_header((http::header::LOCATION, redirect_url.as_str()))
             .finish()
