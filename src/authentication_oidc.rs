@@ -2,6 +2,7 @@ extern crate env_logger;
 use crate::authentication_middleware::AuthenticationRedirect;
 use crate::authentication_middleware::PeerIpAddress;
 use crate::authentication_middleware::UNKNOWN_PEER_IP;
+use crate::authentication_url::AUTH_LOGIN_FAIL_PAGE;
 use crate::configuration::ApplicationConfiguration;
 use crate::http_traits::CustomHttpResponse;
 pub use crate::login_user_trait::Login;
@@ -113,6 +114,16 @@ pub fn cleanup_oidc_authentication_data_hashmap(
     }
 }
 
+fn handle_error<T: std::error::Error>(fail: &T, message: &'static str) {
+    let mut error_mesage = format!("{}", message);
+    let mut current_fail: Option<&dyn std::error::Error> = Some(fail);
+    while let Some(cause) = current_fail {
+        error_mesage += &format!("\n    caused by: {}", cause);
+        current_fail = cause.source();
+    }
+    warn!("{}", error_mesage);
+}
+
 #[async_trait(?Send)]
 impl Login for OidcConfiguration {
     async fn login_user(
@@ -136,21 +147,27 @@ impl Login for OidcConfiguration {
                     "cannot create hashmap from oidc response parameters: {}",
                     &e
                 );
-                return HttpResponse::err_text_response("ERROR: invalid response");
+                return HttpResponse::build(StatusCode::SEE_OTHER)
+                    .append_header((http::header::LOCATION, AUTH_LOGIN_FAIL_PAGE))
+                    .finish();
             }
         };
         let response_code = match query.get("code") {
             Some(c) => c,
             None => {
                 warn!("no 'code' in oidc response");
-                return HttpResponse::err_text_response("ERROR: invalid response");
+                return HttpResponse::build(StatusCode::SEE_OTHER)
+                    .append_header((http::header::LOCATION, AUTH_LOGIN_FAIL_PAGE))
+                    .finish();
             }
         };
         let response_state = match query.get("state") {
             Some(s) => s,
             None => {
                 warn!("no 'state' in oidc response");
-                return HttpResponse::err_text_response("ERROR: invalid response");
+                return HttpResponse::build(StatusCode::SEE_OTHER)
+                    .append_header((http::header::LOCATION, AUTH_LOGIN_FAIL_PAGE))
+                    .finish();
             }
         };
 
@@ -165,48 +182,58 @@ impl Login for OidcConfiguration {
             Ok(request_id) => request_id,
             Err(_) => {
                 warn!("state cannot be parsed as uuid");
-                return HttpResponse::err_text_response("ERROR: invalid response");
+                return HttpResponse::build(StatusCode::SEE_OTHER)
+                    .append_header((http::header::LOCATION, AUTH_LOGIN_FAIL_PAGE))
+                    .finish();
             }
         };
         debug!("request_id = {}", &request_id.to_string());
         // what url/resource has been requested before login?
-        let mut auth_state_write_lock = application_configuration
-            .shared_request_data
-            .write()
-            .unwrap();
-        let auth_request = match auth_state_write_lock
-            .authentication_state_hashmap
-            .get_mut(&request_id)
+        let url_requested;
         {
-            None => {
+            let mut auth_state_write_lock = application_configuration
+                .shared_request_data
+                .write()
+                .unwrap();
+            let auth_request = match auth_state_write_lock
+                .authentication_state_hashmap
+                .get_mut(&request_id)
+            {
+                None => {
+                    warn!(
+                        "login attempt with expired or invalid authentication request id {}",
+                        &request_id
+                    );
+                    return HttpResponse::build(StatusCode::SEE_OTHER)
+                        .append_header((http::header::LOCATION, AUTH_LOGIN_FAIL_PAGE))
+                        .finish();
+                }
+                Some(a) => a,
+            };
+            if auth_request.has_been_used {
                 warn!(
-                    "login attempt with expired or invalid authentication request id {}",
+                    "authentication request id {} has already been used, possible replay attack!",
                     &request_id
                 );
-                return HttpResponse::err_text_response("ERROR: invalid request id, login expired");
-            }
-            Some(a) => a,
-        };
-        let url_requested = if auth_request.has_been_used {
-            warn!(
-                "authentication request id {} has already been used, possible replay attack!",
-                &request_id
-            );
-            return HttpResponse::err_text_response("ERROR: login failed");
-        } else {
-            // mark resource request as used so that this ID cannot be used anymore
-            auth_request.has_been_used = true;
-            auth_request.url_requested.clone()
-        };
-        // is authentication taking place from the same ip address as the resource request?
-        if peer_ip.ne(&auth_request.peer_ip) {
-            warn!(
+                return HttpResponse::build(StatusCode::SEE_OTHER)
+                    .append_header((http::header::LOCATION, AUTH_LOGIN_FAIL_PAGE))
+                    .finish();
+            } else {
+                // mark resource request as used so that this ID cannot be used anymore
+                auth_request.has_been_used = true;
+                url_requested = auth_request.url_requested.clone();
+            };
+            // is authentication taking place from the same ip address as the resource request?
+            if peer_ip.ne(&auth_request.peer_ip) {
+                warn!(
                 "IP address changed since resource request: peer_address = {:?}, auth_request = {}",
                 &peer_ip, &auth_request
             );
-            return HttpResponse::err_text_response("ERROR: login failed");
+                return HttpResponse::build(StatusCode::SEE_OTHER)
+                    .append_header((http::header::LOCATION, AUTH_LOGIN_FAIL_PAGE))
+                    .finish();
+            }
         }
-        drop(auth_state_write_lock);
         debug!("url_requested = {}", &url_requested);
 
         // At this point we made sure that the response refers to a resource
@@ -226,9 +253,9 @@ impl Login for OidcConfiguration {
                     "oidc login attempt with expired or invalid oidc verification data id {}",
                     &request_id
                 );
-                        return HttpResponse::err_text_response(
-                            "ERROR: invalid request id, login expired",
-                        );
+                        return HttpResponse::build(StatusCode::SEE_OTHER)
+                            .append_header((http::header::LOCATION, AUTH_LOGIN_FAIL_PAGE))
+                            .finish();
                     }
                     Some(a) => a,
                 };
@@ -237,7 +264,9 @@ impl Login for OidcConfiguration {
                     "oidc verification data id {} has already been used, possible replay attack!",
                     &request_id
                 );
-                return HttpResponse::err_text_response("ERROR: login failed");
+                return HttpResponse::build(StatusCode::SEE_OTHER)
+                    .append_header((http::header::LOCATION, AUTH_LOGIN_FAIL_PAGE))
+                    .finish();
             } else {
                 // mark oidc verification data as used so that this ID cannot be used anymore
                 // This should not even be possible since the request id has already been
@@ -247,7 +276,6 @@ impl Login for OidcConfiguration {
             // PkceCodeVerifier does not implement the copy trait
             pkce_verifier_secret = oidc_verification_data.pkce_verifier.secret().to_owned();
             nonce = oidc_verification_data.nonce.to_owned();
-
         }
         let pkce_verifier = PkceCodeVerifier::new(pkce_verifier_secret);
         info!("Getting ID token for request_id {}", &request_id);
@@ -260,8 +288,12 @@ impl Login for OidcConfiguration {
         {
             Ok(t) => t,
             Err(e) => {
-                warn!("ID token request failed: {}", &e);
-                return HttpResponse::err_text_response("ERROR: login failed");
+                handle_error(&e, "ID token request failed.");
+                // so far we get
+                // "data did not match any variant of untagged enum Timestamp"
+                return HttpResponse::build(StatusCode::SEE_OTHER)
+                    .append_header((http::header::LOCATION, AUTH_LOGIN_FAIL_PAGE))
+                    .finish();
             }
         };
 
@@ -271,7 +303,9 @@ impl Login for OidcConfiguration {
             Some(t) => t,
             None => {
                 warn!("ID token cannot be extracted");
-                return HttpResponse::err_text_response("ERROR: login failed");
+                return HttpResponse::build(StatusCode::SEE_OTHER)
+                    .append_header((http::header::LOCATION, AUTH_LOGIN_FAIL_PAGE))
+                    .finish();
             }
         };
         info!("Received ID token for request_id {}", &request_id);
@@ -282,8 +316,10 @@ impl Login for OidcConfiguration {
         ) {
             Ok(c) => c,
             Err(e) => {
-                warn!("Cannot extract claims from ID token: {}", &e);
-                return HttpResponse::err_text_response("ERROR: login failed");
+                handle_error(&e, "Cannot extract claims from ID token.");
+                return HttpResponse::build(StatusCode::SEE_OTHER)
+                    .append_header((http::header::LOCATION, AUTH_LOGIN_FAIL_PAGE))
+                    .finish();
             }
         };
 
@@ -291,7 +327,9 @@ impl Login for OidcConfiguration {
             Some(a) => a,
             None => {
                 warn!("Cannot extract access token hash from claims");
-                return HttpResponse::err_text_response("ERROR: login failed");
+                return HttpResponse::build(StatusCode::SEE_OTHER)
+                    .append_header((http::header::LOCATION, AUTH_LOGIN_FAIL_PAGE))
+                    .finish();
             }
         };
 
@@ -300,20 +338,13 @@ impl Login for OidcConfiguration {
         let _signing_algorithm = match id_token.signing_alg() {
             Ok(a) => a,
             Err(e) => {
-                warn!("Cannot extract signing algorithm from ID token: {}", &e);
-                return HttpResponse::err_text_response("ERROR: login failed");
+                handle_error(&e, "Cannot extract signing algorithm from ID token.");
+                return HttpResponse::build(StatusCode::SEE_OTHER)
+                    .append_header((http::header::LOCATION, AUTH_LOGIN_FAIL_PAGE))
+                    .finish();
             }
         };
 
-        // let actual_access_token_hash = AccessTokenHash::from_token(
-        //     token_response.  .access_token(),
-        //     &signing_algorithm
-        // )?;
-
-        // debug!("token_result = {:?}", &token_result.access_token().secret());
-
-        // At this point the user has authorized us to access the wanted information,
-        // we still do not know who he/she/it is.
         HttpResponse::Forbidden().finish()
     }
 

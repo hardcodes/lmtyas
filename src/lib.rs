@@ -45,4 +45,5 @@ pub mod authentication_url {
     pub const AUTH_ROUTE: &str = "/callback";
     pub const AUTH_PATH: &str = "./authentication-oidc/";
     pub const AUTH_INDEX_PAGE: &str = "nothing-here.html";
+    pub const AUTH_LOGIN_FAIL_PAGE: &str = "/authentication/login-fail.html";
 }

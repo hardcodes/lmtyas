@@ -3,7 +3,7 @@ use common::SETUP_SINGLETON;
 #[cfg(feature = "ldap-auth")]
 pub use lmtyas::authentication_ldap::LdapLogin;
 use lmtyas::configuration::ApplicationConfiguration;
-#[cfg(any(feature = "ldap-auth", feature = "oauth2-auth-ldap"))]
+#[cfg(any(feature = "ldap-auth", feature = "oidc-auth-ldap"))]
 use lmtyas::ldap_common::LdapSearchResult;
 #[cfg(feature = "mail-noauth-notls")]
 pub use lmtyas::mail_noauth_notls::SendEMail;
@@ -15,7 +15,7 @@ async fn with_setup() {
     // load configuration file with the ldap server connection details
     let application_configuration = ApplicationConfiguration::read_from_file(
         Path::new(common::WORKSPACE_DIR).join("conf.dev/lmtyas-config.json"),
-    );
+    ).await;
 
     // test sending mail before the server is has been started
     let send_mail_fail = application_configuration
