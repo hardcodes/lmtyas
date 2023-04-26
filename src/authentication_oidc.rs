@@ -4,8 +4,13 @@ use crate::authentication_middleware::PeerIpAddress;
 use crate::authentication_middleware::UNKNOWN_PEER_IP;
 use crate::authentication_url::AUTH_LOGIN_FAIL_PAGE;
 use crate::configuration::ApplicationConfiguration;
+use crate::cookie_functions::{
+    build_new_authentication_cookie, build_redirect_to_resource_url_response,
+};
 use crate::http_traits::CustomHttpResponse;
 pub use crate::login_user_trait::Login;
+#[cfg(feature = "oidc-ldap")]
+use crate::oidc_ldap::OidcUserLdapUserDetails;
 use actix_web::{
     http, http::Method, http::StatusCode, web, web::Bytes, web::Query, HttpRequest, HttpResponse,
 };
@@ -13,15 +18,13 @@ use async_trait::async_trait;
 use chrono::Duration;
 use chrono::{DateTime, Utc};
 use log::{debug, info, warn};
-use openidconnect::CodeTokenRequest;
 use openidconnect::{
     core::{
-        CoreAuthenticationFlow, CoreClient, CoreProviderMetadata, CoreResponseType,
-        CoreUserInfoClaims,
+        CoreAuthenticationFlow,
     },
     reqwest::async_http_client,
-    AccessTokenHash, AuthenticationFlow, AuthorizationCode, ClientId, ClientSecret, CsrfToken,
-    IssuerUrl, Nonce, PkceCodeChallenge, PkceCodeVerifier, RedirectUrl, Scope, TokenResponse,
+    AuthorizationCode, CsrfToken,
+    Nonce, PkceCodeChallenge, PkceCodeVerifier, Scope, TokenResponse,
 };
 use regex::Regex;
 use serde::Deserialize;
@@ -114,11 +117,39 @@ pub fn cleanup_oidc_authentication_data_hashmap(
     }
 }
 
-fn handle_error<T: std::error::Error>(fail: &T, message: &'static str) {
-    let mut error_mesage = format!("{}", message);
+/// Holds information about a fresh authenticated user
+/// The same as `crate::ldap_common::LdapSearchResult` but
+/// may be implemented without ldap.
+#[derive(Deserialize, Debug)]
+pub struct OidcUser {
+    #[serde(rename = "uid")]
+    pub user_name: String,
+    #[serde(rename = "givenName")]
+    pub first_name: String,
+    #[serde(rename = "sn")]
+    pub last_name: String,
+    pub mail: String,
+}
+
+/// This trait must be implemented to get
+/// user details after oidc login (= we got a valid id token)
+#[async_trait(?Send)]
+pub trait OidcUserDetails {
+    /// use the given email address to query user details
+    async fn get_oidc_user_details_from_email(
+        mail: &str,
+        application_configuration: &ApplicationConfiguration,
+    ) -> Result<OidcUser, Box<dyn Error>>;
+}
+
+#[cfg(feature = "oidc-ldap")]
+type QueryAuthDetails = OidcUserLdapUserDetails;
+
+fn warn_with_error_stack<T: std::error::Error>(fail: &T, message: &'static str) {
+    let mut error_mesage = message.to_string();
     let mut current_fail: Option<&dyn std::error::Error> = Some(fail);
     while let Some(cause) = current_fail {
-        error_mesage += &format!("\n    caused by: {}", cause);
+        error_mesage += &format!(", caused by: {}", cause);
         current_fail = cause.source();
     }
     warn!("{}", error_mesage);
@@ -228,7 +259,7 @@ impl Login for OidcConfiguration {
 
         // At this point we made sure that the response refers to a resource
         // request that we've already seen.
-        // Next: verify that the response is valid = get the access token
+        // Next: verify that the response is valid = get the access/ID token
         let pkce_verifier_secret;
         let nonce;
         {
@@ -274,9 +305,12 @@ impl Login for OidcConfiguration {
         {
             Ok(t) => t,
             Err(e) => {
-                handle_error(&e, "ID token request failed.");
-                // so far we get
+                warn_with_error_stack(&e, "ID token request failed");
+                // if the crate openidconnect is not compilted with the feature
+                // "accept-rfc3339-timestamps", we will get the error
                 // "data did not match any variant of untagged enum Timestamp"
+                // at this point!
+                // See https://github.com/ramosbugs/openidconnect-rs/issues/23.
                 return login_fail_redirect;
             }
         };
@@ -291,37 +325,99 @@ impl Login for OidcConfiguration {
             }
         };
         info!("Received ID token for request_id {}", &request_id);
+        debug!("id_token = {:?}", &id_token);
 
-        let claims = match id_token.claims(
-            &application_configuration.oidc_client.id_token_verifier(),
-            &nonce,
-        ) {
+        // Verify ID token authenticity/nonce and extract claims.
+        let id_token_verifier = &application_configuration
+            .oidc_client
+            .id_token_verifier()
+            .to_owned();
+        let claims = match id_token.claims(id_token_verifier, &nonce) {
             Ok(c) => c,
             Err(e) => {
-                handle_error(&e, "Cannot extract claims from ID token.");
+                warn_with_error_stack(&e, "Failed to verify ID token authenticity");
                 return login_fail_redirect;
             }
         };
+        info!(
+            "Verified ID token authenticity for request_id {}",
+            &request_id
+        );
+        debug!("claims = {:?}", &claims);
 
-        let access_token_hash = match claims.access_token_hash() {
-            Some(a) => a,
-            None => {
-                warn!("Cannot extract access token hash from claims");
-                return login_fail_redirect;
-            }
-        };
+        // let access_token_hash = match claims.access_token_hash() {
+        //     Some(a) => a,
+        //     None => {
+        //         info!("Cannot extract access token hash from claims");
+        //         // return login_fail_redirect;
+        //         None
+        //     }
+        // };
 
-        debug!("access_token_hash = {:?}", &access_token_hash);
+        // debug!("access_token_hash = {:?}", &access_token_hash);
 
-        let _signing_algorithm = match id_token.signing_alg() {
-            Ok(a) => a,
+        // let _signing_algorithm = match id_token.signing_alg() {
+        //     Ok(a) => a,
+        //     Err(e) => {
+        //         warn_with_error_stack(&e, "Cannot extract signing algorithm from ID token");
+        //         return login_fail_redirect;
+        //     }
+        // };
+
+        let email = claims
+            .email()
+            .map(|email| email.as_str())
+            .unwrap_or("<not provided>");
+        debug!("email = {}", &email);
+
+        // At this point we known the identitiy of the user. Let's get some more
+        // infos...
+        let user_details = match QueryAuthDetails::get_oidc_user_details_from_email(
+            email,
+            &application_configuration,
+        )
+        .await
+        {
+            Ok(d) => d,
             Err(e) => {
-                handle_error(&e, "Cannot extract signing algorithm from ID token.");
+                warn!("Cannot get user details for email {}: {}", &email, &e);
                 return login_fail_redirect;
             }
         };
 
-        HttpResponse::Forbidden().finish()
+        if let Some(cookie_uuid) = application_configuration
+            .shared_authenticated_users
+            .write()
+            .unwrap()
+            .new_cookie_uuid_for(
+                &user_details.user_name,
+                &user_details.first_name,
+                &user_details.last_name,
+                email,
+                &peer_ip,
+            )
+        {
+            let rsa_read_lock = application_configuration.rsa_keys.read().unwrap();
+            // when the rsa key pair already has been loaded,
+            // the cookie value is encrypted with the rsa public
+            // key otherwise its simply base64 encoded.
+            let cookie = build_new_authentication_cookie(
+                &cookie_uuid.to_string(),
+                application_configuration
+                    .configuration_file
+                    .max_cookie_age_seconds,
+                &application_configuration.configuration_file.get_domain(),
+                &rsa_read_lock,
+            );
+            return build_redirect_to_resource_url_response(
+                &cookie,
+                url_requested,
+                application_configuration.configuration_file.fqdn.clone(),
+            );
+        } else {
+            warn!("cannot create cookie id for email {}", &email);
+            return HttpResponse::err_text_response("ERROR: login failed");
+        }
     }
 
     fn build_valid_user_regex(&mut self) -> Result<(), Box<dyn Error>> {
@@ -352,7 +448,6 @@ impl AuthenticationRedirect for OidcConfiguration {
             )
             // Set the desired scopes.
             .add_scope(Scope::new("email".to_string()))
-            .add_scope(Scope::new("profile".to_string()))
             // Set the PKCE code challenge.
             .set_pkce_challenge(pkce_challenge)
             .url();

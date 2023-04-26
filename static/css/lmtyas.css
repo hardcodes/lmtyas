@@ -292,6 +292,20 @@ input:valid {
     border-radius: 5px;
 }
 
+.lmtyas-button-sim {
+    border-radius: 5px;
+    border-color: var(--mainfont);
+    border-width: 2px;
+    border-style: solid;
+    background-color: var(--button-enabled);
+    color: var(--mainfont);
+    padding: 12px 60px;
+    margin: 20px 20px;
+    margin: auto;
+    min-width: 250px;
+    text-decoration: none;
+    font-size: 1.0em;
+}
 
 button:disabled{
     background-color: var(--button-disabled);

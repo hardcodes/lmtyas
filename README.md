@@ -180,6 +180,20 @@ Also see [Cargo.toml](./Cargo.toml), section `[features]`.
 - Default: **oidc-auth-ldap**, **mail-noauth-notls** (users are authenticated with an external oidc server, user details are queried from an external ldap server and emails are sent through a smtp server with no authentication and no encryption)
 
   You may ask why we need oidc when we have a ldap server, we use to query user details: when an oidc server is available, your users know the look and feel of the login page. This way they may be more confidend to enter their credentials. Maybe you even use 2FA for your oidc solution, so why not benefit?
+
+  **HINT** When you use [auth0](https://auth0.com/) as oidc provider, the dependency section of the `openidconnect` crate must be changed from
+
+  ```
+  openidconnect = { version = "3.0.0", optional = true}
+  ```
+
+  to
+
+  ```
+  openidconnect = { version = "3.0.0", features = ["accept-rfc3339-timestamps"], optional = true}
+  ```
+
+  See https://github.com/ramosbugs/openidconnect-rs/issues/23.
 - **ldap-auth**: authenticate users with an external ldap server. Makes use of of the **ldap-common** and **get-userdata-ldap** feature.
 - **ldap-common**: holds the ldap configuration file and brings basic ldap functions to query users by name or email address.
 - **oidc-auth-ldap**: authenticate users with an external oidc server. Makes use of of the **authentication-oidc**, **ldap-common** and **get-userdata-ldap** feature.

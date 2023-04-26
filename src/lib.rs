@@ -5,10 +5,14 @@ pub mod authentication_functions;
 #[cfg(feature = "ldap-auth")]
 pub mod authentication_ldap;
 pub mod authentication_middleware;
+#[cfg(feature = "authentication-oidc")]
+pub mod authentication_oidc;
 pub mod base64_trait;
 pub mod cli_parser;
 pub mod configuration;
 pub mod cookie_functions;
+#[cfg(feature = "get-userdata-ldap")]
+pub mod get_userdata_ldap;
 pub mod get_userdata_trait;
 pub mod handler_functions;
 pub mod header_value_trait;
@@ -20,10 +24,8 @@ pub mod login_user_trait;
 pub mod mail_configuration;
 #[cfg(feature = "mail-noauth-notls")]
 pub mod mail_noauth_notls;
-#[cfg(feature = "authentication-oidc")]
-pub mod authentication_oidc;
-#[cfg(feature = "get-userdata-ldap")]
-pub mod get_userdata_ldap;
+#[cfg(feature = "oidc-ldap")]
+pub mod oidc_ldap;
 pub mod rsa_functions;
 pub mod secret_functions;
 pub mod unsecure_string;
