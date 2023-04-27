@@ -184,7 +184,7 @@ async fn main() -> std::io::Result<()> {
             .service(
                 web::scope("html")
                     .wrap(CheckAuthentication)
-                    .service(Files::new("/", "./authenticated/").index_file("tell.html")),
+                    .service(Files::new("/", "web-content/authenticated/").index_file("tell.html")),
             )
             .service(
                 web::scope("authentication")
@@ -220,7 +220,7 @@ async fn main() -> std::io::Result<()> {
             .route("/gfx/company-logo.png", web::get().to(get_company_logo))
             // serve custom colors.css file if it exists
             .route("/css/colors.css", web::get().to(get_colors_css))
-            .service(Files::new("/", "./static/").index_file("index.html"))
+            .service(Files::new("/", "./web-content/static/").index_file("index.html"))
             .service(
                 web::resource("").route(
                     web::route()

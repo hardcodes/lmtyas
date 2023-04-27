@@ -112,7 +112,7 @@ pub async fn get_imprint_link(
 /// return the custom colors.css file if it exists
 pub async fn get_colors_css() -> impl Responder {
     let path_local = Path::new("local/css/colors.css");
-    let path_static = Path::new("static/css/colors.css");
+    let path_static = Path::new("web-content/static/css/colors.css");
     let file_path = match path_local.exists() {
         true => path_local,
         _ => path_static,
@@ -123,7 +123,7 @@ pub async fn get_colors_css() -> impl Responder {
 /// return the custom company-logo.png if it exists
 pub async fn get_company_logo() -> impl Responder {
     let path_local = Path::new("local/gfx/company-logo.png");
-    let path_static = Path::new("static/gfx/hardcodes-logo.png");
+    let path_static = Path::new("web-content/static/gfx/hardcodes-logo.png");
     let file_path = match path_local.exists() {
         true => path_local,
         _ => path_static,
@@ -134,7 +134,7 @@ pub async fn get_company_logo() -> impl Responder {
 /// return the custom favicon.png if it exists
 pub async fn get_favicon() -> impl Responder {
     let path_local = Path::new("local/gfx/favicon.png");
-    let path_static = Path::new("static/gfx/favicon.png");
+    let path_static = Path::new("web-content/static/gfx/favicon.png");
     let file_path = match path_local.exists() {
         true => path_local,
         _ => path_static,
@@ -586,12 +586,12 @@ pub async fn get_authenticated_user_details(user: AuthenticatedUser) -> HttpResp
 
 /// Get admin protected sysop.html
 pub async fn get_sysop_html(_admin: AuthenticatedAdministrator) -> impl Responder {
-    NamedFile::open_async("admin-html/sysop.html").await
+    NamedFile::open_async("web-content/admin-html/sysop.html").await
 }
 
 /// Get admin protected sysop.js
 pub async fn get_sysop_js(_admin: AuthenticatedAdministrator) -> impl Responder {
-    NamedFile::open_async("admin-html/js/sysop.js").await
+    NamedFile::open_async("web-content/admin-html/js/sysop.js").await
 }
 
 /// renew cookie lifetime for the authenticated user
@@ -611,7 +611,7 @@ pub async fn keep_session_alive(req: HttpRequest, _user: AuthenticatedUser) -> H
 /// custom 404 handler
 /// returns 404.html or plain error message if file cannot be found
 pub async fn not_found_404() -> HttpResponse {
-    let file_path = Path::new("static/404.html");
+    let file_path = Path::new("web-content/static/404.html");
     let file_content =
         read_to_string(file_path).unwrap_or_else(|_| -> String { "404 not found".to_string() });
     HttpResponse::build(StatusCode::NOT_FOUND)

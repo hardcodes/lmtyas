@@ -27,42 +27,49 @@ See [lmtyas-config.json](conf.dev/lmtyas-config.json) for an example configurati
 
 | config item                      | config data                                                                                               |
 |----------------------------------|-----------------------------------------------------------------------------------------------------------|
+| {                                | ==> begin of root object                                                                                  |
 | "web_bind_address"               | ip address and port to bind to, e.g. `"127.0.0.1:8844"`                                                   |
 | "ssl_private_key_file"           | path/filename of the SSL private key, e.g. `"/etc/lmtyas/lmtyas-selfsigned.key"`                          |
 | "ssl_certificate_chain_file"     | path/filename of the SSL certificate chain, e.g. `"/etc/lmtyas/lmtyas-selfsigned-cert.pem"`               |
 | "rsa_private_key_file"           | path/filename of the RSA private key file, e.g. `"/etc/lmtyas/lmtyas_rsa_private.key"`                    |
 | "rsa_public_key_file"            | path/filename of the RSA public key file, e.g. `"ignore/lmtyas_rsa_public.key"`                           |
 | "secret_directory"               | path to store the secret files, e.g. `"output/secrets"`                                                   |
-| "email_configuration" : {        | ==> array with email configuration details                                                                |
+| "email_configuration" : {        | ==> object with email configuration details                                                               |
 |     "mail_server_address"        | name or ip address of mail server, e.g.`"127.0.0.1"`                                                      |
 |     "mail_server_port"           | port number of mail server, e.g. `2525`                                                                   |
 |     "mail_from"                  | mail address that sends secrets, e.g. `"IT-department <do-not-reply@acme.local>"`                         |
 |     "mail_subject"               | subject used in mails, e.g. `"Your new password for {Context}"`                                           |
 |     "mail_template_file"         | path/filename of mail template, e.g. `"etc/lmtas/mailtemplate.txt"`                                       |
-| },                               | <== end of array                                                                                          |
+| },                               | <== end of object with email configuration details                                                        |
 | "admin_accounts"                 | array with valid admin accounts to set password, e.g. `["walter"]`                                        |
 | "max_authrequest_age_seconds"    | time in seconds an authentiction attempt is valid, e.g. `300`                                             |
 | "max_cookie_age_seconds"         | time in seconds an account is still logged in, e.g. `90` (forms keep accounts alive)                      |
 | "fqdn"                           | fqdn to use in redirects, e,g, `"my-server.local:8844"`                                                   |
-| "ldap_common_configuration": {   | ==> array with common ldapconfiguration                                                                   |
+| "ldap_common_configuration": {   | ==> object with common ldap configuration                                                                 |
 |     "url"                        | url to connect to ldap server, e.g. `"ldap://127.0.0.1:3893"`                                             |
 |     "base_ou"                    | ou where user accounts are stored, e.g. `"ou=superheros,dc=acme,dc=local"`                                |
 |     "bind_passwd"                | password to bind to the ldap server, e.g. `"ldapsecr3t"`                                                  |
 |     "bind_dn"                    | dn of user that is allowed to query the ldap, e.g. `"cn=ldap-tec-user,ou=svcaccts,dc=acme,dc=local"`      |
 |     "user_filter"                | filter to used to query accounts, `{0}` is replaced with login name, e.g. `"(uid={0})"`                   |
 |     "mail_filter"                | filter to used to query accounts, `{0}` is replaced with mail address, e.g. `"(mail={0})"`                |
-|     "authentication:wq
-": { | array with ldap auth configuration                                                                        |
+|     "authentication:": {         | object with ldap auth configuration                                                                       |
 |     "ldap_bind_user_dn"          | dn of users logging in, `{0}` is replaced with login name, e.g. `"cn={0},ou=superheros,dc=acme,dc=local"` |
 |     "valid_user_regex"           | regex of valid user names, e.g. `"^[\\w\\d\\-]{3,8}"`                                                     |
-|     },                           | <== end of array                                                                                          |
-| },                               | <== end of array                                                                                          |
+|     },                           | <== end of object with ldap auth configuration                                                            |
+| },                               | <== end of object with common ldap configuration                                                          |
+| "oidc_configuration": {          | ==> object with optional oidc configuration                                                               |
+|     "provider_metadata_url":     | base url which serves `.well-known/openid-configuration`, e.g. `"https://acme.eu.auth0.com/"`             | 
+|     "client_id":                 | oidc client id of this application, e.g. `"Y2xpZW50X2lk"`                                                 |
+|     "client_secret":             | oidc client secret of this application, e.g. `"Y2xpZW50X3NlY3JldA=="`                                     |
+|     "valid_user_regex":          | regex of valid user names, e.g. `"^[\\w\\d\\-]{3,8}"`                                                     |
+| },                               | <== end object with optional oidc configuration                                                           |
 | "login_hint"                     | hint for users which account to use for login, e.g. `"A.C.M.E. LDAP account"`                             |
 | "mail_hint"                      | optional hint what mail address format should be used, e.g. `givenname.surname@acme.local`                |
-| "imprint": {                     | ==> array with imprint link data                                                                          |
+| "imprint": {                     | ==> object with imprint link data                                                                         |
 | "href"                           | link to an imprint page, e.g. `"https://www.acme.local"`                                                  |
 | "target"                         | target window for imprint, one out of `"_self"`, `"_blank"`, `"_parent"`, `"_top"`                        |
-| }                                | <== end of array                                                                                          |
+| }                                | <== end of with imprint link data                                                                         |
+| }                                | <== end of root object                                                                                    |
 
 - **NOTE  1**
     - "mail_subject": `{Context}` is replaced with the context entered in the web form.
@@ -75,7 +82,7 @@ See [lmtyas-config.json](conf.dev/lmtyas-config.json) for an example configurati
         URL must be in the template, see [mailtemplate.txt](./conf.dev/mailtemplate.txt).
 
         Depending on your authentication backends you may not know the data for each of the placeholders!
-- **NOTE 2** The arrays `email_configuration` and `ldap_configuration` may be absent or differ, depending on the selected features. See section *[Compile and install -features](#compile-and-install---features)*.
+- **NOTE 2** The objects `email_configuration`, `ldap_configuration` and `oidc_configuration` may be absent or differ, depending on the selected features. See section *[Compile and install -features](#compile-and-install---features)*.
 - **NOTE 3** The directive `mail_hint` may be absent. If so the default `firstname.lastname@acme.local` will be used.
 
 You need a SSL certificate and its unencrypted key in pem format. Create your own *[set of rsa keys](#security---data-encryption---rsa-keys)*.
@@ -109,13 +116,8 @@ cargo build --release
 groupadd lmtyas
 sudo adduser --disabled-login --home /opt/lmtyas --no-create-home --system  --shell /usr/sbin/nologin --ingroup lmtyas lmtyas
 # create directory structure
-sudo mkdir -p /opt/lmtyas/admin-html/js
-sudo mkdir -p /opt/lmtyas/authenticated
-sudo mkdir -p /opt/lmtyas/output/authentication/ldap
+sudo mkdir -p /opt/lmtyas/web-content
 sudo mkdir -p /opt/lmtyas/output/secrets
-sudo mkdir -p /opt/lmtyas/static/css
-sudo mkdir -p /opt/lmtyas/static/gfx
-sudo mkdir -p /opt/lmtyas/static/js
 
 # create systemd unit file
 sudo cat << __EOF__ > /etc/systemd/system/lmtyas.service
@@ -152,16 +154,13 @@ sudo systemctl unmask lmtyas.service
 # copy binary
 sudo cp target/release/lmtyas /opt/lmtyas/
 # copy files
-sudo cp --recursive static/* /opt/l3umw/static/
-sudo cp --recursive admin-html/* /opt/l3umw/admin-html/
-sudo cp --recursive authenticated/* /opt/l3umw/authenticated/
-sudo cp --recursive authentication/ldap/* /opt/l3umw/authentication/ldap/
+sudo cp --recursive web-content/* /opt/l3umw/web-content/
 
 # fix owner and acl
 sudo chown -R lmtyas:lmtyas /opt/lmtyas/
 sudo find /opt/lmtyas/ -type f -exec chmod 640 {} \;
 sudo find /opt/lmtyas/ -type d -exec chmod 750 {} \;
-sudo chmod -R 750 /opt/lmtyas/lmtyas
+sudo chmod 750 /opt/lmtyas/lmtyas
 ```
 
 Create a [`/etc/lmtyas/lmtyas-config.json`](#configuration-file), the *[rsa keys](#security---data-encryption---rsa-keys)* and get a ssl certficate in PEM format --- this may be self signed, depending on your own personal needs; in a company context you probably want a signed certifcate from some sort of CA/PKI. Then
@@ -223,14 +222,14 @@ To customize the favicon displayed for the site create a folder `local/gfx` and 
 
 ## Customization - colors
 
-To customize the colors applied to the css create a folder `local/css` and put a tweaked copy of the file [static/css/colors.css](./static/css/colors.css) into it.
+To customize the colors applied to the css create a folder `local/css` and put a tweaked copy of the file [web-content/static/css/colors.css](./web-content/static/css/colors.css) into it.
 
 
 # Set RSA password
 
 If the service is (re-)started, a valid administrator (see `admin_accounts` in section *[Configuration file](#configuration-file)*) must set the password of the RSA private key first. Therefore open the URL
 
-`https://<dns name>:<port number>/authenticated/sysop/sysop.html`
+`https://<dns name>:<port number>`
 
 **Example**
 

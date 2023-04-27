@@ -38,14 +38,14 @@ pub const PROGRAM_DESCRIPTION: &str = env!("CARGO_PKG_DESCRIPTION");
 #[cfg(feature = "ldap-auth")]
 pub mod authentication_url {
     pub const AUTH_ROUTE: &str = "/login";
-    pub const AUTH_PATH: &str = "./authentication-ldap/";
+    pub const AUTH_PATH: &str = "./web-content/authentication-ldap/";
     pub const AUTH_INDEX_PAGE: &str = "nothing-here.html";
 }
 
 #[cfg(feature = "oidc-auth-ldap")]
 pub mod authentication_url {
     pub const AUTH_ROUTE: &str = "/callback";
-    pub const AUTH_PATH: &str = "./authentication-oidc/";
+    pub const AUTH_PATH: &str = "./web-content/authentication-oidc/";
     pub const AUTH_INDEX_PAGE: &str = "nothing-here.html";
     pub const AUTH_LOGIN_FAIL_PAGE: &str = "/authentication/login-fail.html";
 }

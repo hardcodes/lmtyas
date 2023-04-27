@@ -306,10 +306,10 @@ impl Login for OidcConfiguration {
             Ok(t) => t,
             Err(e) => {
                 warn_with_error_stack(&e, "ID token request failed");
-                // if the crate openidconnect is not compilted with the feature
+                // If the crate openidconnect is not compiled with the feature
                 // "accept-rfc3339-timestamps", we will get the error
                 // "data did not match any variant of untagged enum Timestamp"
-                // at this point!
+                // at this point using auth0 as oidc provider!
                 // See https://github.com/ramosbugs/openidconnect-rs/issues/23.
                 return login_fail_redirect;
             }
@@ -344,25 +344,6 @@ impl Login for OidcConfiguration {
             &request_id
         );
         debug!("claims = {:?}", &claims);
-
-        // let access_token_hash = match claims.access_token_hash() {
-        //     Some(a) => a,
-        //     None => {
-        //         info!("Cannot extract access token hash from claims");
-        //         // return login_fail_redirect;
-        //         None
-        //     }
-        // };
-
-        // debug!("access_token_hash = {:?}", &access_token_hash);
-
-        // let _signing_algorithm = match id_token.signing_alg() {
-        //     Ok(a) => a,
-        //     Err(e) => {
-        //         warn_with_error_stack(&e, "Cannot extract signing algorithm from ID token");
-        //         return login_fail_redirect;
-        //     }
-        // };
 
         let email = claims
             .email()
@@ -412,7 +393,7 @@ impl Login for OidcConfiguration {
             return build_redirect_to_resource_url_response(
                 &cookie,
                 url_requested,
-                application_configuration.configuration_file.fqdn.clone(),
+                format!("https://{}", application_configuration.configuration_file.fqdn.clone()),
             );
         } else {
             warn!("cannot create cookie id for email {}", &email);

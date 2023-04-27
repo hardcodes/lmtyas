@@ -29,13 +29,17 @@ pub fn build_new_encrypted_authentication_cookie(
         Err(_) => String::from("invalid_rsa_cookie"),
         Ok(value) => value,
     };
+    #[cfg(feature = "ldap-auth")]
+    let same_site = actix_web::cookie::SameSite::Strict;
+    #[cfg(feature = "oidc-auth-ldap")]
+    let same_site = actix_web::cookie::SameSite::Lax;
     let new_cookie = Cookie::build(COOKIE_NAME, encrypted_cookie_value)
         .secure(true)
         .http_only(true)
         .path(COOKIE_PATH)
         .domain(String::from(domain))
         .max_age(Duration::seconds(max_age_seconds))
-        .same_site(SameSite::Strict)
+        .same_site(same_site)
         .finish();
     new_cookie
 }
@@ -58,13 +62,18 @@ pub fn build_new_base64_authentication_cookie(
     domain: &str,
 ) -> Cookie<'static> {
     let encoded_cookie_value = cookie_value.to_string().to_base64_encoded();
+    #[cfg(feature = "ldap-auth")]
+    let same_site = actix_web::cookie::SameSite::Strict;
+    #[cfg(feature = "oidc-auth-ldap")]
+    let same_site = actix_web::cookie::SameSite::Lax;
+
     let new_cookie = Cookie::build(COOKIE_NAME, encoded_cookie_value)
         .secure(true)
         .http_only(true)
         .path(COOKIE_PATH)
         .domain(String::from(domain))
         .max_age(Duration::seconds(max_age_seconds))
-        .same_site(SameSite::Strict)
+        .same_site(same_site)
         .finish();
     new_cookie
 }
@@ -132,11 +141,11 @@ pub fn build_redirect_to_resource_url_response(
     location: String,
     allowed_origin: String,
 ) -> HttpResponse {
-    HttpResponse::Found()
+    HttpResponse::build(StatusCode::FOUND)
         .append_header((http::header::LOCATION, location))
         .append_header((http::header::SET_COOKIE, cookie.to_string()))
         .append_header(("Access-Control-Allow-Origin", allowed_origin))
-        .body("OK")
+        .finish()
 }
 
 /// Get plain cookie value (rsa decrypt or base64 decode)
