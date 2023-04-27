@@ -52,16 +52,16 @@ See [lmtyas-config.json](conf.dev/lmtyas-config.json) for an example configurati
 |     "bind_dn"                    | dn of user that is allowed to query the ldap, e.g. `"cn=ldap-tec-user,ou=svcaccts,dc=acme,dc=local"`      |
 |     "user_filter"                | filter to used to query accounts, `{0}` is replaced with login name, e.g. `"(uid={0})"`                   |
 |     "mail_filter"                | filter to used to query accounts, `{0}` is replaced with mail address, e.g. `"(mail={0})"`                |
-|     "authentication:": {         | object with ldap auth configuration                                                                       |
+|     "authentication:": {         | object with optional ldap authentication configuration                                                    |
 |     "ldap_bind_user_dn"          | dn of users logging in, `{0}` is replaced with login name, e.g. `"cn={0},ou=superheros,dc=acme,dc=local"` |
 |     "valid_user_regex"           | regex of valid user names, e.g. `"^[\\w\\d\\-]{3,8}"`                                                     |
-|     },                           | <== end of object with ldap auth configuration                                                            |
+|     },                           | <== end of object with ldap authentication configuration                                                  |
 | },                               | <== end of object with common ldap configuration                                                          |
 | "oidc_configuration": {          | ==> object with optional oidc configuration                                                               |
 |     "provider_metadata_url":     | base url which serves `.well-known/openid-configuration`, e.g. `"https://acme.eu.auth0.com/"`             | 
 |     "client_id":                 | oidc client id of this application, e.g. `"Y2xpZW50X2lk"`                                                 |
 |     "client_secret":             | oidc client secret of this application, e.g. `"Y2xpZW50X3NlY3JldA=="`                                     |
-|     "valid_user_regex":          | regex of valid user names, e.g. `"^[\\w\\d\\-]{3,8}"`                                                     |
+|     "valid_user_regex":          | regex of valid user names, e.g. `"^[\\w\\d\\-]{3,8}@acme\\.local$"`                                       |
 | },                               | <== end object with optional oidc configuration                                                           |
 | "login_hint"                     | hint for users which account to use for login, e.g. `"A.C.M.E. LDAP account"`                             |
 | "mail_hint"                      | optional hint what mail address format should be used, e.g. `givenname.surname@acme.local`                |
@@ -195,8 +195,9 @@ Also see [Cargo.toml](./Cargo.toml), section `[features]`.
   See https://github.com/ramosbugs/openidconnect-rs/issues/23.
 - **ldap-auth**: authenticate users with an external ldap server. Makes use of of the **ldap-common** and **get-userdata-ldap** feature.
 - **ldap-common**: holds the ldap configuration file and brings basic ldap functions to query users by name or email address.
-- **oidc-auth-ldap**: authenticate users with an external oidc server. Makes use of of the **authentication-oidc**, **ldap-common** and **get-userdata-ldap** feature.
+- **oidc-auth-ldap**: authenticate users with an external oidc server. Makes use of of the **authentication-oidc**, **oidc-ldap**, **ldap-common** and **get-userdata-ldap** feature.
 - **authentication-oidc**: holds the oidc implementation.
+- **oidc-ldap**: query user details from an external ldap server.
 - **mail-noauth-notls**: send mails to user via mail server that does not need authentication and uses no encrypted transport.
 - **get-userdata-ldap**: query userdata (frist and last name by email address of secret receiver) from a ldap server.
 - **no-userdata-backend**: use this, when there is no backend (like e.g., a ldap server) to query userdata.

@@ -19,12 +19,8 @@ use chrono::Duration;
 use chrono::{DateTime, Utc};
 use log::{debug, info, warn};
 use openidconnect::{
-    core::{
-        CoreAuthenticationFlow,
-    },
-    reqwest::async_http_client,
-    AuthorizationCode, CsrfToken,
-    Nonce, PkceCodeChallenge, PkceCodeVerifier, Scope, TokenResponse,
+    core::CoreAuthenticationFlow, reqwest::async_http_client, AuthorizationCode, CsrfToken, Nonce,
+    PkceCodeChallenge, PkceCodeVerifier, Scope, TokenResponse,
 };
 use regex::Regex;
 use serde::Deserialize;
@@ -173,6 +169,18 @@ impl Login for OidcConfiguration {
         let login_fail_redirect = HttpResponse::build(StatusCode::SEE_OTHER)
             .append_header((http::header::LOCATION, AUTH_LOGIN_FAIL_PAGE))
             .finish();
+
+        let valid_user_regex = match &application_configuration
+            .configuration_file
+            .oidc_configuration
+            .user_regex
+        {
+            Some(r) => r,
+            None => {
+                warn!("valid user regex is not defined");
+                return login_fail_redirect;
+            }
+        };
 
         // extract "code" and "state"
         let query = match Query::<HashMap<String, String>>::from_query(request.query_string()) {
@@ -351,6 +359,11 @@ impl Login for OidcConfiguration {
             .unwrap_or("<not provided>");
         debug!("email = {}", &email);
 
+        if !valid_user_regex.is_match(email) {
+            warn!("user email address does not match regex: {}", &email);
+            return login_fail_redirect;
+        }
+
         // At this point we known the identitiy of the user. Let's get some more
         // infos...
         let user_details = match QueryAuthDetails::get_oidc_user_details_from_email(
@@ -393,7 +406,10 @@ impl Login for OidcConfiguration {
             return build_redirect_to_resource_url_response(
                 &cookie,
                 url_requested,
-                format!("https://{}", application_configuration.configuration_file.fqdn.clone()),
+                format!(
+                    "https://{}",
+                    application_configuration.configuration_file.fqdn.clone()
+                ),
             );
         } else {
             warn!("cannot create cookie id for email {}", &email);

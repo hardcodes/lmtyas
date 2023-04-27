@@ -1,7 +1,7 @@
 use crate::base64_trait::{Base64StringConversions, Base64VecU8Conversions};
 use crate::rsa_functions::RsaKeys;
 use actix_web::{
-    cookie::time::Duration, cookie::Cookie, cookie::SameSite, http, http::StatusCode, HttpResponse,
+    cookie::time::Duration, cookie::Cookie, http, http::StatusCode, HttpResponse,
 };
 
 /// Name of the cookie that is sent to an authenticated user browser
