@@ -2,11 +2,11 @@ use log::{debug, info, warn};
 extern crate env_logger;
 #[cfg(feature = "ldap-auth")]
 pub use crate::authentication_ldap::LdapCommonConfiguration;
+#[cfg(feature = "oidc-auth-ldap")]
+use crate::authentication_oidc::OidcConfiguration;
 use crate::configuration::ApplicationConfiguration;
 use crate::cookie_functions::{get_plain_cookie_string, COOKIE_NAME};
 use crate::header_value_trait::HeaderValueExctractor;
-#[cfg(feature = "oidc-auth-ldap")]
-use crate::authentication_oidc::OidcConfiguration;
 #[cfg(any(feature = "ldap-auth", feature = "oidc-auth-ldap"))]
 use actix_web::dev::{forward_ready, Service, ServiceRequest, ServiceResponse, Transform};
 use actix_web::{body::EitherBody, http, http::StatusCode, web, Error, HttpRequest, HttpResponse};

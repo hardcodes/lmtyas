@@ -1,23 +1,20 @@
 use actix_files::Files;
 use actix_web::{guard, middleware, web, App, HttpResponse, HttpServer};
-use lmtyas::authenticated_user::cleanup_authenticated_users_hashmap;
 #[cfg(feature = "ldap-auth")]
 use lmtyas::authentication_ldap::LdapCommonConfiguration;
-use lmtyas::authentication_middleware::{
-    cleanup_authentication_state_hashmap, CheckAuthentication,
-};
+use lmtyas::authentication_middleware::CheckAuthentication;
+#[cfg(feature = "oidc-auth-ldap")]
+use lmtyas::authentication_oidc::OidcConfiguration;
 use lmtyas::authentication_url;
+use lmtyas::cleanup_timer::build_cleaup_timers;
 use lmtyas::cli_parser::{parse_cli_parameters, ARG_CONFIG_FILE};
 use lmtyas::configuration::ApplicationConfiguration;
 use lmtyas::handler_functions::*;
 use lmtyas::log_functions::extract_request_path;
 use lmtyas::login_user_trait::Login;
-#[cfg(feature = "oidc-auth-ldap")]
-use lmtyas::authentication_oidc::{cleanup_oidc_authentication_data_hashmap, OidcConfiguration};
 use log::info;
 use std::io::Write;
 use std::path::Path;
-use timer::Timer;
 
 #[cfg(feature = "ldap-auth")]
 type AuthConfiguration = LdapCommonConfiguration;
@@ -52,47 +49,8 @@ async fn main() -> std::io::Result<()> {
     // load ssl keys
     let ssl_acceptor_builder = application_configuration.get_ssl_acceptor_builder();
 
-    // timer that calls a cleanup routine every 15 seconds
-    // and removes used or aged authentication requests
-    let auth_duration = application_configuration
-        .configuration_file
-        .max_authrequest_age_seconds;
-    let cleanup_authentication_state_hashmap_timer = Timer::new();
-    let authentication_state_hashmap = application_configuration.shared_request_data.clone();
-    let _cleanup_authentication_state_hashmap_guard = cleanup_authentication_state_hashmap_timer
-        .schedule_repeating(chrono::Duration::seconds(15), move || {
-            cleanup_authentication_state_hashmap(&authentication_state_hashmap, auth_duration)
-        });
-
-    // timer that calls a cleanup routine every 15 seconds
-    // and removes used or aged oidc authentication requests
-    // TODO: make this conditional
-    let cleanup_oidc_authentication_state_hashmap_timer = Timer::new();
-    let shared_oidc_verification_data = application_configuration
-        .shared_oidc_verification_data
-        .clone();
-    let _cleanup_shared_oidc_verfication_data_guard =
-        cleanup_oidc_authentication_state_hashmap_timer.schedule_repeating(
-            chrono::Duration::seconds(15),
-            move || {
-                cleanup_oidc_authentication_data_hashmap(
-                    &shared_oidc_verification_data,
-                    auth_duration,
-                )
-            },
-        );
-
-    // timer that calls a cleanup routine every 15 seconds
-    // and removes expired user sessions
-    let cookie_duration = application_configuration
-        .configuration_file
-        .max_cookie_age_seconds;
-    let cleanup_authenticated_users_hashmap_timer = Timer::new();
-    let authenticated_users_hashmap = application_configuration.shared_authenticated_users.clone();
-    let _cleanup_authenticated_users_hashmap_guard = cleanup_authenticated_users_hashmap_timer
-        .schedule_repeating(chrono::Duration::seconds(15), move || {
-            cleanup_authenticated_users_hashmap(&authenticated_users_hashmap, cookie_duration)
-        });
+    // build cleanup timers and store references to keep them running
+    let _timer_guards = build_cleaup_timers(&application_configuration);
 
     // values for the csp-header
     let content_security_policy = concat!(
