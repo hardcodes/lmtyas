@@ -129,6 +129,9 @@ pub struct OidcUser {
 
 /// This trait must be implemented to get
 /// user details after oidc login (= we got a valid id token)
+/// The default implementation in `oidc_ldap.rs` uses an
+/// external ldap server to do that. Using the ID/access token
+/// to do so would also be possible in another implemenation.
 #[async_trait(?Send)]
 pub trait OidcUserDetails {
     /// use the given email address to query user details
@@ -153,6 +156,9 @@ fn warn_with_error_stack<T: std::error::Error>(fail: &T, message: &'static str) 
 
 #[async_trait(?Send)]
 impl Login for OidcConfiguration {
+    /// This function is called when a user logs in.
+    /// In case of this OIDC implementation this means
+    /// the callback (redirect) from the OIDC idp server.
     async fn login_user(
         _bytes: Bytes,
         request: HttpRequest,
