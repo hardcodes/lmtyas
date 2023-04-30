@@ -17,10 +17,15 @@ fn build_cleanup_authentication_state_hashmap_timer(
         .max_authrequest_age_seconds;
     let cleanup_authentication_state_hashmap_timer = Timer::new();
     let authentication_state_hashmap = application_configuration.shared_request_data.clone();
-    (cleanup_authentication_state_hashmap_timer
-        .schedule_repeating(chrono::Duration::seconds(15), move || {
-            cleanup_authentication_state_hashmap(&authentication_state_hashmap, auth_duration)
-        }), cleanup_authentication_state_hashmap_timer)
+    (
+        cleanup_authentication_state_hashmap_timer.schedule_repeating(
+            chrono::Duration::seconds(15),
+            move || {
+                cleanup_authentication_state_hashmap(&authentication_state_hashmap, auth_duration)
+            },
+        ),
+        cleanup_authentication_state_hashmap_timer,
+    )
 }
 
 /// Timer that calls a cleanup routine every 15 seconds
@@ -33,10 +38,15 @@ fn build_cleanup_authenticated_users_hashmap_timer(
         .max_cookie_age_seconds;
     let cleanup_authenticated_users_hashmap_timer = Timer::new();
     let authenticated_users_hashmap = application_configuration.shared_authenticated_users.clone();
-    (cleanup_authenticated_users_hashmap_timer
-        .schedule_repeating(chrono::Duration::seconds(15), move || {
-            cleanup_authenticated_users_hashmap(&authenticated_users_hashmap, cookie_duration)
-        }), cleanup_authenticated_users_hashmap_timer)
+    (
+        cleanup_authenticated_users_hashmap_timer.schedule_repeating(
+            chrono::Duration::seconds(15),
+            move || {
+                cleanup_authenticated_users_hashmap(&authenticated_users_hashmap, cookie_duration)
+            },
+        ),
+        cleanup_authenticated_users_hashmap_timer,
+    )
 }
 
 /// Timer that calls a cleanup routine every 15 seconds
@@ -52,12 +62,18 @@ fn build_cleanup_oidc_authentication_state_hashmap_timer(
     let shared_oidc_verification_data = application_configuration
         .shared_oidc_verification_data
         .clone();
-    (cleanup_oidc_authentication_state_hashmap_timer.schedule_repeating(
-        chrono::Duration::seconds(15),
-        move || {
-            cleanup_oidc_authentication_data_hashmap(&shared_oidc_verification_data, auth_duration)
-        },
-    ), cleanup_oidc_authentication_state_hashmap_timer)
+    (
+        cleanup_oidc_authentication_state_hashmap_timer.schedule_repeating(
+            chrono::Duration::seconds(15),
+            move || {
+                cleanup_oidc_authentication_data_hashmap(
+                    &shared_oidc_verification_data,
+                    auth_duration,
+                )
+            },
+        ),
+        cleanup_oidc_authentication_state_hashmap_timer,
+    )
 }
 
 /// Build a vector of timer guards and timers to keep

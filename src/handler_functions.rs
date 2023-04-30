@@ -39,7 +39,7 @@ const MAX_FORM_BYTES_LEN: usize = 1024;
 /// max length of form fields
 const MAX_FORM_INPUT_LEN: usize = 128;
 
-/// redirect browser to our index page
+/// Redirect browser to our index page.
 pub async fn redirect_to_index(
     application_configuration: web::Data<ApplicationConfiguration>,
 ) -> HttpResponse {
@@ -56,7 +56,7 @@ pub async fn redirect_to_index(
     response
 }
 
-/// show a monitoring system that we are still alive
+/// Show a monitoring system that we are still alive.
 pub async fn still_alive(
     application_configuration: web::Data<ApplicationConfiguration>,
 ) -> impl Responder {
@@ -84,7 +84,7 @@ pub async fn get_login_hint(
     HttpResponse::ok_text_response(login_hint.to_string())
 }
 
-/// returns a hint abou valid mail addresses
+/// Returns a hint about valid mail addresses.
 pub async fn get_mail_hint(
     application_configuration: web::Data<ApplicationConfiguration>,
 ) -> impl Responder {
@@ -97,7 +97,7 @@ pub async fn get_mail_hint(
     }
 }
 
-/// returns a href and target to the imprint page
+/// Returns a href and target to the imprint page.
 pub async fn get_imprint_link(
     application_configuration: web::Data<ApplicationConfiguration>,
 ) -> impl Responder {
@@ -109,7 +109,7 @@ pub async fn get_imprint_link(
     )
 }
 
-/// return the custom colors.css file if it exists
+/// Return the custom colors.css file if it exists.
 pub async fn get_colors_css() -> impl Responder {
     let path_local = Path::new("local/css/colors.css");
     let path_static = Path::new("web-content/static/css/colors.css");
@@ -120,7 +120,7 @@ pub async fn get_colors_css() -> impl Responder {
     NamedFile::open_async(file_path).await
 }
 
-/// return the custom company-logo.png if it exists
+/// Return the custom company-logo.png if it exists.
 pub async fn get_company_logo() -> impl Responder {
     let path_local = Path::new("local/gfx/company-logo.png");
     let path_static = Path::new("web-content/static/gfx/hardcodes-logo.png");
@@ -131,7 +131,7 @@ pub async fn get_company_logo() -> impl Responder {
     NamedFile::open_async(file_path).await
 }
 
-/// return the custom favicon.png if it exists
+/// Return the custom favicon.png if it exists.
 pub async fn get_favicon() -> impl Responder {
     let path_local = Path::new("local/gfx/favicon.png");
     let path_static = Path::new("web-content/static/gfx/favicon.png");
@@ -243,7 +243,7 @@ pub async fn set_password_for_rsa_rivate_key(
     }
 }
 
-/// Stores a secret and its meta date as encrypted file on disk
+/// Stores a secret and its meta date as encrypted file on disk.
 ///
 /// # Arguments
 ///
@@ -434,6 +434,8 @@ pub async fn store_secret(
     HttpResponse::ok_text_response("OK")
 }
 
+/// Returns the length of a base64 decoded secret. If it cannot be decoded
+/// at all, MAX_FORM_INPUT_LEN + 1 will be returned as length.
 fn get_base64_encoded_secret_len(parsed_secret: &str) -> usize {
     let decoded_secret = match Vec::from_base64_encoded(parsed_secret) {
         Ok(s) => s,
@@ -584,17 +586,18 @@ pub async fn get_authenticated_user_details(user: AuthenticatedUser) -> HttpResp
     }
 }
 
-/// Get admin protected sysop.html
+/// Get admin protected sysop.html.
 pub async fn get_sysop_html(_admin: AuthenticatedAdministrator) -> impl Responder {
     NamedFile::open_async("web-content/admin-html/sysop.html").await
 }
 
-/// Get admin protected sysop.js
+/// Get admin protected sysop.js.
 pub async fn get_sysop_js(_admin: AuthenticatedAdministrator) -> impl Responder {
     NamedFile::open_async("web-content/admin-html/js/sysop.js").await
 }
 
-/// renew cookie lifetime for the authenticated user
+/// Renew cookie lifetime for the authenticated user by settings the
+/// current timestamp.
 ///
 /// # Arguments
 ///
@@ -608,8 +611,9 @@ pub async fn keep_session_alive(req: HttpRequest, _user: AuthenticatedUser) -> H
     update_authenticated_user_cookie_lifetime(&req)
 }
 
-/// custom 404 handler
-/// returns 404.html or plain error message if file cannot be found
+/// Custom 404 handler
+///
+/// Returns 404.html or plain error message if file cannot be found.
 pub async fn not_found_404() -> HttpResponse {
     let file_path = Path::new("web-content/static/404.html");
     let file_content =

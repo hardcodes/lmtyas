@@ -1,4 +1,4 @@
-use crate::base64_trait::{Base64VecU8Conversions, Base64StringConversions};
+use crate::base64_trait::{Base64StringConversions, Base64VecU8Conversions};
 use log::info;
 use openssl::rand::rand_bytes;
 use openssl::symm::{decrypt, encrypt, Cipher};
@@ -29,7 +29,6 @@ impl fmt::Display for AesEncryptionError {
         write!(f, "could not aes encrypt data!")
     }
 }
-
 
 impl EncryptAes for String {
     /// AES encrypt a `String`with randomly chosen key and iv.

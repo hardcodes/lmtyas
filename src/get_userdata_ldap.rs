@@ -12,7 +12,7 @@ pub struct GetUserDataLdapBackend;
 /// method used.
 #[async_trait]
 impl GetUserData for GetUserDataLdapBackend {
-    // This function is called when a secret is transmitted
+    /// This function is called when a secret is transmitted
     /// to get the display name of the receiver. At this
     /// point we only know of the email address
     async fn get_receiver_display_name(

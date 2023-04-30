@@ -73,7 +73,7 @@ impl AuthenticatedUser {
         }
     }
 
-    /// Update the timestamp before a cookie lifetime is expied to
+    /// Update the timestamp before a cookie lifetime is expired to
     /// stay in the hashmap
     pub fn update_timestamp(&mut self) {
         self.time_stamp = Utc::now()

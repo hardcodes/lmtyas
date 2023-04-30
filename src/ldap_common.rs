@@ -1,4 +1,6 @@
 extern crate env_logger;
+#[cfg(feature = "ldap-auth")]
+use crate::authentication_ldap::LdapAuthConfiguration;
 pub use crate::login_user_trait::Login;
 use crate::unsecure_string::SecureStringToUnsecureString;
 use ldap3::{ldap_escape, LdapConnAsync, Scope, SearchEntry};
@@ -7,9 +9,6 @@ use secstr::SecStr;
 use serde::Deserialize;
 use std::error::Error;
 use zeroize::Zeroize;
-#[cfg(feature = "ldap-auth")]
-use crate::authentication_ldap::LdapAuthConfiguration;
-
 
 /// Holds the configuration to access an LDAP server
 /// to query user details
@@ -51,9 +50,7 @@ impl LdapCommonConfiguration {
         // in plaintext. It is converted here and lives only
         // for the short time of a query.
         let bind_pw = &mut self.bind_passwd.to_unsecure_string();
-        ldap.simple_bind(&self.bind_dn, bind_pw)
-            .await?
-            .success()?;
+        ldap.simple_bind(&self.bind_dn, bind_pw).await?.success()?;
         bind_pw.zeroize();
         debug!("ldap.simple_bind() -> OK");
         let (rs, _res) = ldap
