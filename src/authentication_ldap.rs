@@ -92,7 +92,7 @@ impl Login for LdapCommonConfiguration {
         debug!("bytes = {:?}", &bytes);
         debug!("request = {:?}", &request);
         let peer_ip = Peer::get_peer_ip_address(&request);
-        debug!("peer_address = {:?}", &peer_ip);
+        debug!("peer_ip = {:?}", &peer_ip);
         // accept POST method only
         if Method::POST != request.method() {
             return HttpResponse::Forbidden().finish();
@@ -144,7 +144,7 @@ impl Login for LdapCommonConfiguration {
                 return HttpResponse::err_text_response("ERROR: cannot parse request id");
             }
         };
-        debug!("request_id = {}", &request_id.to_string());
+        info!("login attempt (peer_ip = {}, request_id = {})", &peer_ip, &request_id.to_string());
         // what url/resource has been requested before login?
         let url_requested;
         {

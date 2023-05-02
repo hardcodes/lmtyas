@@ -170,7 +170,7 @@ impl Login for OidcConfiguration {
             return HttpResponse::Forbidden().finish();
         }
         let peer_ip = Peer::get_peer_ip_address(&request);
-        debug!("peer_address = {:?}", &peer_ip);
+        debug!("peer_ip = {:?}", &peer_ip);
 
         let login_fail_redirect = HttpResponse::build(StatusCode::SEE_OTHER)
             .append_header((http::header::LOCATION, AUTH_LOGIN_FAIL_PAGE))
@@ -228,7 +228,7 @@ impl Login for OidcConfiguration {
                 return login_fail_redirect;
             }
         };
-        debug!("request_id = {}", &request_id.to_string());
+        info!("login attempt (peer_ip = {}, request_id = {})", &peer_ip, &request_id.to_string());
         // what url/resource has been requested before login?
         let url_requested;
         {
