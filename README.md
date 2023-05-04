@@ -61,7 +61,7 @@ See [lmtyas-config.json](conf.dev/lmtyas-config.json) for an example configurati
 |     "provider_metadata_url":     | base url which serves `.well-known/openid-configuration`, e.g. `"https://acme.eu.auth0.com/"`             | 
 |     "client_id":                 | oidc client id of this application, e.g. `"Y2xpZW50X2lk"`                                                 |
 |     "client_secret":             | oidc client secret of this application, e.g. `"Y2xpZW50X3NlY3JldA=="`                                     |
-|     "valid_user_regex":          | regex of valid user names, e.g. `"^[\\w\\d\\-]{3,8}@acme\\.local$"`                                       |
+|     "valid_user_regex":          | regex of valid user names (email), e.g. `"^[\\w\\d\\-]{3,8}@acme\\.local$"`                               |
 | },                               | <== end object with optional oidc configuration                                                           |
 | "login_hint"                     | hint for users which account to use for login, e.g. `"A.C.M.E. LDAP account"`                             |
 | "mail_hint"                      | optional hint what mail address format should be used, e.g. `givenname.surname@acme.local`                |

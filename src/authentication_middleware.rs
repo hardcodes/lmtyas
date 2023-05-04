@@ -149,8 +149,9 @@ impl SharedRequestData {
             // attempt. A possible attacker will simply knock on the server without
             // following the redirect and stopped after reaching MAX_AUTH_REQUESTS. So the
             // webservice won't consume all memory on the host.
-            // A cleanup thread will remove old entries after 10 minutes, so that the
-            // situation will resolve itself unless the server is still being hammered on.
+            // A cleanup thread will remove old entries after `max_authrequest_age_seconds`,
+            // so that the situation will resolve itself unless the server is still being
+            // hammered on.
             warn!("MAX_AUTH_REQUESTS exceeded, possible DOS attack!");
             return None;
         } else {

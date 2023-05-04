@@ -170,8 +170,7 @@ impl Login for OidcConfiguration {
             return HttpResponse::Forbidden().finish();
         }
         let peer_ip = Peer::get_peer_ip_address(&request);
-        debug!("peer_ip = {:?}", &peer_ip);
-
+        // redirect to login failure page used on errors
         let login_fail_redirect = HttpResponse::build(StatusCode::SEE_OTHER)
             .append_header((http::header::LOCATION, AUTH_LOGIN_FAIL_PAGE))
             .finish();
@@ -188,7 +187,7 @@ impl Login for OidcConfiguration {
             }
         };
 
-        // extract "code" and "state"
+        // extract "code" and "state" from the forwarded response
         let query = match Query::<HashMap<String, String>>::from_query(request.query_string()) {
             Ok(q) => q,
             Err(e) => {
@@ -220,11 +219,11 @@ impl Login for OidcConfiguration {
         debug!("code = {:?}", &code);
         debug!("state = {:?}", &state);
 
-        // what ID was assigned to the resource request?
+        // what request_id was assigned to the resource request?
         let request_id = match Uuid::parse_str(state.secret()) {
             Ok(request_id) => request_id,
             Err(_) => {
-                warn!("state cannot be parsed as uuid");
+                warn!("response state cannot be parsed as uuid");
                 return login_fail_redirect;
             }
         };
@@ -309,7 +308,7 @@ impl Login for OidcConfiguration {
             nonce = oidc_verification_data.nonce.to_owned();
         }
         let pkce_verifier = PkceCodeVerifier::new(pkce_verifier_secret);
-        info!("Getting ID token for request_id {}", &request_id);
+        info!("PKCE: getting ID token for request_id {}", &request_id);
         let token_response = match application_configuration
             .oidc_client
             .exchange_code(code)
@@ -319,7 +318,7 @@ impl Login for OidcConfiguration {
         {
             Ok(t) => t,
             Err(e) => {
-                warn_with_error_stack(&e, "ID token request failed");
+                warn_with_error_stack(&e, "PKCE: ID token request failed");
                 // If the crate openidconnect is not compiled with the feature
                 // "accept-rfc3339-timestamps", we will get the error
                 // "data did not match any variant of untagged enum Timestamp"
@@ -334,11 +333,11 @@ impl Login for OidcConfiguration {
         let id_token = match token_response.id_token() {
             Some(t) => t,
             None => {
-                warn!("ID token cannot be extracted");
+                warn!("PKCE: ID token cannot be extracted");
                 return login_fail_redirect;
             }
         };
-        info!("Received ID token for request_id {}", &request_id);
+        info!("PKCE: Received ID token for request_id {}", &request_id);
         debug!("id_token = {:?}", &id_token);
 
         // Verify ID token authenticity/nonce and extract claims.
@@ -349,12 +348,12 @@ impl Login for OidcConfiguration {
         let claims = match id_token.claims(id_token_verifier, &nonce) {
             Ok(c) => c,
             Err(e) => {
-                warn_with_error_stack(&e, "Failed to verify ID token authenticity");
+                warn_with_error_stack(&e, "OIDC: failed to verify ID token authenticity");
                 return login_fail_redirect;
             }
         };
         info!(
-            "Verified ID token authenticity for request_id {}",
+            "OIDC: verified ID token authenticity for request_id {}",
             &request_id
         );
         debug!("claims = {:?}", &claims);
@@ -366,12 +365,15 @@ impl Login for OidcConfiguration {
         debug!("email = {}", &email);
 
         if !valid_user_regex.is_match(email) {
-            warn!("user email address does not match regex: {}", &email);
+            warn!("OIDC: user email address from claim does not match regex: {}", &email);
             return login_fail_redirect;
         }
 
         // At this point we known the identitiy of the user. Let's get some more
         // infos...
+        // To do that, we use an implementation of the `OidcUserDetails` trait.
+        // A future implementation could use further claims to query user details.
+        // This would mean further rouond trips to the IdP.
         let user_details = match QueryAuthDetails::get_oidc_user_details_from_email(
             email,
             &application_configuration,
@@ -423,6 +425,7 @@ impl Login for OidcConfiguration {
         }
     }
 
+    // This function is called once the confguration file has been read.
     fn build_valid_user_regex(&mut self) -> Result<(), Box<dyn Error>> {
         let user_regex = Regex::new(&self.valid_user_regex)?;
         self.user_regex = Some(user_regex);
