@@ -176,7 +176,7 @@ sudo systemctl start lmtyas.service
 
 Also see [Cargo.toml](./Cargo.toml), section `[features]`.
 
-- Default: **oidc-auth-ldap**, **mail-noauth-notls** (users are authenticated with an external oidc server, user details are queried from an external ldap server and emails are sent through a smtp server with no authentication and no encryption)
+- Default: **oidc-auth-ldap**, **mail-noauth-notls** (users are authenticated with an external oidc server: Authorization Code Flow with Proof Key for Code Exchange (PKCE). The only scope used is `email`, user details are queried from an external ldap server and emails are sent through a smtp server with no authentication and no encryption)
 
   You may ask why we need oidc when we have a ldap server, we use to query user details: when an oidc server is available, your users know the look and feel of the login page. This way they may be more confidend to enter their credentials. Maybe you even use 2FA for your oidc solution, so why not benefit?
 
@@ -202,10 +202,10 @@ Also see [Cargo.toml](./Cargo.toml), section `[features]`.
 - **get-userdata-ldap**: query userdata (frist and last name by email address of secret receiver) from a ldap server.
 - **no-userdata-backend**: use this, when there is no backend (like e.g., a ldap server) to query userdata.
 
-So far these combinations make sene:
+So far these combinations make sense:
 
-- **oidc-auth-ldap**, **mail-noauth-notls**
-- **ldap-auth**, **mail-noauth-notls**
+- `default = ["oidc-auth-ldap", "mail-noauth-notls"]`
+- `default = ["ldap-auth", "mail-noauth-notls"]`
 
 
 # Customization
