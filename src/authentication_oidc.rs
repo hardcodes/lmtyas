@@ -227,7 +227,7 @@ impl Login for OidcConfiguration {
                 return login_fail_redirect;
             }
         };
-        info!("login attempt (peer_ip = {}, request_id = {})", &peer_ip, &request_id.to_string());
+        info!("OIDC: login attempt (peer_ip = {}, request_id = {})", &peer_ip, &request_id.to_string());
         // what url/resource has been requested before login?
         let url_requested;
         {
@@ -241,7 +241,7 @@ impl Login for OidcConfiguration {
             {
                 None => {
                     warn!(
-                        "login attempt with expired or invalid authentication request id {}",
+                        "OIDC: login attempt with expired or invalid authentication request id {}",
                         &request_id
                     );
                     return login_fail_redirect;
@@ -250,7 +250,7 @@ impl Login for OidcConfiguration {
             };
             if auth_request.has_been_used {
                 warn!(
-                    "authentication request id {} has already been used, possible replay attack!",
+                    "OIDC: uthentication request id {} has already been used, possible replay attack!",
                     &request_id
                 );
                 return login_fail_redirect;
@@ -262,7 +262,7 @@ impl Login for OidcConfiguration {
             // is authentication taking place from the same ip address as the resource request?
             if peer_ip.ne(&auth_request.peer_ip) {
                 warn!(
-                "IP address changed since resource request: peer_address = {:?}, auth_request = {}",
+                "OIDC: IP address changed since resource request: peer_address = {:?}, auth_request = {}",
                 &peer_ip, &auth_request
             );
                 return login_fail_redirect;
@@ -284,7 +284,7 @@ impl Login for OidcConfiguration {
                 match shared_oidc_verfication_data_write_lock.get_mut(&request_id) {
                     None => {
                         warn!(
-                    "oidc login attempt with expired or invalid oidc verification data id {}",
+                    "OIDC: login attempt with expired or invalid oidc verification data id {}",
                     &request_id
                 );
                         return login_fail_redirect;
@@ -293,7 +293,7 @@ impl Login for OidcConfiguration {
                 };
             if oidc_verification_data.has_been_used {
                 warn!(
-                    "oidc verification data id {} has already been used, possible replay attack!",
+                    "OIDC: verification data id {} has already been used, possible replay attack!",
                     &request_id
                 );
                 return login_fail_redirect;
