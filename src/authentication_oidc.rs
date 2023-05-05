@@ -471,7 +471,7 @@ impl AuthenticationRedirect for OidcConfiguration {
         let uuid = request_uuid.to_owned();
         shared_oidc_verfication_data_write_lock.insert(uuid, verification_data);
         drop(shared_oidc_verfication_data_write_lock);
-        HttpResponse::build(StatusCode::SEE_OTHER)
+        HttpResponse::build(StatusCode::FOUND)
             .append_header((http::header::LOCATION, redirect_url.as_str()))
             .finish()
     }

@@ -368,7 +368,7 @@ impl AuthenticationRedirect for LdapCommonConfiguration {
             "get_authentication_redirect_response() => {}",
             &redirect_url
         );
-        let authentication_redirect_response = HttpResponse::build(StatusCode::SEE_OTHER)
+        let authentication_redirect_response = HttpResponse::build(StatusCode::FOUND)
             .append_header((http::header::LOCATION, redirect_url))
             .finish();
         authentication_redirect_response
