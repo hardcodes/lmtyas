@@ -241,6 +241,7 @@ where
                         .authenticated_users_hashmap
                         .get(&parsed_cookie_uuid)
                     {
+                        // UUID inside cookie as referenced a `AuthenticatedUser`.
                         if peer_ip.ne(&auth_request.peer_ip) {
                             warn!(
                                 "Cookie stolen? peer_address = {:?}, auth_request = {}",
@@ -258,6 +259,9 @@ where
                             });
                         }
                     };
+                    // Some browers show up with expired cookies. Those will fall through
+                    // since there is no `AuthenticatedUser` stored for the decrypted UUID
+                    // left. So it will be handled as if no cookie was present.
                 }
             }
         }
