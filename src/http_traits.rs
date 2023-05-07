@@ -14,14 +14,6 @@ pub trait CustomHttpResponse {
     ///   .body("OK: this is fine!");
     /// }
     /// ```
-    ///
-    /// # Arguments
-    ///
-    /// - `body': a `actix_web::body::MessageBody` with the text content to return
-    ///
-    /// # Returns
-    ///
-    /// - `actix_web::HttpResponse`
     fn ok_text_response_with_cookie<B>(body: B, cookie: Cookie) -> actix_web::HttpResponse
     where
         B: MessageBody + 'static;
@@ -36,15 +28,6 @@ pub trait CustomHttpResponse {
     ///   .body("OK: this is fine!");
     /// }
     /// ```
-    ///
-    /// # Arguments
-    ///
-    /// - `body':   a `actix_web::body::MessageBody` with the text content to return
-    /// - `cookie`: cookie to set in the response
-    ///
-    /// # Returns
-    ///
-    /// - `actix_web::HttpResponse`
     fn ok_text_response<B>(body: B) -> actix_web::HttpResponse
     where
         B: MessageBody + 'static;
@@ -59,14 +42,6 @@ pub trait CustomHttpResponse {
     ///   .body("{\"this\": \"that\"}");
     /// }
     /// ```
-    ///
-    /// # Arguments
-    ///
-    /// - `body': a `actix_web::body::MessageBody` with the JSON content to return
-    ///
-    /// # Returns
-    ///
-    /// - `actix_web::HttpResponse`
     fn ok_json_response<B>(body: B) -> actix_web::HttpResponse
     where
         B: MessageBody + 'static;
@@ -81,14 +56,6 @@ pub trait CustomHttpResponse {
     ///   .body("ERROR: this is bad!");
     /// }
     /// ```
-    ///
-    /// # Arguments
-    ///
-    /// - `body': a `actix_web::body::MessageBody` with the text content to return
-    ///
-    /// # Returns
-    ///
-    /// - `actix_web::HttpResponse`
     fn err_text_response<B>(body: B) -> actix_web::HttpResponse
     where
         B: MessageBody + 'static;
