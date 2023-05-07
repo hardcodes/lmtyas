@@ -238,7 +238,9 @@ pub async fn set_password_for_rsa_rivate_key(
         }
         Ok(_) => {
             info!("rsa keys have been loaded successfully");
-            HttpResponse::ok_text_response("OK")
+            // Delete cookie after rsa password has been set because it
+            // is not enrypted yet.
+            HttpResponse::ok_text_response_with_empty_unix_epoch_cookie("OK")
         }
     }
 }
