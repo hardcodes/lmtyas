@@ -4,7 +4,7 @@ use crate::authentication_middleware::PeerIpAddress;
 use crate::authentication_middleware::UNKNOWN_PEER_IP;
 use crate::base64_trait::Base64VecU8Conversions;
 use crate::configuration::ApplicationConfiguration;
-use crate::cookie_functions::build_new_authentication_cookie;
+use crate::cookie_functions::{build_new_authentication_cookie, empty_unix_epoch_cookie};
 use crate::http_traits::CustomHttpResponse;
 pub use crate::ldap_common::{LdapCommonConfiguration, LdapSearchResult};
 pub use crate::login_user_trait::Login;
@@ -144,7 +144,11 @@ impl Login for LdapCommonConfiguration {
                 return HttpResponse::err_text_response("ERROR: cannot parse request id");
             }
         };
-        info!("login attempt (peer_ip = {}, request_id = {})", &peer_ip, &request_id.to_string());
+        info!(
+            "login attempt (peer_ip = {}, request_id = {})",
+            &peer_ip,
+            &request_id.to_string()
+        );
         // what url/resource has been requested before login?
         let url_requested;
         {
@@ -370,6 +374,10 @@ impl AuthenticationRedirect for LdapCommonConfiguration {
         );
         let authentication_redirect_response = HttpResponse::build(StatusCode::FOUND)
             .append_header((http::header::LOCATION, redirect_url))
+            .append_header((
+                http::header::SET_COOKIE,
+                empty_unix_epoch_cookie().to_string(),
+            ))
             .finish();
         authentication_redirect_response
     }

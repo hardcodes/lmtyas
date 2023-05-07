@@ -1,7 +1,8 @@
 use crate::base64_trait::{Base64StringConversions, Base64VecU8Conversions};
 use crate::rsa_functions::RsaKeys;
 use actix_web::{
-    cookie::time::Duration, cookie::Cookie, http, http::StatusCode, HttpResponse,
+    cookie::time::Duration, cookie::time::OffsetDateTime, cookie::Cookie, http, http::StatusCode,
+    HttpResponse,
 };
 
 /// Name of the cookie that is sent to an authenticated user browser
@@ -172,4 +173,21 @@ pub fn get_plain_cookie_string(transmitted_cookie: &str, rsa: &RsaKeys) -> Strin
         )
         .unwrap_or_else(|_| -> String { "invalid_base64_utf8".to_string() }),
     }
+}
+
+/// Returns an empty cookie with an expiration date of the
+/// unix epoch (1970-01-01 0:00 UTC).
+pub fn empty_unix_epoch_cookie() -> Cookie<'static> {
+    #[cfg(feature = "ldap-auth")]
+    let same_site = actix_web::cookie::SameSite::Strict;
+    #[cfg(feature = "oidc-auth-ldap")]
+    let same_site = actix_web::cookie::SameSite::Lax;
+    let new_cookie = Cookie::build(COOKIE_NAME, "".to_string())
+        .secure(true)
+        .http_only(true)
+        .path(COOKIE_PATH)
+        .expires(OffsetDateTime::UNIX_EPOCH)
+        .same_site(same_site)
+        .finish();
+    new_cookie
 }

@@ -6,6 +6,7 @@ use crate::authentication_url::AUTH_LOGIN_FAIL_PAGE;
 use crate::configuration::ApplicationConfiguration;
 use crate::cookie_functions::{
     build_new_authentication_cookie, build_redirect_to_resource_url_response,
+    empty_unix_epoch_cookie,
 };
 use crate::http_traits::CustomHttpResponse;
 pub use crate::login_user_trait::Login;
@@ -227,7 +228,11 @@ impl Login for OidcConfiguration {
                 return login_fail_redirect;
             }
         };
-        info!("OIDC: login attempt (peer_ip = {}, request_id = {})", &peer_ip, &request_id.to_string());
+        info!(
+            "OIDC: login attempt (peer_ip = {}, request_id = {})",
+            &peer_ip,
+            &request_id.to_string()
+        );
         // what url/resource has been requested before login?
         let url_requested;
         {
@@ -365,7 +370,10 @@ impl Login for OidcConfiguration {
         debug!("email = {}", &email);
 
         if !valid_user_regex.is_match(email) {
-            warn!("OIDC: user email address from claim does not match regex: {}", &email);
+            warn!(
+                "OIDC: user email address from claim does not match regex: {}",
+                &email
+            );
             return login_fail_redirect;
         }
 
@@ -473,6 +481,10 @@ impl AuthenticationRedirect for OidcConfiguration {
         drop(shared_oidc_verfication_data_write_lock);
         HttpResponse::build(StatusCode::FOUND)
             .append_header((http::header::LOCATION, redirect_url.as_str()))
+            .append_header((
+                http::header::SET_COOKIE,
+                empty_unix_epoch_cookie().to_string(),
+            ))
             .finish()
     }
 }
