@@ -182,12 +182,12 @@ pub fn empty_unix_epoch_cookie() -> Cookie<'static> {
     let same_site = actix_web::cookie::SameSite::Strict;
     #[cfg(feature = "oidc-auth-ldap")]
     let same_site = actix_web::cookie::SameSite::Lax;
-    let new_cookie = Cookie::build(COOKIE_NAME, "".to_string())
+    let empty_unix_epoch_cookie = Cookie::build(COOKIE_NAME, "".to_string())
         .secure(true)
         .http_only(true)
         .path(COOKIE_PATH)
         .expires(OffsetDateTime::UNIX_EPOCH)
         .same_site(same_site)
         .finish();
-    new_cookie
+    empty_unix_epoch_cookie
 }
