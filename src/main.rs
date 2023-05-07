@@ -85,6 +85,10 @@ async fn main() -> std::io::Result<()> {
                         "Strict-Transport-Security",
                         "max-age=31536000; includeSubDomains",
                     ))
+                    // Disable caching. This is no CDN or social media site with
+                    // high throughput. But some browsers tend to show outdated
+                    // versions of our data. Better make sure they do not cache at all.
+                    .add(("Cache-Control", "no-cache"))
                     .add(("Content-Security-Policy", content_security_policy))
                     .add(("X-Frame-Options", "DENY"))
                     .add(("X-Content-Type-Options", "nosniff")),
