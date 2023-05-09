@@ -367,7 +367,6 @@ impl Login for OidcConfiguration {
             .email()
             .map(|email| email.as_str())
             .unwrap_or("<not provided>");
-        debug!("email = {}", &email);
 
         if !valid_user_regex.is_match(email) {
             warn!(
@@ -376,6 +375,13 @@ impl Login for OidcConfiguration {
             );
             return login_fail_redirect;
         }
+
+        info!(
+            "OIDC: authentication completed (peer_ip = {}, request_id = {}, email = {})",
+            &peer_ip,
+            &request_id.to_string(),
+            &email
+        );
 
         // At this point we known the identitiy of the user. Let's get some more
         // infos...
@@ -407,6 +413,13 @@ impl Login for OidcConfiguration {
                 &peer_ip,
             )
         {
+            info!(
+                "OIDC: login completed (peer_ip = {}, request_id = {}, email = {})",
+                &peer_ip,
+                &request_id.to_string(),
+                &email
+            );
+            
             let rsa_read_lock = application_configuration.rsa_keys.read().unwrap();
             // when the rsa key pair already has been loaded,
             // the cookie value is encrypted with the rsa public
