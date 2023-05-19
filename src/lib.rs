@@ -50,3 +50,8 @@ pub mod authentication_url {
     pub const AUTH_INDEX_PAGE: &str = "nothing-here.html";
     pub const AUTH_LOGIN_FAIL_PAGE: &str = "/authentication/login-fail.html";
 }
+
+#[cfg(feature = "oidc-auth-ldap")]
+pub const TIMER_VEC_CAPACITY: usize = 3;
+#[cfg(not(feature = "oidc-auth-ldap"))]
+pub const TIMER_VEC_CAPACITY: usize = 2;
