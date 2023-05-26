@@ -255,7 +255,7 @@ impl Login for OidcConfiguration {
             };
             if auth_request.has_been_used {
                 warn!(
-                    "OIDC: uthentication request id {} has already been used, possible replay attack!",
+                    "OIDC: authentication request id {} has already been used, possible replay attack!",
                     &request_id
                 );
                 return login_fail_redirect;
@@ -387,7 +387,7 @@ impl Login for OidcConfiguration {
         // infos...
         // To do that, we use an implementation of the `OidcUserDetails` trait.
         // A future implementation could use further claims to query user details.
-        // This would mean further rouond trips to the IdP.
+        // This would mean further round trips to the IdP.
         let user_details = match QueryAuthDetails::get_oidc_user_details_from_email(
             email,
             &application_configuration,
