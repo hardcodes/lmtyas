@@ -18,7 +18,7 @@ on the website driven by this web service and the receiver will get an email wit
 
 ![tell a secret](./gfx/lmtyas-screenshot-001.png)
 
-Yes, identities can be stolen and/or hacked - but then you have got bigger problems at hand. Again, have a good look at [SQRL](https://www.grc.com/sqrl/sqrl.htm).
+Yes, identities can be stolen and/or hacked - but then you have got bigger problems at hand. Again, have a good look at [SQRL](https://www.grc.com/sqrl/sqrl.htm) or [fido2](https://en.wikipedia.org/wiki/FIDO2_Project).
 
 **NOTE**: secrets like passwords should be forced to be changed after first login!
 
