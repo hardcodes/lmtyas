@@ -2,7 +2,9 @@
 
 A web service written in Rust that allows an authenticated user to send secrets like passwords to other authenticated users.
 
-In a perfect world we wouldn't need passwords anymore but more often than not we still do need to tell them to other people (have a look at [SQRL](https://www.grc.com/sqrl/sqrl.htm), there is a world almost without passwords out there). Sending passwords by email is unsecure because most people are not able to receive encrypted emails. Sending passwords by snail mail is slow. Using a second channel, e.g. like a chat program, may work but often leaves traces.
+In a perfect world we wouldn't need passwords anymore but more often than not we also still do need to tell them to other people. There is a world almost without passwords out there, e.g. have a look at [SQRL](https://www.grc.com/sqrl/sqrl.htm) or [fido2](https://en.wikipedia.org/wiki/FIDO2_Project). 
+
+Sending passwords by email is unsecure because most people are not able to receive encrypted emails. Sending passwords by snail mail is slow. Using a second channel, e.g. like a chat program, may work but often leaves traces or involves third parties you do not trust.
 
 *"Let me tell you a secret" enters the stage*
 
