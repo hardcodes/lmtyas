@@ -35,9 +35,9 @@ type UserDataImpl = GetUserDataLdapBackend;
 /// https://url.spec.whatwg.org/#fragment-percent-encode-set
 const FRAGMENT: &AsciiSet = &CONTROLS.add(b'/').add(b'=');
 /// max length of form data
-const MAX_FORM_BYTES_LEN: usize = 1024;
+const MAX_FORM_BYTES_LEN: usize = 10100 * 10;
 /// max length of form fields
-const MAX_FORM_INPUT_LEN: usize = 128;
+const MAX_FORM_INPUT_LEN: usize = 10100;
 
 /// Redirect browser to our index page.
 pub async fn redirect_to_index(

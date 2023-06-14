@@ -105,12 +105,12 @@ impl Secret {
     /// Creates a new instance of `Secret` with
     /// encrypted data.
     pub fn to_encrypted(&self, rsa_keys: &RsaKeys) -> Result<Secret, Box<dyn Error>> {
-        let encrypted_from_email = rsa_keys.encrypt_str(&self.from_email)?;
-        let encrypted_from_display_name = rsa_keys.encrypt_str(&self.from_display_name)?;
-        let encrypted_to_email = rsa_keys.encrypt_str(&self.to_email)?;
-        let encrypted_to_display_name = rsa_keys.encrypt_str(&self.to_display_name)?;
-        let encrypted_context = rsa_keys.encrypt_str(&self.context)?;
-        let encrypted_secret = rsa_keys.encrypt_str(&self.secret)?;
+        let encrypted_from_email = rsa_keys.hybrid_encrypt_str(&self.from_email)?;
+        let encrypted_from_display_name = rsa_keys.hybrid_encrypt_str(&self.from_display_name)?;
+        let encrypted_to_email = rsa_keys.hybrid_encrypt_str(&self.to_email)?;
+        let encrypted_to_display_name = rsa_keys.hybrid_encrypt_str(&self.to_display_name)?;
+        let encrypted_context = rsa_keys.hybrid_encrypt_str(&self.context)?;
+        let encrypted_secret = rsa_keys.hybrid_encrypt_str(&self.secret)?;
         let secret = Secret {
             from_email: encrypted_from_email,
             from_display_name: encrypted_from_display_name,
@@ -125,12 +125,24 @@ impl Secret {
     /// Creates a new instance of `Secret` with
     /// decrypted data.
     pub fn to_decrypted(&self, rsa_keys: &RsaKeys) -> Result<Secret, Box<dyn Error>> {
-        let decrypted_from_email = rsa_keys.decrypt_str(&self.from_email)?;
-        let decrypted_from_display_name = rsa_keys.decrypt_str(&self.from_display_name)?;
-        let decrypted_to_email = rsa_keys.decrypt_str(&self.to_email)?;
-        let decrypted_to_display_name = rsa_keys.decrypt_str(&self.to_display_name)?;
-        let decrypted_context = rsa_keys.decrypt_str(&self.context)?;
-        let decrypted_secret = rsa_keys.decrypt_str(&self.secret)?;
+        let decrypted_from_email = if *(&self.from_email.find('.').is_none())
+            { rsa_keys.decrypt_str(&self.from_email)? }
+            else { rsa_keys.hybrid_decrypt_str(&self.from_email)?};
+        let decrypted_from_display_name = if *(&self.from_display_name.find('.').is_none())
+            { rsa_keys.decrypt_str(&self.from_display_name)? }
+            else { rsa_keys.hybrid_decrypt_str(&self.from_display_name)?};
+        let decrypted_to_email = if *(&self.to_email.find('.').is_none())
+            { rsa_keys.decrypt_str(&self.to_email)? }
+            else { rsa_keys.hybrid_decrypt_str(&self.to_email)?};
+        let decrypted_to_display_name = if *(&self.to_display_name.find('.').is_none())
+            { rsa_keys.decrypt_str(&self.to_display_name)? }
+            else { rsa_keys.hybrid_decrypt_str(&self.to_display_name)?};
+        let decrypted_context = if *(&self.context.find('.').is_none())
+            { rsa_keys.decrypt_str(&self.context)? }
+            else { rsa_keys.hybrid_decrypt_str(&self.context)?};
+        let decrypted_secret = if *(&self.secret.find('.').is_none())
+            { rsa_keys.decrypt_str(&self.secret)? }
+            else { rsa_keys.hybrid_decrypt_str(&self.secret)?};
         let secret = Secret {
             from_email: decrypted_from_email,
             from_display_name: decrypted_from_display_name,

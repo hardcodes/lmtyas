@@ -89,7 +89,7 @@ ul li::before {
     padding-top:1em;
 }
 
-input {
+input, textarea {
     width: 100%;
     padding: 12px 20px;
     margin: 8px 0;
@@ -97,6 +97,17 @@ input {
     border: 1px solid var(--input-border);
     border-radius: 4px;
     box-sizing: border-box;
+}
+
+textarea {
+    min-height: 10em;
+    resize: vertical;
+}
+
+.lmtyas-input-hint {
+    font-size: 70%;
+    margin-top: -8px;
+    margin-bottom: 8px;
 }
 
 .lmtyas-image{
@@ -128,7 +139,10 @@ textarea:-moz-read-only { /* For Firefox */
     background-color: var(--input-ro-bg);
 }
 
-input:invalid {
+input:invalid,
+textarea:invalid,
+input.invalid,
+textarea.invalid {
     border: 2px dashed var(--error-border);
 }
 

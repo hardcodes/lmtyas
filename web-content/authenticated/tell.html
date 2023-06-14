@@ -69,28 +69,29 @@
                     <p>
                         <label for="FromDisplayName">Display name of sender</label>
                         <input id="FromDisplayName" name="FromDisplayName" maxlength="128"
-                            placeholder="Givenname LastName" value="" disabled>
+                            placeholder="Givenname LastName" value="" readonly>
                         <label for="FromEmail">EMail address of sender</label>
                         <input id="FromEmail" name="FromEmail" maxlength="128"
-                            placeholder="firstname.lastname@acme.local" value="" disabled>
+                            placeholder="firstname.lastname@acme.local" value="" readonly>
                     </p>
                     <h2>Receiver of secret</h2>
-                    <p>
-                        <!-- <label for="ToDisplayName">Display name of receiver</label> -->
-                        <input id="ToDisplayName" name="ToDisplayName" type="hidden" maxlength="128"
-                            placeholder="Givenname LastName" value="" disabled>
-                        <label for="ToEmail">Email address of receiver</label>
-                        <input id="ToEmail" name="ToEmail" type="email" maxlength="128"
-                            placeholder="firstname.lastname@acme.local" value="" required
-                            pattern="^([a-zA-Z0-9_\-\.]+)@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.)|(([a-zA-Z0-9\-]+\.)+))([a-zA-Z]{2,5}|[0-9]{1,3})(\]?)$">
-                    </p>
+                    <!-- <label for="ToDisplayName">Display name of receiver</label> -->
+                    <input id="ToDisplayName" name="ToDisplayName" type="hidden" maxlength="128"
+                        placeholder="Givenname LastName" value="" readonly>
+                    <label for="ToEmail">Email address of receiver</label>
+                    <input id="ToEmail" name="ToEmail" type="email" maxlength="128"
+                        placeholder="firstname.lastname@acme.local" value="" required
+                        pattern="^([a-zA-Z0-9_\-\.]+)@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.)|(([a-zA-Z0-9\-]+\.)+))([a-zA-Z]{2,5}|[0-9]{1,3})(\]?)$">
+                    <div class="lmtyas-input-hint" data-for="ToEmail"></div>
                     <h2>Secret</h2>
                     <label for="Context">Context</label>
                     <input id="Context" name="Context" minlength="2" maxlength="128" placeholder="secret for..."
                         value="" required>
+                    <div class="lmtyas-input-hint" data-for="Context"></div>
                     <label for="Secret">Secret</label>
-                    <input id="Secret" name="Secret" minlength="3" maxlength="96"
-                        placeholder="secret information like a password" value="" required>
+                    <textarea id="Secret" name="Secret" data-maxlength="8000"
+                        placeholder="secret information like a password" required></textarea>
+                    <div class="lmtyas-input-hint" data-for="Secret"></div>
                     <p>
                     </p>
                     <p>

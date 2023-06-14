@@ -71,3 +71,30 @@ function errorOnSubmission() {
     console.log("errorOnSubmission()");
     stopForm(secretForm, 6);
 }
+
+if(document.readyState !== "interactive" && document.readyState !== "complete") {
+    function initializer() {
+        document.querySelectorAll(".lmtyas-input-hint").forEach((hintNode) => {
+            const targetId = hintNode.dataset.for;
+            const target = document.getElementById(targetId);
+            let maxLength = null;
+            if("maxlength" in target.dataset) {
+                maxLength = parseInt(target.dataset.maxlength);
+            } else {
+                maxLength = parseInt(target.getAttribute("maxlength"));
+            }
+            function updater() {
+                hintNode.innerText = `${target.value.length} chars (max. ${maxLength})`;
+                if(target.value.length > maxLength) {
+                    target.classList.add("invalid");
+                } else {
+                    target.classList.remove("invalid");
+                }
+            };
+            target.addEventListener("input", updater);
+            target.addEventListener("keyup", updater);
+            updater();
+        });
+    };
+    document.addEventListener("readystatechange", initializer);
+}

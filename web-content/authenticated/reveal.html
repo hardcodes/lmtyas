@@ -70,16 +70,17 @@
                     <p>
                         <label for="FromDisplayName">Display name of sender</label>
                         <input id="FromDisplayName" name="FromDisplayName" maxlength="128"
-                            placeholder="Givenname LastName" value="" disabled>
+                            placeholder="Givenname LastName" value="" readonly>
                         <label for="FromEmail">EMail address of sender</label>
                         <input id="FromEmail" name="FromEmail" maxlength="128"
-                            placeholder="firstname.lastname@acme.local" value="" disabled>
+                            placeholder="firstname.lastname@acme.local" value="" readonly>
                     </p>
                     <h2>Secret</h2>
                     <label for="Context">Context</label>
-                    <input id="Context" name="Context" maxlength="256" placeholder="secret for..." value="" disabled>
+                    <input id="Context" name="Context" maxlength="256" placeholder="secret for..." value="" readonly>
                     <label for="Secret">Secret</label>
-                    <input id="Secret" name="Secret" maxlength="128" placeholder="secret information" value="">
+                    <textarea id="Secret" name="Secret" readonly
+                              placeholder="secret information"></textarea>
                     <p>
                     </p>
                     <p>
