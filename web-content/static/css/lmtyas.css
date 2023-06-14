@@ -25,7 +25,7 @@ body{
 
 .lmtyas-nav-links{
     background-color: var(--header-links-bg);
-    color: --var(--header-links-font);
+    color: var(--header-links-font);
     padding-top: 10px;
     padding-bottom: 10px;
     font-weight: bold;
@@ -34,7 +34,7 @@ body{
 }
 
 .lmtyas-nav-links a:hover{
-    background-color: --var(--header-links-hover-bg);
+    background-color: var(--header-links-hover-bg);
     color: var(--header-links-hover-font);
     padding-left: 20px;
     padding-right: 20px;
@@ -77,9 +77,9 @@ ul {
 ul li::before {
     content: "\25A0";
     color: var(--ul-link-before);
-    display: inline-block; 
+    display: inline-block;
     width: 0.5em;
-    margin-left: -1.0 em;
+    margin-left: -1.0em;
 }
 
 .mid {
@@ -244,13 +244,13 @@ input:valid {
 .lmtyas-none{
     display: none;
 }
-  
+
   /* Safari */
 @-webkit-keyframes spin {
     0% { -webkit-transform: rotate(0deg); }
     100% { -webkit-transform: rotate(360deg); }
 }
-  
+
 @keyframes spin {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
