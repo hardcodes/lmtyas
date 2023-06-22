@@ -326,7 +326,7 @@ pub async fn store_secret(
         }
     };
     parsed_form_data.to_display_name = display_name;
-    // aes encrypt the secret before rsa encryption
+    // aes encrypt the secret before rsa or hybrid rsa/aes encryption
     let aes_encryption_result = match parsed_form_data.secret.to_aes_enrypted_b64() {
         Ok(aes_encryption_result) => aes_encryption_result,
         Err(e) => {
