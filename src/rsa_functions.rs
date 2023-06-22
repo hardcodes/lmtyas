@@ -1,8 +1,8 @@
 use crate::base64_trait::{Base64StringConversions, Base64VecU8Conversions};
 use crate::unsecure_string::SecureStringToUnsecureString;
-use log::{debug, warn , info};
-use openssl::rsa::{Padding, Rsa};
+use log::{debug, info, warn};
 use openssl::rand::rand_bytes;
+use openssl::rsa::{Padding, Rsa};
 use openssl::symm::{decrypt, encrypt, Cipher};
 use secstr::SecStr;
 use serde::Deserialize;
@@ -146,17 +146,16 @@ impl RsaKeys {
         aes_key_iv.extend_from_slice(&aes_key);
         aes_key_iv.extend_from_slice(&aes_iv);
 
-        public_key.public_encrypt(&aes_key_iv, &mut buf, Padding::PKCS1).unwrap();
+        public_key
+            .public_encrypt(&aes_key_iv, &mut buf, Padding::PKCS1)
+            .unwrap();
 
         let base64_encrypted_key_iv = buf.to_base64_encoded();
 
         let cipher = Cipher::aes_256_cbc();
 
-        let ciphertext = encrypt(
-            cipher,
-            &aes_key,
-            Some(&aes_iv),
-            plaintext_data.as_bytes()).unwrap();
+        let ciphertext =
+            encrypt(cipher, &aes_key, Some(&aes_iv), plaintext_data.as_bytes()).unwrap();
 
         let payload = ciphertext.to_base64_encoded();
 
@@ -177,15 +176,20 @@ impl RsaKeys {
 
         let elements: Vec<&str> = encrypted_data.split('.').collect();
 
-        let encryption_scheme = elements.get(0).unwrap();
-
-        if "v1" != *encryption_scheme {
-            let box_err: Box<dyn Error> = format_args!("Unsupported encryption scheme: {}", encryption_scheme).to_string().into();
+        if elements.len() != 3 {
+            let box_err: Box<dyn Error> =
+                format_args!("Expected {} parts, but found  {}", 3, elements.len())
+                    .to_string()
+                    .into();
             return Err(box_err);
         }
-
-        if elements.len() != 3 {
-            let box_err: Box<dyn Error> = format_args!("Expected {} parts, but found  {}", 3, elements.len()).to_string().into();
+        // we can access the elements since we checked the length first.
+        let encryption_scheme = elements.first().unwrap();
+        if "v1" != *encryption_scheme {
+            let box_err: Box<dyn Error> =
+                format_args!("Unsupported encryption scheme: {}", encryption_scheme)
+                    .to_string()
+                    .into();
             return Err(box_err);
         }
 
@@ -204,10 +208,12 @@ impl RsaKeys {
             cipher,
             &aes_key_iv.as_slice()[0..32],
             Some(&aes_key_iv.as_slice()[32..48]),
-            &encrypted_payload
-        ).unwrap();
+            &encrypted_payload,
+        )?;
 
-        return Ok(String::from_utf8(payload)?.trim_matches(char::from(0)).to_string());
+        return Ok(String::from_utf8(payload)?
+            .trim_matches(char::from(0))
+            .to_string());
     }
 
     /// Decrypt a base64 encoded String slice with stored RSA private key
