@@ -263,7 +263,8 @@ After a new secret has been entered,
     - the id (= file name) of the secret
     - the key/iv that were used to encrypt the secret before storing it to disk
 - The link will be enrypted with the RSA public key of the web service.
-- data is stored on disk (encrypted by web service RSA public key):
+- data is stored on disk (encrypted by a randomly chosen generated AES key and IV using AES in CBC mode which itself are encrypted using the web service RSA public key):
+    - AES key and IV
     - receiver
     - context
     - secret (AES encrypted by random key/iv)
@@ -274,7 +275,8 @@ When opening the link,
 
 - the link is decrypted using the RSA private key of the web service using the password that is only stored during runtime in a secure string.
 - The stored data is read from the file which id (= file name) was inside the decrypted link data.
-- The data from the file is decrypted using the RSA private key of the web service.
+- The AES key and IV inside the file is decrypted using the RSA private key of the web service.
+- The data itself is decrypted using the AES key and IV.
 - The authenticated user is compared with the user stored in the file as receiver
     - if the user does not match,
         - an error will be shown and

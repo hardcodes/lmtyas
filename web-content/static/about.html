@@ -99,8 +99,9 @@
                     </ul>
                 </li>
                 <li>&nbsp;&nbsp;The link will be enrypted with the RSA public key of the web service.</li>
-                <li>&nbsp;&nbsp;data is stored on disk (encrypted by web service RSA public key):
+                <li>&nbsp;&nbsp;data is stored on disk (encrypted by a randomly chosen generated AES key and IV using AES in CBC mode which itself are encrypted using the web service RSA public key):
                     <ul>
+                        <li>&nbsp;&nbsp;AES key and IV</li>
                         <li>&nbsp;&nbsp;receiver</li>
                         <li>&nbsp;&nbsp;context</li>
                         <li>&nbsp;&nbsp;secret (AES encrypted by random key/iv)</li>
@@ -116,7 +117,8 @@
                 <li>&nbsp;&nbsp;The stored data is read from the file which id (= file name) was inside the decrypted
                     link data.
                 </li>
-                <li>&nbsp;&nbsp;The data from the file is decrypted using the RSA private key of the web service.</li>
+                <li>&nbsp;&nbsp;The AES key and IV inside the file is decrypted using the RSA private key of the web service.</li>
+                <li>&nbsp;&nbsp;The data itself is decrypted using the AES key and IV.</li>
                 <li>&nbsp;&nbsp;The authenticated user is compared with the user stored in the file as receiver
                     <ul>
                         <li>&nbsp;&nbsp;if the user does not match,
