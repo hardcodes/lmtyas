@@ -503,7 +503,7 @@ pub async fn reveal_secret(
     let encrypted_secret = match Secret::read_from_disk(&path).await {
         Ok(encrypted_secret) => encrypted_secret,
         Err(e) => {
-            warn!("secret file {} cannot be read: {}", &path.display(), e);
+            info!("secret file {} cannot be read from user {}: {}", &path.display(), &user.user_name, e);
             return HttpResponse::err_text_response(
                 "ERROR: Secret cannot be read! Already revealed?",
             );
