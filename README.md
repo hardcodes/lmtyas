@@ -280,7 +280,7 @@ When opening the link,
 - The authenticated user is compared with the user stored in the file as receiver
     - if the user does not match,
         - an error will be shown and
-        - runtime data discared.
+        - runtime data discarded.
         - The file will stay untouched, the process ends.
     - if the user matches the process continues:
       - The key/iv inside the decrypted link data is used to rebuild the secret.
