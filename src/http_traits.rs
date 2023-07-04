@@ -35,8 +35,13 @@ pub trait CustomHttpResponse {
     /// A shortcut for returning a HttpResponse like
     ///
     /// ```
-    /// use actix_web::HttpResponse;
+    /// use actix_web::{cookie::Cookie, cookie::time::OffsetDateTime, http, HttpResponse};
+    /// use lmtyas::cookie_functions::{COOKIE_NAME, COOKIE_PATH, empty_unix_epoch_cookie};
     /// fn cumbersome_example() -> HttpResponse{
+    ///     #[cfg(feature = "ldap-auth")]
+    ///     let same_site = actix_web::cookie::SameSite::Strict;
+    ///     #[cfg(feature = "oidc-auth-ldap")]
+    ///     let same_site = actix_web::cookie::SameSite::Lax;
     ///     let empty_unix_epoch_cookie = Cookie::build(COOKIE_NAME, "".to_string())
     ///         .secure(true)
     ///         .http_only(true)
