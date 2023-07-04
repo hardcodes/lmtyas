@@ -25,7 +25,7 @@ body{
 
 .lmtyas-nav-links{
     background-color: var(--header-links-bg);
-    color: --var(--header-links-font);
+    color: var(--header-links-font);
     padding-top: 10px;
     padding-bottom: 10px;
     font-weight: bold;
@@ -34,7 +34,7 @@ body{
 }
 
 .lmtyas-nav-links a:hover{
-    background-color: --var(--header-links-hover-bg);
+    background-color: var(--header-links-hover-bg);
     color: var(--header-links-hover-font);
     padding-left: 20px;
     padding-right: 20px;
@@ -77,9 +77,9 @@ ul {
 ul li::before {
     content: "\25A0";
     color: var(--ul-link-before);
-    display: inline-block; 
+    display: inline-block;
     width: 0.5em;
-    margin-left: -1.0 em;
+    margin-left: -1.0em;
 }
 
 .mid {
@@ -89,7 +89,7 @@ ul li::before {
     padding-top:1em;
 }
 
-input {
+input, textarea {
     width: 100%;
     padding: 12px 20px;
     margin: 8px 0;
@@ -97,6 +97,17 @@ input {
     border: 1px solid var(--input-border);
     border-radius: 4px;
     box-sizing: border-box;
+}
+
+textarea {
+    min-height: 10em;
+    resize: vertical;
+}
+
+.lmtyas-input-hint {
+    font-size: 70%;
+    margin-top: -8px;
+    margin-bottom: 8px;
 }
 
 .lmtyas-image{
@@ -128,7 +139,10 @@ textarea:-moz-read-only { /* For Firefox */
     background-color: var(--input-ro-bg);
 }
 
-input:invalid {
+input:invalid,
+textarea:invalid,
+input.invalid,
+textarea.invalid {
     border: 2px dashed var(--error-border);
 }
 
@@ -244,13 +258,13 @@ input:valid {
 .lmtyas-none{
     display: none;
 }
-  
+
   /* Safari */
 @-webkit-keyframes spin {
     0% { -webkit-transform: rotate(0deg); }
     100% { -webkit-transform: rotate(360deg); }
 }
-  
+
 @keyframes spin {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }

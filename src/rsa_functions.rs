@@ -1,7 +1,9 @@
 use crate::base64_trait::{Base64StringConversions, Base64VecU8Conversions};
 use crate::unsecure_string::SecureStringToUnsecureString;
-use log::{debug, warn , info};
+use log::{debug, info, warn};
+use openssl::rand::rand_bytes;
 use openssl::rsa::{Padding, Rsa};
+use openssl::symm::{decrypt, encrypt, Cipher};
 use secstr::SecStr;
 use serde::Deserialize;
 use std::error::Error;
@@ -113,6 +115,105 @@ impl RsaKeys {
                 Ok(base64_encrypted)
             }
         }
+    }
+
+    /// Encrypt a String slice with stored RSA public key. The encryption is
+    /// done in a hybrid mode, meaning, that the payload itself is encrypted
+    /// using AES256 with a generated key, which is in turn encrypted using the
+    /// RSA key.
+    ///
+    /// # Arguments
+    ///
+    /// - `plaintext_data`: a String slice with data to encrypt
+    pub fn hybrid_encrypt_str(&self, plaintext_data: &str) -> Result<String, Box<dyn Error>> {
+        if self.rsa_public_key.is_none() {
+            let box_err: Box<dyn Error> = "RSA public key is not set!".to_string().into();
+            return Err(box_err);
+        }
+
+        // AES Keys to encrypt the payload - the keysize of 256bit can be
+        // encrypted using a 2048 RSA key. A smaller key size makes no sense and
+        // this will result in a panic
+        let mut aes_key = [0; 32];
+        let mut aes_iv = [0; 16];
+        let mut aes_key_iv = Vec::new();
+        rand_bytes(&mut aes_key).unwrap();
+        rand_bytes(&mut aes_iv).unwrap();
+
+        let public_key = self.rsa_public_key.as_ref().unwrap();
+        let mut buf: Vec<u8> = vec![0; public_key.size() as usize];
+
+        aes_key_iv.extend_from_slice(&aes_key);
+        aes_key_iv.extend_from_slice(&aes_iv);
+
+        public_key
+            .public_encrypt(&aes_key_iv, &mut buf, Padding::PKCS1)
+            .unwrap();
+
+        let base64_encrypted_key_iv = buf.to_base64_encoded();
+
+        let cipher = Cipher::aes_256_cbc();
+
+        let ciphertext =
+            encrypt(cipher, &aes_key, Some(&aes_iv), plaintext_data.as_bytes()).unwrap();
+
+        let payload = ciphertext.to_base64_encoded();
+
+        return Ok(format_args!("v1.{base64_encrypted_key_iv}.{payload}").to_string());
+    }
+
+    /// Decrypt a string encrypted using the RSA keypair with the
+    /// hybrid_encrypt_str function.
+    ///
+    /// # Arguments
+    ///
+    /// - `encrypted_data`: a String slice with data to decrypt
+    pub fn hybrid_decrypt_str(&self, encrypted_data: &str) -> Result<String, Box<dyn Error>> {
+        if self.rsa_private_key.is_none() {
+            let box_err: Box<dyn Error> = "RSA private key is not set!".to_string().into();
+            return Err(box_err);
+        }
+
+        let elements: Vec<&str> = encrypted_data.split('.').collect();
+
+        if elements.len() != 3 {
+            let box_err: Box<dyn Error> =
+                format_args!("Expected {} parts, but found  {}", 3, elements.len())
+                    .to_string()
+                    .into();
+            return Err(box_err);
+        }
+        // we can access the elements since we checked the length first.
+        let encryption_scheme = elements.first().unwrap();
+        if "v1" != *encryption_scheme {
+            let box_err: Box<dyn Error> =
+                format_args!("Unsupported encryption scheme: {}", encryption_scheme)
+                    .to_string()
+                    .into();
+            return Err(box_err);
+        }
+
+        let encrypted_key_iv = Vec::from_base64_encoded(elements.get(1).unwrap())?;
+        let encrypted_payload = Vec::from_base64_encoded(elements.get(2).unwrap())?;
+
+        let public_key = self.rsa_public_key.as_ref().unwrap();
+
+        let private_key = self.rsa_private_key.as_ref().unwrap();
+        let mut aes_key_iv: Vec<u8> = vec![0; public_key.size() as usize];
+        private_key.private_decrypt(&encrypted_key_iv, &mut aes_key_iv, Padding::PKCS1)?;
+
+        let cipher = Cipher::aes_256_cbc();
+
+        let payload = decrypt(
+            cipher,
+            &aes_key_iv.as_slice()[0..32],
+            Some(&aes_key_iv.as_slice()[32..48]),
+            &encrypted_payload,
+        )?;
+
+        return Ok(String::from_utf8(payload)?
+            .trim_matches(char::from(0))
+            .to_string());
     }
 
     /// Decrypt a base64 encoded String slice with stored RSA private key
