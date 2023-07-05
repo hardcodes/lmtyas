@@ -1,9 +1,9 @@
 [package]
 name = "lmtyas"
 description = "let-me-tell-you-a-secret, a web service that allows an authenticated user to send secrets like passwords to other authenticated users."
-version = "2.0.2"
+version = "2.1.0"
 edition = "2021"
-authors = ["Sven Putze <github@hardcodes.de>"]
+authors = ["Sven Putze <github@hardcodes.de>", "Matthias Bläsing"]
 readme = "README.md"
 license = "MIT OR Apache-2.0"
 
