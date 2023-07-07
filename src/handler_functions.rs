@@ -521,7 +521,7 @@ pub async fn reveal_secret(
     debug!("aes_encrypted = {}", &aes_encrypted.secret);
 
     // check if user is entitled to reveal this secret
-    if aes_encrypted.to_email != user.mail {
+    if aes_encrypted.to_email.to_lowercase() != user.mail.to_lowercase() {
         warn!(
             "user{} (mail = {}) wants to access secret {} (to_email = {})",
             &user.user_name, &user.mail, &uuid, &aes_encrypted.to_email
