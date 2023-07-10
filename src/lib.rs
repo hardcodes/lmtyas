@@ -35,6 +35,7 @@ pub const PROGRAM_NAME: &str = env!("CARGO_PKG_NAME");
 pub const PROGRAM_VERSION: &str = env!("CARGO_PKG_VERSION");
 pub const PROGRAM_AUTHORS: &str = env!("CARGO_PKG_AUTHORS");
 pub const PROGRAM_DESCRIPTION: &str = env!("CARGO_PKG_DESCRIPTION");
+pub const UNKOWN_RECEIVER_EMAIL: &str = "UNKOWN RECEIVER EMAIL";
 
 #[cfg(feature = "ldap-auth")]
 pub mod authentication_url {

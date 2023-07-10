@@ -139,6 +139,14 @@ async fn main() -> std::io::Result<()> {
                     ),
             )
             .service(
+                web::scope("authenticated/receiver")
+                    .wrap(CheckAuthentication)
+                    .route(
+                        "/get/validated_email/{email}",
+                        web::get().to(get_validated_receiver_email),
+                    ),
+            )
+            .service(
                 web::scope("authenticated")
                     .wrap(CheckAuthentication)
                     .route("/keep_session_alive", web::get().to(keep_session_alive)),

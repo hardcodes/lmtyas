@@ -12,16 +12,17 @@ pub trait GetUserData {
     /// This function is called when a secret is transmitted
     /// to get the display name of the receiver. At this
     /// point we only know of the email address.
-    ///
-    /// Arguments
-    ///
-    /// - `mail`:                      email address of the user we want more details about
-    /// - `application_configuration`: application configuration
-    ///
-    /// # Returns
-    ///
-    /// - `Result<String, Box<dyn Error>>`
     async fn get_receiver_display_name(
+        mail: &str,
+        application_configuration: &web::Data<ApplicationConfiguration>,
+    ) -> Result<String, String>;
+
+    /// This function is called to validate the entered receiver email address
+    /// before the form is transmitted to the server.
+    /// 
+    /// If there is no way to validate the email address, simply
+    /// return `mail` as result string.
+    async fn validate_email_address(
         mail: &str,
         application_configuration: &web::Data<ApplicationConfiguration>,
     ) -> Result<String, String>;
@@ -36,4 +37,11 @@ impl GetUserData for NoUserDataBackend {
     ) -> Result<String, String>{
         Ok("".to_string())
     }
+
+    async fn validate_email_address(mail: &str,
+        _application_configuration: &web::Data<ApplicationConfiguration>,
+    ) -> Result<String, String>{
+        Ok(mail.to_string())
+    }
+
 }

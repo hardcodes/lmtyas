@@ -19,7 +19,6 @@ impl GetUserData for GetUserDataLdapBackend {
         mail: &str,
         application_configuration: &web::Data<ApplicationConfiguration>,
     ) -> Result<String, String> {
-        // 2. check if user exists
         let ldap_search_result = match &application_configuration
             .configuration_file
             .ldap_common_configuration
@@ -58,5 +57,51 @@ impl GetUserData for GetUserDataLdapBackend {
         };
         let display_name = format!("{} {}", &ldap_result.first_name, &ldap_result.last_name);
         Ok(display_name)
+    }
+
+    /// This function is called before a secret is transmitted
+    /// when the email address of the receiver is entered.
+    /// An invalid email address will prevent sending the form.
+    async fn validate_email_address(
+        mail: &str,
+        application_configuration: &web::Data<ApplicationConfiguration>,
+    ) -> Result<String, String> {
+        let ldap_search_result = match &application_configuration
+            .configuration_file
+            .ldap_common_configuration
+            .ldap_search_by_mail(
+                mail,
+                Some(
+                    &application_configuration
+                        .configuration_file
+                        .ldap_common_configuration
+                        .mail_filter,
+                ),
+            )
+            .await
+        {
+            Err(e) => {
+                let error_message =
+                    format!("error while looking up user by mail {}: {}", &mail, &e);
+                warn!("{}", &error_message);
+                return Err(error_message);
+            }
+            Ok(ldap_search_result) => ldap_search_result.clone(),
+        };
+        // dirty hack to build a json string from the ldap query result,
+        // so it can be serialized.
+        let ldap_result = match serde_json::from_str(&ldap_search_result.replace(['[', ']'], ""))
+            as Result<LdapSearchResult, _>
+        {
+            Err(e) => {
+                let error_message = format!(
+                    "can not serde_json::from_str({}): {}",
+                    &ldap_search_result, &e
+                );
+                return Err(error_message);
+            }
+            Ok(r) => r,
+        };
+        Ok(ldap_result.mail)
     }
 }

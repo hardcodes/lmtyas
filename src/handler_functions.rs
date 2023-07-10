@@ -14,6 +14,7 @@ use crate::http_traits::CustomHttpResponse;
 #[cfg(feature = "mail-noauth-notls")]
 pub use crate::mail_noauth_notls::SendEMail;
 use crate::secret_functions::Secret;
+use crate::UNKOWN_RECEIVER_EMAIL;
 use actix_files::NamedFile;
 use actix_web::web::Bytes;
 use actix_web::{http::header, http::StatusCode, web, HttpRequest, HttpResponse, Responder};
@@ -503,7 +504,12 @@ pub async fn reveal_secret(
     let encrypted_secret = match Secret::read_from_disk(&path).await {
         Ok(encrypted_secret) => encrypted_secret,
         Err(e) => {
-            info!("secret file {} cannot be read from user {}: {}", &path.display(), &user.user_name, e);
+            info!(
+                "secret file {} cannot be read from user {}: {}",
+                &path.display(),
+                &user.user_name,
+                e
+            );
             return HttpResponse::err_text_response(
                 "ERROR: Secret cannot be read! Already revealed?",
             );
@@ -566,14 +572,6 @@ struct UserDetails {
 }
 
 /// Get display name and email address of the authenticated user
-///
-/// # Arguments
-///
-/// - `user`: `AuthenticatedUser` to get details from
-///
-/// # Returns
-///
-/// - `HttpResponse`
 pub async fn get_authenticated_user_details(user: AuthenticatedUser) -> HttpResponse {
     debug!("get_authenticated_user_details()");
     let user_details = UserDetails {
@@ -586,6 +584,33 @@ pub async fn get_authenticated_user_details(user: AuthenticatedUser) -> HttpResp
         }
         Ok(json) => HttpResponse::ok_json_response(json),
     }
+}
+
+/// Validate email address of the receiver before sending the form.
+/// An invalid email address will prevent sending the form.
+/// Return `mail` as result string if the mail could be validated,
+/// else return `crate::UNKOWN_RECEIVER_EMAIL` as result string to
+/// the frontend.
+pub async fn get_validated_receiver_email(
+    path: web::Path<String>,
+    _user: AuthenticatedUser,
+    application_configuration: web::Data<ApplicationConfiguration>,
+) -> HttpResponse {
+    debug!("get_validated_receiver_email()");
+    let email = path.into_inner();
+    let receiver_email = match <UserDataImpl as GetUserData>::validate_email_address(
+        &email,
+        &application_configuration,
+    )
+    .await
+    {
+        Ok(receiver_email) => receiver_email,
+        Err(e) => {
+            debug!("cannot find mail address {}, error: {}", &email, &e);
+            return HttpResponse::ok_text_response(UNKOWN_RECEIVER_EMAIL.to_string());
+        }
+    };
+    HttpResponse::ok_text_response(receiver_email.to_ascii_lowercase())
 }
 
 /// Get admin protected sysop.html.

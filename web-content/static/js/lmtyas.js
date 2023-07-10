@@ -54,7 +54,7 @@ function showNotifyMessage(messagetext) {
     document.body.appendChild(div);
   }
   document.getElementById("NotifyMessage").innerHTML = messagetext;
-    document.getElementById("NotifyMessage").classList.add("lmtyas-inline-block");
+  document.getElementById("NotifyMessage").classList.add("lmtyas-inline-block");
   document.getElementById("NotifyMessage").classList.add("lmtyas-visible");
 }
 
@@ -240,6 +240,32 @@ function stopForm(formId, backHomeTimerSeconds = 10) {
   }
   disableFormInputs(formId);
   startBackHomeTimer(backHomeTimerSeconds);
+}
+
+function setAriaAttribute(inputElement, validityMessage) {
+  if (validityMessage) {
+      inputElement.setCustomValidity(validityMessage);
+      inputElement.setAttribute("aria-invalid", "true");
+  }
+  else {
+      inputElement.setCustomValidity('');
+      inputElement.removeAttribute("aria-invalid");
+  }
+}
+
+function initAriaAttributes(form) {
+  if (typeof form !== 'undefined') {
+    for (const field of form.elements) {
+      field.addEventListener("invalid", function handleInvalidField(event) {
+        field.setAttribute("aria-invalid", "true");
+      });
+
+      field.addEventListener("blur", function handleFieldBlur() {
+        field.removeAttribute("aria-invalid");
+        field.checkValidity();
+      });
+    }
+  }
 }
 
 queryWebService("/system/get/imprint-link", setImprintLink, function () { });

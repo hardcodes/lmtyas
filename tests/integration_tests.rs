@@ -88,7 +88,7 @@ async fn with_setup() {
         "expected finding user bob in ldap server by uid"
     );
 
-    // lookin up non existing user by uid in ldap
+    // looking up non existing user by uid in ldap
     let user_not_found_by_uid = application_configuration
         .configuration_file
         .ldap_common_configuration
@@ -133,7 +133,7 @@ async fn with_setup() {
         "expected finding user bob in ldap server by mail"
     );
 
-    // lookin up non existing user by mail in ldap
+    // looking up non existing user by mail in ldap
     let user_not_found_by_mail = application_configuration
         .configuration_file
         .ldap_common_configuration
