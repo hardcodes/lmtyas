@@ -94,6 +94,38 @@ secretForm.addEventListener('submit', function (e) {
     }
 });
 
+const secretTextarea = document.getElementById("Secret");
+const secretMaxLength = secretTextarea.maxLength;
+let validateTextareaTimer;
+secretTextarea.addEventListener('paste', function (e) {
+    let paste = (e.clipboardData || window.clipboardData).getData("text");
+    let pasteLength = paste.length;
+    if (secretTextarea.value.length + pasteLength <= secretMaxLength) {
+        console.log("pasting text");
+        setAriaAttribute(secretTextarea, "");
+    }
+    else {
+        let errorMsg = `Pasted text (${pasteLength} chars) does not fit in textarea (max. ${secretMaxLength} chars)!`;
+        setAriaAttribute(secretTextarea, errorMsg);
+        console.log("pasting too much text, aborting!");
+        validateTextareaTimer = setTimeout(resetTextAreaAria, 3000);
+        e.preventDefault();
+    }
+    secretTextarea.reportValidity();
+});
+
+function resetTextAreaAria(){
+    if (typeof validateTextareaTimer !== 'undefined') {
+        clearTimeout(validateTextareaTimer);
+    }
+    setAriaAttribute(secretTextarea, "");
+    secretTextarea.reportValidity();
+}
+
+secretTextarea.addEventListener('change', function (e) {
+    resetTextAreaAria()
+});
+
 var keepAliveCount = 0;
 var keep_alive_interval = initKeepAliveInterval("/authenticated/keep_session_alive");
 keepSessionAlive("/authenticated/keep_session_alive");
@@ -138,7 +170,7 @@ function sendFormData() {
     let secret;
     try {
         // encode password to transfer special characters
-        secret = btoa(unescape(encodeURIComponent(document.getElementById("Secret").value)));
+        secret = btoa(unescape(encodeURIComponent(secretTextarea.value)));
     }
     catch (error) {
         console.log("ERROR: could not convert secret to base64: " + output);
