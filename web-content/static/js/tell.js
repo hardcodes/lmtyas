@@ -147,7 +147,7 @@ function sendFormData() {
     let jsonObject = {
         FromEmail: document.getElementById("FromEmail").value,
         FromDisplayName: document.getElementById("FromDisplayName").value,
-        ToEmail: document.getElementById("ToEmail").value,
+        ToEmail: document.getElementById("ToEmail").value.toLowerCase(),
         ToDisplayName: document.getElementById("ToDisplayName").value,
         Context: document.getElementById("Context").value,
         Secret: secret,
