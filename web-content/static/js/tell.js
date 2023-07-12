@@ -100,12 +100,13 @@ let validateTextareaTimer;
 secretTextarea.addEventListener('paste', function (e) {
     let paste = (e.clipboardData || window.clipboardData).getData("text");
     let pasteLength = paste.length;
-    if (secretTextarea.value.length + pasteLength <= secretMaxLength) {
+    let remainingChars = secretMaxLength - secretTextarea.value.length;
+    if (remainingChars > pasteLength) {
         console.log("pasting text");
         setAriaAttribute(secretTextarea, "");
     }
     else {
-        let errorMsg = `Pasted text (${pasteLength} chars) does not fit in textarea (max. ${secretMaxLength} chars)!`;
+        let errorMsg = `Pasted text with ${pasteLength} chars does not fit in ${remainingChars} remaining chars!`;
         setAriaAttribute(secretTextarea, errorMsg);
         console.log("pasting too much text, aborting!");
         validateTextareaTimer = setTimeout(resetTextAreaAria, 3000);
@@ -185,7 +186,6 @@ function sendFormData() {
         Secret: secret,
     };
     let jsonString = JSON.stringify(jsonObject);
-    console.log(jsonString);
     sendToWebService("/authenticated/secret/tell", displaySubmission, errorOnSubmission, jsonString, 5);
     document.getElementById("SubmitButton").classList.add("lmtyas-hidden");
 }
