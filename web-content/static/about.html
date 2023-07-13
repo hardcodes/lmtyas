@@ -65,7 +65,7 @@
             <p>In a perfect world we wouldn’t need passwords anymore but more often than not we still do need to tell
                 them to other people. Sending passwords by email is unsecure because most people are not able to receive
                 encrypted emails. Sending passwords by snail mail is slow. Using a second channel, e.g. like a chat
-                program, may work but often leaves traces.</p>
+                program, may work but often leaves traces. Telling the via phone is next to impossible.</p>
             <p><em>“Let me tell you a secret” enters the stage</em></p>
             <p>Simply enter a</p>
             <ul>
@@ -77,8 +77,11 @@
                 read the secret. The secret id and thus the receiver is encoded in the link and since authentication is
                 needed to open the secret, we make sure that only the right person reads the secret.</p>
             <h1 id="security">Security</h1>
-            <p>The web service uses RSA public key encryption to secure the data. Only encryted data is stored on the
-                disk. For security reasons the password for the RSA private key is not stored in the configuration file.
+            <p>The web service uses a combination of RSA public key encryption and AES symmetric encryption to secure
+                the data. Only encryted data is stored on the
+                disk. </p>
+            <p>For security reasons the password for the RSA private key is not stored in the
+                configuration file.
                 It must be entered by the administrator every time the web service has been started.</p>
             <h1 id="how-does-it-work">How does it work</h1>
             <p>After a new secret has been entered,</p>
@@ -99,7 +102,8 @@
                     </ul>
                 </li>
                 <li>&nbsp;&nbsp;The link will be enrypted with the RSA public key of the web service.</li>
-                <li>&nbsp;&nbsp;data is stored on disk (encrypted by a randomly chosen generated AES key and IV using AES in CBC mode which itself are encrypted using the web service RSA public key):
+                <li>&nbsp;&nbsp;data is stored on disk (encrypted by a randomly chosen generated AES key and IV using
+                    AES in CBC mode which itself are encrypted using the web service RSA public key):
                     <ul>
                         <li>&nbsp;&nbsp;AES key and IV</li>
                         <li>&nbsp;&nbsp;receiver</li>
@@ -117,7 +121,8 @@
                 <li>&nbsp;&nbsp;The stored data is read from the file which id (= file name) was inside the decrypted
                     link data.
                 </li>
-                <li>&nbsp;&nbsp;The AES key and IV inside the file is decrypted using the RSA private key of the web service.</li>
+                <li>&nbsp;&nbsp;The AES key and IV inside the file is decrypted using the RSA private key of the web
+                    service.</li>
                 <li>&nbsp;&nbsp;The data itself is decrypted using the AES key and IV.</li>
                 <li>&nbsp;&nbsp;The authenticated user is compared with the user stored in the file as receiver
                     <ul>

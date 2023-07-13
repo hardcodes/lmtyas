@@ -4,7 +4,7 @@ A web service written in Rust that allows an authenticated user to send secrets 
 
 In a perfect world we wouldn't need passwords anymore but more often than not we also still do need to tell them to other people. There is a world almost without passwords out there, e.g. have a look at [SQRL](https://www.grc.com/sqrl/sqrl.htm) or [fido2](https://en.wikipedia.org/wiki/FIDO2_Project). 
 
-Sending passwords by email is unsecure because most people are not able to receive encrypted emails. Sending passwords by snail mail is slow. Using a second channel, e.g. like a chat program, may work but often leaves traces or involves third parties you do not trust.
+Sending passwords by email is unsecure because most people are not able to receive encrypted emails. Sending passwords by snail mail is slow. Using a second channel, e.g. like a chat program, may work but often leaves traces or involves third parties you do not trust. Telling the via phone is next to impossible.
 
 *"Let me tell you a secret" enters the stage*
 
@@ -246,7 +246,10 @@ If the service is (re-)started, a valid administrator (see `admin_accounts` in s
 
 ## Security - Data Encryption
 
-The web service uses RSA public key encryption to secure the data. Only encryted data is stored on the disk. For security reasons the password for the RSA private key is not stored in the configuration file. It must be entered by the administrator every time the web service has been started. The password is stored in a secure string so that even a memory dump would not help. It only lives in plain text for the short time it is needed to decrypt data.
+The web service uses a combination of RSA public key encryption and AES symmetric encryption to secure
+the data. Only encryted data is stored on the disk.
+
+For security reasons the password for the RSA private key is not stored in the configuration file. It must be entered by the administrator every time the web service has been started. The password is stored in a secure string so that even a memory dump would not help. It only lives in plain text for the short time it is needed to decrypt data.
 
 **NOTE**: Even the secure string can be circumvented, an attacker that can access your system and create a dump has all time in the world to analyse and/or reconstruct the password. 
 
