@@ -1,7 +1,10 @@
 extern crate env_logger;
 use crate::configuration::ApplicationConfiguration;
 use crate::http_traits::CustomHttpResponse;
+#[cfg(feature = "mail-noauth-notls")]
 pub use crate::mail_noauth_notls::SendEMail;
+// #[cfg(feature = "mail-noauth-notls-smime")]
+// pub use crate::mail_noauth_notls_smime::SendEMail;
 use actix_web::web::Bytes;
 use actix_web::{web, HttpResponse, HttpRequest};
 use async_trait::async_trait;

@@ -36,7 +36,7 @@ uuid = { version = "1", features = ["v1"] }
 zeroize = "1.5.7"
 
 [features]
-default = ["oidc-auth-ldap", "mail-noauth-notls", "mail-smime"]
+default = ["ldap-auth", "mail-noauth-notls-smime"]
 ldap-auth = ["ldap-common", "get-userdata-ldap"]
 ldap-common = []
 oidc-auth-ldap = ["authentication-oidc", "oidc-ldap", "ldap-common", "get-userdata-ldap"]
@@ -44,7 +44,7 @@ authentication-oidc = ["dep:openidconnect"]
 oidc-ldap = []
 get-userdata-ldap = []
 mail-noauth-notls = []
-mail-smime = []
+mail-noauth-notls-smime = []
 no-userdata-backend = []
 
 [dev-dependencies]

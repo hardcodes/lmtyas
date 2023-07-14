@@ -13,6 +13,8 @@ use crate::get_userdata_trait::NoUserDataBackend;
 use crate::http_traits::CustomHttpResponse;
 #[cfg(feature = "mail-noauth-notls")]
 pub use crate::mail_noauth_notls::SendEMail;
+#[cfg(feature = "mail-noauth-notls-smime")]
+pub use crate::mail_noauth_notls_smime::SendEMail;
 use crate::secret_functions::Secret;
 use crate::UNKOWN_RECEIVER_EMAIL;
 use actix_files::NamedFile;

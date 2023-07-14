@@ -25,8 +25,8 @@ pub mod login_user_trait;
 pub mod mail_configuration;
 #[cfg(feature = "mail-noauth-notls")]
 pub mod mail_noauth_notls;
-#[cfg(feature = "mail-smime")]
-pub mod mail_smime_configuration;
+#[cfg(feature = "mail-noauth-notls-smime")]
+pub mod mail_noauth_notls_smime;
 #[cfg(feature = "oidc-ldap")]
 pub mod oidc_ldap;
 pub mod rsa_functions;

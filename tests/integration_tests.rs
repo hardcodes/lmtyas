@@ -7,6 +7,10 @@ use lmtyas::configuration::ApplicationConfiguration;
 use lmtyas::ldap_common::LdapSearchResult;
 #[cfg(feature = "mail-noauth-notls")]
 pub use lmtyas::mail_noauth_notls::SendEMail;
+#[cfg(feature = "mail-noauth-notls-smime")]
+pub use lmtyas::mail_noauth_notls_smime::SendEMail;
+
+
 use std::path::Path;
 
 /// testing the functions that need external services in one go.

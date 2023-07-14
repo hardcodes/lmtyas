@@ -2,6 +2,8 @@ use serde::Deserialize;
 use std::error::Error;
 use std::fs;
 use std::path::Path;
+#[cfg(feature = "mail-noauth-notls-smime")]
+use crate::mail_noauth_notls_smime::SmimeConfiguration;
 
 /// Holds the information needed to
 /// send email to the receiver of a
@@ -14,6 +16,8 @@ pub struct SendEMailConfiguration {
     pub mail_subject: String,
     pub mail_template_file: Box<Path>,
     pub mail_credentails: Option<EMailCredentials>,
+    #[cfg(feature = "mail-noauth-notls-smime")]
+    pub mail_smime_configuration: Option<SmimeConfiguration>,
 }
 
 impl SendEMailConfiguration {

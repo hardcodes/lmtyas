@@ -10,12 +10,6 @@ impl SendEMail for SendEMailConfiguration {
     /// for implementing different flavors of `send_mail()`.
     /// This is the default implementation (as in default feature)
     /// that does not send credentials and does not use TLS.
-    ///
-    /// # Arguments
-    ///
-    /// - `mail_to`:          mail address of the receiver of the secret.
-    /// - `mail_subject`:     subject of the mail
-    /// - `mail_body`:        body of the mail
     fn send_mail(
         &self,
         mail_to: &str,
@@ -28,7 +22,7 @@ impl SendEMail for SendEMailConfiguration {
         )?;
         let parsed_mail_to =
             Mailbox::parse_with_context_on_error(mail_to, ParseMailAddressErrorContext::ToAddress)?;
-        let email = match Message::builder()
+        let email_message = match Message::builder()
             .from(parsed_mail_from)
             .to(parsed_mail_to)
             .subject(mail_subject)
@@ -48,7 +42,7 @@ impl SendEMail for SendEMailConfiguration {
         let tp = SmtpTransport::builder_dangerous(&self.mail_server_address);
         let tp_with_port = tp.port(self.mail_server_port);
         let smtp_transport = tp_with_port.build();
-        smtp_transport.send(&email)?;
+        smtp_transport.send(&email_message)?;
         Ok(())
     }
 }
