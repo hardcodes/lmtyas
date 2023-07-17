@@ -27,6 +27,7 @@ impl SendEMail for SendEMailConfiguration {
         mail_to: &str,
         mail_subject: &str,
         mail_body: &str,
+        mail_signature: Option<&str>,
     ) -> Result<(), Box<dyn Error>> {
         let parsed_mail_from = Mailbox::parse_with_context_on_error(
             &self.mail_from,
@@ -35,15 +36,12 @@ impl SendEMail for SendEMailConfiguration {
         let parsed_mail_to =
             Mailbox::parse_with_context_on_error(mail_to, ParseMailAddressErrorContext::ToAddress)?;
 
-        // TODO: how do we pass the signature here? Maybe add some function to SendEMail::send_mail
-        // args, e.g. `helper_function: &dyn Fn(&str) -> String`
-        let signature = String::from("yada yada");
         let multipart_message = MultiPart::signed(
             MULTIPART_SIGNED_PROTOCOL.to_string(),
             MULTIPART_SIGNED_MICALG.to_string(),
         )
         .singlepart(SinglePart::plain(String::from(mail_body)))
-        .singlepart(SinglePart::plain(signature));
+        .singlepart(SinglePart::plain(mail_signature.unwrap().to_string()));
 
         let email_message = match Message::builder()
             .from(parsed_mail_from)

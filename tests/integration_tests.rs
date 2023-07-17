@@ -25,7 +25,7 @@ async fn with_setup() {
     let send_mail_fail = application_configuration
         .configuration_file
         .email_configuration
-        .send_mail("bob@acme.local", "mail_subject", "mail_body");
+        .send_mail("bob@acme.local", "mail_subject", "mail_body", None);
     assert!(
         matches!(send_mail_fail, Err(_)),
         "should not be able to send mails without server running"
@@ -43,7 +43,7 @@ async fn with_setup() {
     let send_mail_ok = application_configuration
         .configuration_file
         .email_configuration
-        .send_mail("bob@acme.local", "mail_subject", "mail_body");
+        .send_mail("bob@acme.local", "mail_subject", "mail_body", None);
     assert!(
         matches!(send_mail_ok, Ok(_)),
         "server should be running, why can I not send mails?"
@@ -53,7 +53,7 @@ async fn with_setup() {
     let send_mail_fail2 = application_configuration
         .configuration_file
         .email_configuration
-        .send_mail("wrong mail address", "mail_subject", "mail_body");
+        .send_mail("wrong mail address", "mail_subject", "mail_body", None);
     assert!(
         matches!(send_mail_fail2, Err(_)),
         "should not be able to send mails with wrong address"
@@ -63,7 +63,7 @@ async fn with_setup() {
     let send_mail_fail3 = application_configuration
         .configuration_file
         .email_configuration
-        .send_mail("<bob@acme.local", "mail_subject", "mail_body");
+        .send_mail("<bob@acme.local", "mail_subject", "mail_body", None);
     assert!(
         matches!(send_mail_fail3, Err(_)),
         "should not be able to send mails with wrong address"

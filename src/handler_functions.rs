@@ -468,10 +468,14 @@ pub async fn store_secret(
         &parsed_form_data.to_email,
         &uuid.to_string()
     );
+    #[cfg(not(feature = "mail-noauth-notls-smime"))]
+    let mail_signature = None;
+    #[cfg(feature = "mail-noauth-notls-smime")]
+    let mail_signature = "TODO"; // TODO: buid mail signature
     if let Err(e) = &application_configuration
         .configuration_file
         .email_configuration
-        .send_mail(&parsed_form_data.to_email, mail_subject, mail_body)
+        .send_mail(&parsed_form_data.to_email, mail_subject, mail_body, Some(mail_signature))
     {
         warn!(
             "error sending email to {} for secret {}: {}",

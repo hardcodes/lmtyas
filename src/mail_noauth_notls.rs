@@ -15,6 +15,7 @@ impl SendEMail for SendEMailConfiguration {
         mail_to: &str,
         mail_subject: &str,
         mail_body: &str,
+        _mail_signature: Option<&str>,
     ) -> Result<(), Box<dyn Error>> {
         let parsed_mail_from = Mailbox::parse_with_context_on_error(
             &self.mail_from,

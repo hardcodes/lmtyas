@@ -1,9 +1,9 @@
+#[cfg(feature = "mail-noauth-notls-smime")]
+use crate::mail_noauth_notls_smime::SmimeConfiguration;
 use serde::Deserialize;
 use std::error::Error;
 use std::fs;
 use std::path::Path;
-#[cfg(feature = "mail-noauth-notls-smime")]
-use crate::mail_noauth_notls_smime::SmimeConfiguration;
 
 /// Holds the information needed to
 /// send email to the receiver of a
@@ -49,9 +49,9 @@ pub enum ParseMailAddressErrorContext {
 pub trait ParseMailboxWithContext {
     /// parse an email address into the lettre `Mailbox` format and
     /// add a context to the error message if that fails.
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// - `address`:         email address that should be pared into a `Mailbox`
     /// - `error_context`:   context that shows what the email address should be used for
     ///                      (from, to, cc, bcc)
@@ -61,22 +61,18 @@ pub trait ParseMailboxWithContext {
     ) -> Result<lettre::message::Mailbox, Box<dyn Error>>;
 }
 
-
-impl ParseMailboxWithContext for lettre::message::Mailbox{
+impl ParseMailboxWithContext for lettre::message::Mailbox {
     #[inline(always)]
     fn parse_with_context_on_error(
         address: &str,
         error_context: ParseMailAddressErrorContext,
-    ) -> Result<lettre::message::Mailbox, Box<dyn Error>>{
+    ) -> Result<lettre::message::Mailbox, Box<dyn Error>> {
         match address.parse::<lettre::message::Mailbox>() {
             Ok(p) => Ok(p),
-            Err(e) => {
-                Err(Box::<dyn Error + Send + Sync>::from(format!(
-                    "{}, {:?}",
-                    e,
-                    error_context
-                )))
-            }
+            Err(e) => Err(Box::<dyn Error + Send + Sync>::from(format!(
+                "{}, {:?}",
+                e, error_context
+            ))),
         }
     }
 }
@@ -93,5 +89,12 @@ pub trait SendEMail {
     /// - `mail_to`:          mail address of the receiver of the secret.
     /// - `mail_subject`:     subject of the mail
     /// - `mail_body`:        body of the mail
-    fn send_mail(&self, mail_to: &str, mail_subject: &str, mail_body: &str) -> Result<(), Box<dyn Error>>;
+    /// - `mail_signature`:   optional mail signature
+    fn send_mail(
+        &self,
+        mail_to: &str,
+        mail_subject: &str,
+        mail_body: &str,
+        mail_signature: Option<&str>,
+    ) -> Result<(), Box<dyn Error>>;
 }
