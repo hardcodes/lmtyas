@@ -229,7 +229,7 @@ pub async fn set_password_for_rsa_rivate_key(
     }
     // the lock must be removed at this point because
     // application_configuration.load_rsa_keys()
-    // will quire a lock on itself. If we didn't remove the
+    // will quire a lock on itself. If we don't remove the
     // lock here, we will never return...
     info!("password has been set, loading rsa keys");
     match application_configuration.load_rsa_keys() {
@@ -241,6 +241,51 @@ pub async fn set_password_for_rsa_rivate_key(
         }
         Ok(_) => {
             info!("rsa keys have been loaded successfully");
+            // Clear the password now, since the rsa keys have been loaded.
+            let _result = application_configuration.clear_rsa_password();
+            // load the S/Mime certificate if the feature is enabled
+            #[cfg(feature = "mail-noauth-notls-smime")]
+            {
+                let rsa_read_lock = application_configuration.rsa_keys.read().unwrap();
+                let decrypted_password = match rsa_read_lock.hybrid_decrypt_str(
+                    &application_configuration
+                        .configuration_file
+                        .email_configuration
+                        .mail_smime_configuration
+                        .enrypted_password,
+                ) {
+                    Err(e) => {
+                        warn!("Could not decrypt S/Mime certificate password: {:?}", e);
+                        return HttpResponse::err_text_response(
+                            "ERROR: could not load S/Mime certificate!",
+                        );
+                    }
+                    Ok(password) => SecStr::from(password),
+                };
+                if let Ok(mut smime_certificate_write_lock) =
+                    application_configuration.smime_certificate.write()
+                {
+                    if let Err(e) = smime_certificate_write_lock.load_smime_certificate(
+                        &application_configuration
+                            .configuration_file
+                            .email_configuration
+                            .mail_smime_configuration
+                            .rsa_private_key_file,
+                        &application_configuration
+                            .configuration_file
+                            .email_configuration
+                            .mail_smime_configuration
+                            .rsa_public_key_file,
+                        &decrypted_password,
+                    ) {
+                        warn!("Could not load S/Mime certificate: {:?}", e);
+                        return HttpResponse::err_text_response(
+                            "ERROR: could not load S/Mime certificate!",
+                        );
+                    }
+                }
+            }
+
             // Delete cookie after rsa password has been set because it
             // is not enrypted yet.
             HttpResponse::ok_text_response_with_empty_unix_epoch_cookie("OK")

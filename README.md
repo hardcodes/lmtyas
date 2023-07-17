@@ -346,6 +346,32 @@ Email Address []:rainer.zufall@acme.local
 ```
 
 
+## Security - Mail - S/Mime
+
+If you use the feature ``, a password for the S/Mime certificate must be stored in the configuration file. To prevent attackers from sending emails in the name of the service, if they get hold of the configuration file, the password must by stored encrypted. To encrypt the password, you need the RSA public key, created in section *[Security - Data Encryption - RSA Keys](#security---data-encryption---rsa-keys)*.
+
+**Create encrypted password in bash**
+
+```bash
+PUBLIC_KEY="lmtyas_rsa_public.key"
+SMIME_PASSWORD='sm!m3_s3cr3t'
+AES_KEY=$(openssl rand -hex 32)
+AES_IV=$(openssl rand -hex 16)
+AES_SMIME_PASSWORD=$(echo -n "${SMIME_PASSWORD}"|openssl enc -nosalt -aes-256-cbc -base64 -K ${AES_KEY} -iv ${AES_IV})
+# decode with
+# echo -n "${AES_SMIME_PASSWORD}"|openssl enc -nosalt -d -aes-256-cbc -base64 -A -K ${AES_KEY} -iv ${AES_IV}
+AES_KEY_IV_RSA=$(echo -n "${AES_KEY}${AES_IV}"|xxd -r -p|openssl pkeyutl -encrypt -inkey "${PUBLIC_KEY}" -pubin|base64 -w 0)
+AES_SMIME_PASSWORD_RSA=$(echo -n "${AES_SMIME_PASSWORD}"|openssl pkeyutl -encrypt -inkey "${PUBLIC_KEY}" -pubin|base64 -w 0)
+# finally the hybrid encrypted password
+echo "v1.${AES_KEY_IV_RSA}.${AES_SMIME_PASSWORD_RSA}"
+```
+
+
+**Create encrypted password with lmtyas**
+
+Send yourself a secret and put the password of the S/Mime certficate inside the **Context** field of the form and extract the value from the JSON file created on disk.
+
+
 # Monitoring
 
 Set up your monitoring software to probe the path `monitoring/still_alive`. If the service is still running, "Yes sir, I can boogie!" will be returned. This path is accessible without authentication.

@@ -9,6 +9,7 @@ use crate::ldap_common::LdapCommonConfiguration;
 #[cfg(any(feature = "ldap-auth", feature = "authentication-oidc"))]
 use crate::login_user_trait::Login;
 use crate::mail_configuration::SendEMailConfiguration;
+use crate::mail_noauth_notls_smime::SmimeCertificate;
 use crate::rsa_functions::{RsaKeys, RsaPrivateKeyPassword};
 use crate::secret_functions::SharedSecretData;
 #[cfg(feature = "authentication-oidc")]
@@ -24,6 +25,8 @@ use std::fs::File;
 use std::io::BufReader;
 use std::path::Path;
 use std::sync::{Arc, RwLock};
+#[cfg(feature = "mail-noauth-notls-smime")]
+pub use crate::mail_noauth_notls_smime::SendEMail;
 
 /// valid secure cipers for TLS1v2 and TLS 1v3
 const CIPHER_LIST: &str = concat!(
@@ -131,6 +134,9 @@ pub struct ApplicationConfiguration {
     /// stores the optional oidc verification data
     #[cfg(feature = "oidc-auth-ldap")]
     pub shared_oidc_verification_data: Arc<RwLock<SharedOidcVerificationDataHashMap>>,
+    // Stores an optional S/Mime certficate to sign the sent emails
+    #[cfg(feature = "mail-noauth-notls-smime")]
+    pub smime_certificate: Arc<RwLock<SmimeCertificate>>,
 }
 
 /// Build a new instance of ApplicationConfiguration
@@ -191,6 +197,8 @@ impl ApplicationConfiguration {
             shared_oidc_verification_data: Arc::new(RwLock::new(
                 SharedOidcVerificationDataHashMap::new(),
             )),
+            #[cfg(feature = "mail-noauth-notls-smime")]
+            smime_certificate: Arc::new(RwLock::new(SmimeCertificate::new())),
         }
     }
 
@@ -198,10 +206,6 @@ impl ApplicationConfiguration {
     ///
     /// If the files are not to be found or cannot be read, the function will
     /// return a boxed error.
-    ///
-    /// # Returns
-    ///
-    /// - `Result<(), Box<dyn Error>>`
     pub fn load_rsa_keys(&self) -> Result<(), Box<dyn Error>> {
         if let Some(rsa_private_key_password) =
             &self.rsa_password.read().unwrap().rsa_private_key_password
@@ -220,13 +224,6 @@ impl ApplicationConfiguration {
     }
 
     /// Clears the passsword for the RSA key files which are referenced in the configuration file
-    ///
-    /// If the files are not to be found or cannot be read, the function will
-    /// return a boxed error.
-    ///
-    /// # Returns
-    ///
-    /// - `Result<(), Box<dyn Error>>`
     pub fn clear_rsa_password(&self) -> Result<(), Box<dyn Error>> {
         self.rsa_password.write().unwrap().rsa_private_key_password = None;
         Ok(())

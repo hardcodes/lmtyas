@@ -17,7 +17,7 @@ pub struct SendEMailConfiguration {
     pub mail_template_file: Box<Path>,
     pub mail_credentails: Option<EMailCredentials>,
     #[cfg(feature = "mail-noauth-notls-smime")]
-    pub mail_smime_configuration: Option<SmimeConfiguration>,
+    pub mail_smime_configuration: SmimeConfiguration,
 }
 
 impl SendEMailConfiguration {
