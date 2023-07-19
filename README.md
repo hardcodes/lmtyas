@@ -249,9 +249,7 @@ If the service is (re-)started, a valid administrator (see `admin_accounts` in s
 The web service uses a combination of RSA public key encryption and AES symmetric encryption to secure
 the data. Only encryted data is stored on the disk.
 
-For security reasons the password for the RSA private key is not stored in the configuration file. It must be entered by the administrator every time the web service has been started. The password is stored in a secure string so that even a memory dump would not help. It only lives in plain text for the short time it is needed to decrypt data.
-
-**NOTE**: Even the secure string can be circumvented, an attacker that can access your system and create a dump has all time in the world to analyse and/or reconstruct the password. 
+For security reasons the password for the RSA private key is not stored in the configuration file. It must be entered by the administrator every time the web service has been started. The password only lives in the service for the short time it is needed to load the private RSA key.
 
 
 ## Security - Data Encryption - Workflow 
@@ -276,7 +274,7 @@ After a new secret has been entered,
 
 When opening the link,
 
-- the link is decrypted using the RSA private key of the web service using the password that is only stored during runtime in a secure string.
+- the link is decrypted using the RSA private key of the web service.
 - The stored data is read from the file which id (= file name) was inside the decrypted link data.
 - The AES key and IV inside the file is decrypted using the RSA private key of the web service.
 - The data itself is decrypted using the AES key and IV.
@@ -348,28 +346,44 @@ Email Address []:rainer.zufall@acme.local
 
 ## Security - Mail - S/Mime
 
-If you use the feature ``, a password for the S/Mime certificate must be stored in the configuration file. To prevent attackers from sending emails in the name of the service, if they get hold of the configuration file, the password must by stored encrypted. To encrypt the password, you need the RSA public key, created in section *[Security - Data Encryption - RSA Keys](#security---data-encryption---rsa-keys)*.
+If you use the feature `mail-noauth-notls-smime`, a password for the S/Mime certificate must be stored in the configuration file. To prevent attackers from sending emails in the name of the service, if they get hold of the configuration file, an encrypted password will be stored in the file.
+
+To encrypt the password, you need the RSA public key, created in section *[Security - Data Encryption - RSA Keys](#security---data-encryption---rsa-keys)*.
+
 
 **Create encrypted password in bash**
 
-```bash
-PUBLIC_KEY="lmtyas_rsa_public.key"
-SMIME_PASSWORD='sm!m3_s3cr3t'
-AES_KEY=$(openssl rand -hex 32)
-AES_IV=$(openssl rand -hex 16)
-AES_SMIME_PASSWORD=$(echo -n "${SMIME_PASSWORD}"|openssl enc -nosalt -aes-256-cbc -base64 -K ${AES_KEY} -iv ${AES_IV})
-# decode with
-# echo -n "${AES_SMIME_PASSWORD}"|openssl enc -nosalt -d -aes-256-cbc -base64 -A -K ${AES_KEY} -iv ${AES_IV}
-AES_KEY_IV_RSA=$(echo -n "${AES_KEY}${AES_IV}"|xxd -r -p|openssl pkeyutl -encrypt -inkey "${PUBLIC_KEY}" -pubin|base64 -w 0)
-AES_SMIME_PASSWORD_RSA=$(echo -n "${AES_SMIME_PASSWORD}"|openssl pkeyutl -encrypt -inkey "${PUBLIC_KEY}" -pubin|base64 -w 0)
-# finally the hybrid encrypted password
-echo "v1.${AES_KEY_IV_RSA}.${AES_SMIME_PASSWORD_RSA}"
-```
+1. Create a temporary file named `password.txt` with the password for the RSA private key of the lmtyas webservice in it.
+2. Run these commands in the bash shell to encrypt the password (`password.txt` will be deleted).
 
-
-**Create encrypted password with lmtyas**
-
-Send yourself a secret and put the password of the S/Mime certficate inside the **Context** field of the form and extract the value from the JSON file created on disk.
+    ```bash
+    # change to the directory with the RSA public key file
+    cd /etc/lmtyas
+    PUBLIC_KEY="lmtyas_rsa_public.key"
+    # password is stored in file
+    SMIME_PASSWORD_FILE="password.txt"
+    openssl rand 32 > aes_key
+    AES_KEY=$(cat aes_key)
+    AES_KEY_HEX=$(cat aes_key|xxd -l 32 -c 32 -p)
+    openssl rand 16 > aes_iv
+    AES_IV=$(cat aes_iv)
+    AES_IV_HEX=$(cat aes_iv|xxd -l 16 -c 16 -p)
+    # encrypt key and iv with RSA public key and encode result with base64
+    AES_KEY_IV_RSA=$(echo -n "${AES_KEY}${AES_IV}"|openssl pkeyutl -encrypt -inkey "${PUBLIC_KEY}" -pubin|base64 -w 0)
+    # encrypt password with AES
+    AES_SMIME_PASSWORD=$(openssl enc -nosalt -aes-256-cbc -K ${AES_KEY_HEX} -iv ${AES_IV_HEX} -in "${SMIME_PASSWORD_FILE}"|base64 -w 0)
+    # decode with
+    echo -n "${AES_SMIME_PASSWORD}"|openssl enc -nosalt -d -aes-256-cbc -base64 -A -K ${AES_KEY_HEX} -iv ${AES_IV_HEX}
+    # finally the hybrid encrypted password
+    echo "v1.${AES_KEY_IV_RSA}.${AES_SMIME_PASSWORD}"
+    # remove temporary files
+    shred aes_key
+    rm aes_key
+    shred aes_iv
+    rm aes_iv
+    shred "${SMIME_PASSWORD_FILE}"
+    rm "${SMIME_PASSWORD_FILE}"
+    ```
 
 
 # Monitoring

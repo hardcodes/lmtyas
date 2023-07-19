@@ -15,7 +15,7 @@ impl SendEMail for SendEMailConfiguration {
         mail_to: &str,
         mail_subject: &str,
         mail_body: &str,
-        _mail_signature: Option<&str>,
+        _mail_signature: Option<Vev<u8>>,
     ) -> Result<(), Box<dyn Error>> {
         let parsed_mail_from = Mailbox::parse_with_context_on_error(
             &self.mail_from,
@@ -23,22 +23,13 @@ impl SendEMail for SendEMailConfiguration {
         )?;
         let parsed_mail_to =
             Mailbox::parse_with_context_on_error(mail_to, ParseMailAddressErrorContext::ToAddress)?;
-        let email_message = match Message::builder()
+        let email_message = Message::builder()
             .from(parsed_mail_from)
             .to(parsed_mail_to)
             .subject(mail_subject)
             .header(ContentType::TEXT_PLAIN)
             .user_agent(PROGRAM_NAME.to_string())
-            .body(String::from(mail_body))
-        {
-            Ok(m) => m,
-            Err(e) => {
-                return Err(Box::<dyn Error + Send + Sync>::from(format!(
-                    "Error building email message: {}",
-                    e,
-                )));
-            }
-        };
+            .body(String::from(mail_body))?;
 
         let tp = SmtpTransport::builder_dangerous(&self.mail_server_address);
         let tp_with_port = tp.port(self.mail_server_port);

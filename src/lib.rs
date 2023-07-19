@@ -31,6 +31,7 @@ pub mod mail_noauth_notls_smime;
 pub mod oidc_ldap;
 pub mod rsa_functions;
 pub mod secret_functions;
+pub mod string_trait;
 pub mod unsecure_string;
 
 pub const PROGRAM_NAME: &str = env!("CARGO_PKG_NAME");

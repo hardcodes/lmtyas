@@ -16,6 +16,7 @@ pub use crate::mail_noauth_notls::SendEMail;
 #[cfg(feature = "mail-noauth-notls-smime")]
 pub use crate::mail_noauth_notls_smime::SendEMail;
 use crate::secret_functions::Secret;
+use crate::string_trait::StringTrimNewline;
 use crate::UNKOWN_RECEIVER_EMAIL;
 use actix_files::NamedFile;
 use actix_web::web::Bytes;
@@ -146,24 +147,16 @@ pub async fn get_favicon() -> impl Responder {
 }
 
 /// Returns true or false as json value so that
-/// the web form can check if the rsa password
+/// the web form can check if the rsa private key
 /// is already stored in the running server.
-///
-/// # Arguments
-///
-/// - `application_configuration`: application configuration
-///
-/// # Returns
-///
-/// - `HttpResponse`
 pub async fn is_server_ready(
     application_configuration: web::Data<ApplicationConfiguration>,
 ) -> HttpResponse {
     if application_configuration
-        .rsa_password
+        .rsa_keys
         .read()
         .unwrap()
-        .rsa_private_key_password
+        .rsa_private_key
         .is_some()
     {
         HttpResponse::ok_json_response("{\"isReady\": true}")
@@ -231,7 +224,7 @@ pub async fn set_password_for_rsa_rivate_key(
     // application_configuration.load_rsa_keys()
     // will quire a lock on itself. If we don't remove the
     // lock here, we will never return...
-    info!("password has been set, loading rsa keys");
+    info!("password has been set, loading rsa keys...");
     match application_configuration.load_rsa_keys() {
         Err(e) => {
             // loading the rsa keys did not work, throw the password away
@@ -246,6 +239,7 @@ pub async fn set_password_for_rsa_rivate_key(
             // load the S/Mime certificate if the feature is enabled
             #[cfg(feature = "mail-noauth-notls-smime")]
             {
+                info!("decrypting S/Mime certificate password...");
                 let rsa_read_lock = application_configuration.rsa_keys.read().unwrap();
                 let decrypted_password = match rsa_read_lock.hybrid_decrypt_str(
                     &application_configuration
@@ -255,34 +249,37 @@ pub async fn set_password_for_rsa_rivate_key(
                         .enrypted_password,
                 ) {
                     Err(e) => {
-                        warn!("Could not decrypt S/Mime certificate password: {:?}", e);
+                        warn!("could not decrypt S/Mime certificate password: {:?}", e);
                         return HttpResponse::err_text_response(
                             "ERROR: could not load S/Mime certificate!",
                         );
                     }
-                    Ok(password) => SecStr::from(password),
+                    Ok(mut password) => {
+                        String::trim_newline(&mut password);
+                        debug!("password: {}", &password);
+                        SecStr::from(password)
+                    }
                 };
-                if let Ok(mut smime_certificate_write_lock) =
-                    application_configuration.smime_certificate.write()
-                {
-                    if let Err(e) = smime_certificate_write_lock.load_smime_certificate(
-                        &application_configuration
-                            .configuration_file
-                            .email_configuration
-                            .mail_smime_configuration
-                            .rsa_private_key_file,
-                        &application_configuration
-                            .configuration_file
-                            .email_configuration
-                            .mail_smime_configuration
-                            .rsa_public_key_file,
-                        &decrypted_password,
-                    ) {
-                        warn!("Could not load S/Mime certificate: {:?}", e);
-                        return HttpResponse::err_text_response(
-                            "ERROR: could not load S/Mime certificate!",
-                        );
-                    }
+                info!("sucessfully decrypted S/Mime certificate password.");
+                let mut smime_certificate_write_lock =
+                    application_configuration.smime_certificate.write().unwrap();
+                if let Err(e) = smime_certificate_write_lock.load_smime_certificate(
+                    &application_configuration
+                        .configuration_file
+                        .email_configuration
+                        .mail_smime_configuration
+                        .rsa_private_key_file,
+                    &application_configuration
+                        .configuration_file
+                        .email_configuration
+                        .mail_smime_configuration
+                        .rsa_public_key_file,
+                    &decrypted_password,
+                ) {
+                    warn!("could not load S/Mime certificate: {:?}", e);
+                    return HttpResponse::err_text_response(
+                        "ERROR: could not load S/Mime certificate!",
+                    );
                 }
             }
 
@@ -468,14 +465,32 @@ pub async fn store_secret(
         &parsed_form_data.to_email,
         &uuid.to_string()
     );
+
     #[cfg(not(feature = "mail-noauth-notls-smime"))]
     let mail_signature = None;
     #[cfg(feature = "mail-noauth-notls-smime")]
-    let mail_signature = "TODO"; // TODO: buid mail signature
+    let mail_signature = match application_configuration
+        .smime_certificate
+        .read()
+        .unwrap()
+        .sign_mail_body(mail_body)
+    {
+        Err(e) => {
+            warn!("error signing email: {}", &e);
+            return HttpResponse::err_text_response("ERROR: cannot sign email!");
+        }
+        Ok(signature) => Some(signature),
+    };
+
     if let Err(e) = &application_configuration
         .configuration_file
         .email_configuration
-        .send_mail(&parsed_form_data.to_email, mail_subject, mail_body, Some(mail_signature))
+        .send_mail(
+            &parsed_form_data.to_email,
+            mail_subject,
+            mail_body,
+            mail_signature,
+        )
     {
         warn!(
             "error sending email to {} for secret {}: {}",

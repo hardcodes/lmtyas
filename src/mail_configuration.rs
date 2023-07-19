@@ -95,6 +95,6 @@ pub trait SendEMail {
         mail_to: &str,
         mail_subject: &str,
         mail_body: &str,
-        mail_signature: Option<&str>,
+        mail_signature: Option<Vec<u8>>,
     ) -> Result<(), Box<dyn Error>>;
 }
