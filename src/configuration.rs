@@ -9,6 +9,7 @@ use crate::ldap_common::LdapCommonConfiguration;
 #[cfg(any(feature = "ldap-auth", feature = "authentication-oidc"))]
 use crate::login_user_trait::Login;
 use crate::mail_configuration::SendEMailConfiguration;
+#[cfg(feature = "mail-noauth-notls-smime")]
 use crate::mail_noauth_notls_smime::SmimeCertificate;
 use crate::rsa_functions::{RsaKeys, RsaPrivateKeyPassword};
 use crate::secret_functions::SharedSecretData;

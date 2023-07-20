@@ -42,6 +42,10 @@ See [lmtyas-config.json](conf.dev/lmtyas-config.json) for an example configurati
 |     "mail_from"                  | mail address that sends secrets, e.g. `"IT-department <do-not-reply@acme.local>"`                         |
 |     "mail_subject"               | subject used in mails, e.g. `"Your new password for {Context}"`                                           |
 |     "mail_template_file"         | path/filename of mail template, e.g. `"etc/lmtas/mailtemplate.txt"`                                       |
+|     "mail_smime_configuration": {| ==> object with smime certificate details                                                                 |
+|         "rsa_private_key_file"   | path/filename of the RSA private key file, e.g. `"/etc/lmtyas/lmtyas_smime_rsa_private.key"`              |
+|         "enrypted_password"      | encrypted password of the RSA private key file                                                            |
+|      }                           | <== end of object with smime certificate details                                                          |
 | },                               | <== end of object with email configuration details                                                        |
 | "admin_accounts"                 | array with valid admin accounts to set password, e.g. `["walter"]`                                        |
 | "max_authrequest_age_seconds"    | time in seconds an authentiction attempt is valid, e.g. `300`                                             |
@@ -84,8 +88,9 @@ See [lmtyas-config.json](conf.dev/lmtyas-config.json) for an example configurati
         URL must be in the template, see [mailtemplate.txt](./conf.dev/mailtemplate.txt).
 
         Depending on your authentication backends you may not know the data for each of the placeholders!
-- **NOTE 2** The objects `email_configuration`, `ldap_configuration` and `oidc_configuration` may be absent or differ, depending on the selected features. See section *[Compile and install -features](#compile-and-install---features)*.
+- **NOTE 2** The objects `email_configuration`. `mail_smime_configuration`, `ldap_configuration` and `oidc_configuration` may be absent or differ, depending on the selected features. See section *[Compile and install -features](#compile-and-install---features)*.
 - **NOTE 3** The directive `mail_hint` may be absent. If so the default `firstname.lastname@acme.local` will be used.
+- **WARNING** Signing of emails does not work yet, do not use this feature!
 
 You need a SSL certificate and its unencrypted key in pem format. Create your own *[set of rsa keys](#security---data-encryption---rsa-keys)*.
 
@@ -201,6 +206,9 @@ Also see [Cargo.toml](./Cargo.toml), section `[features]`.
 - **authentication-oidc**: holds the oidc implementation.
 - **oidc-ldap**: query user details from an external ldap server.
 - **mail-noauth-notls**: send mails to user via mail server that does not need authentication and uses no encrypted transport.
+- *mail-noauth-notls-smime*: send signed mails to user via mail server that does not need authentication and uses no encrypted transport. 
+    
+  **WARNING** Signing of emails does **not work** yet, **do not use** this feature!
 - **get-userdata-ldap**: query userdata (frist and last name by email address of secret receiver) from a ldap server.
 - **no-userdata-backend**: use this, when there is no backend (like e.g., a ldap server) to query userdata.
 
@@ -343,7 +351,7 @@ Common Name (e.g. server FQDN or YOUR name) []:acme.local
 Email Address []:rainer.zufall@acme.local
 ```
 
-
+<!--
 ## Security - Mail - S/Mime
 
 If you use the feature `mail-noauth-notls-smime`, a password for the S/Mime certificate must be stored in the configuration file. To prevent attackers from sending emails in the name of the service, if they get hold of the configuration file, an encrypted password will be stored in the file.
@@ -373,7 +381,7 @@ To encrypt the password, you need the RSA public key, created in section *[Secur
     # encrypt password with AES
     AES_SMIME_PASSWORD=$(openssl enc -nosalt -aes-256-cbc -K ${AES_KEY_HEX} -iv ${AES_IV_HEX} -in "${SMIME_PASSWORD_FILE}"|base64 -w 0)
     # decode with
-    echo -n "${AES_SMIME_PASSWORD}"|openssl enc -nosalt -d -aes-256-cbc -base64 -A -K ${AES_KEY_HEX} -iv ${AES_IV_HEX}
+    # echo -n "${AES_SMIME_PASSWORD}"|openssl enc -nosalt -d -aes-256-cbc -base64 -A -K ${AES_KEY_HEX} -iv ${AES_IV_HEX}
     # finally the hybrid encrypted password
     echo "v1.${AES_KEY_IV_RSA}.${AES_SMIME_PASSWORD}"
     # remove temporary files
@@ -384,7 +392,7 @@ To encrypt the password, you need the RSA public key, created in section *[Secur
     shred "${SMIME_PASSWORD_FILE}"
     rm "${SMIME_PASSWORD_FILE}"
     ```
-
+-->
 
 # Monitoring
 

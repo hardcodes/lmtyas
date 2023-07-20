@@ -16,6 +16,7 @@ pub use crate::mail_noauth_notls::SendEMail;
 #[cfg(feature = "mail-noauth-notls-smime")]
 pub use crate::mail_noauth_notls_smime::SendEMail;
 use crate::secret_functions::Secret;
+#[cfg(feature = "mail-noauth-notls-smime")]
 use crate::string_trait::StringTrimNewline;
 use crate::UNKOWN_RECEIVER_EMAIL;
 use actix_files::NamedFile;
@@ -239,7 +240,7 @@ pub async fn set_password_for_rsa_rivate_key(
             // load the S/Mime certificate if the feature is enabled
             #[cfg(feature = "mail-noauth-notls-smime")]
             {
-                info!("decrypting S/Mime certificate password...");
+                info!("decrypting S/Mime private key password...");
                 let rsa_read_lock = application_configuration.rsa_keys.read().unwrap();
                 let decrypted_password = match rsa_read_lock.hybrid_decrypt_str(
                     &application_configuration
@@ -249,9 +250,9 @@ pub async fn set_password_for_rsa_rivate_key(
                         .enrypted_password,
                 ) {
                     Err(e) => {
-                        warn!("could not decrypt S/Mime certificate password: {:?}", e);
+                        warn!("could not decrypt S/Mime private key password: {:?}", e);
                         return HttpResponse::err_text_response(
-                            "ERROR: could not load S/Mime certificate!",
+                            "ERROR: could not load S/Mime configuration!",
                         );
                     }
                     Ok(mut password) => {
@@ -260,7 +261,7 @@ pub async fn set_password_for_rsa_rivate_key(
                         SecStr::from(password)
                     }
                 };
-                info!("sucessfully decrypted S/Mime certificate password.");
+                info!("sucessfully decrypted S/Mime private key password.");
                 let mut smime_certificate_write_lock =
                     application_configuration.smime_certificate.write().unwrap();
                 if let Err(e) = smime_certificate_write_lock.load_smime_certificate(
@@ -269,16 +270,11 @@ pub async fn set_password_for_rsa_rivate_key(
                         .email_configuration
                         .mail_smime_configuration
                         .rsa_private_key_file,
-                    &application_configuration
-                        .configuration_file
-                        .email_configuration
-                        .mail_smime_configuration
-                        .rsa_public_key_file,
                     &decrypted_password,
                 ) {
-                    warn!("could not load S/Mime certificate: {:?}", e);
+                    warn!("could not load S/Mime configuration: {:?}", e);
                     return HttpResponse::err_text_response(
-                        "ERROR: could not load S/Mime certificate!",
+                        "ERROR: could not load S/Mime configuration!",
                     );
                 }
             }
