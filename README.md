@@ -668,4 +668,6 @@ kill $(ps -aux|grep python3|grep smtpd|awk '{print $2;}')
 
 The code is dual licensed under the [MIT License](./LICENSE-MIT) **or** the [APACHE 2.0 License](http://www.apache.org/licenses/LICENSE-2.0), which ever suits you better.
 
+# Contribution
+
 Unless you explicitly state otherwise, any contribution intentionally submitted for inclusion in this crate by you, as defined in the Apache-2.0 license, shall be dual licensed as above, without any additional terms or conditions.
