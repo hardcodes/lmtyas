@@ -63,7 +63,7 @@
             <p>A web service written in Rust that allows an authenticated user to send secrets like passwords to other
                 authenticated users.</p>
             <p>In a perfect world we wouldn’t need passwords anymore but more often than not we still do need to tell
-                them to other people. Sending passwords by email is unsecure because most people are not able to receive
+                them to other people. Sending passwords by email is insecure because most people are not able to receive
                 encrypted emails. Sending passwords by snail mail is slow. Using a second channel, e.g. like a chat
                 program, may work but often leaves traces. Telling the via phone is next to impossible.</p>
             <p><em>“Let me tell you a secret” enters the stage</em></p>
@@ -74,7 +74,7 @@
                 <li>&nbsp;&nbsp;an email address of the receiver</li>
             </ul>
             <p>on the website driven by this web service and the receiver will get an email with a link that entitles to
-                read the secret. The secret id and thus the receiver is encoded in the link and since authentication is
+                read the secret. The secret Id and thus the receiver is encoded in the link and since authentication is
                 needed to open the secret, we make sure that only the right person reads the secret.</p>
             <h1 id="security">Security</h1>
             <p>The web service uses a combination of RSA public key encryption and AES symmetric encryption to secure
@@ -82,23 +82,23 @@
                 disk. </p>
             <p>For security reasons the password for the RSA private key is not stored in the
                 configuration file.
-                It must be entered by the administrator every time the web service has been started.</p>
+                It must be entered by the administrator every time the web service gets started.</p>
             <h1 id="how-does-it-work">How does it work</h1>
             <p>After a new secret has been entered,</p>
             <ul>
                 <li>&nbsp;&nbsp;the receiver, context and the secret is encrypted with the public key of the web
                     service.</li>
-                <li>&nbsp;&nbsp;A new AES key/iv pair is randomly chosen.
+                <li>&nbsp;&nbsp;A new AES key/IV pair is randomly chosen.
                     <ul>
                         <li>&nbsp;&nbsp;The secret will additionaly be encrypted with the randomly chosen key/iv.</li>
-                        <li>&nbsp;&nbsp;The random key/iv will be encrypted with the RSA public key of the web service.
+                        <li>&nbsp;&nbsp;The random key/IV will be encrypted with the RSA public key of the web service.
                         </li>
                     </ul>
                 </li>
                 <li>&nbsp;&nbsp;A link for the email will be constructed of
                     <ul>
-                        <li>&nbsp;&nbsp;the id (= file name) of the secret</li>
-                        <li>&nbsp;&nbsp;the key/iv that were used to encrypt the secret before storing it to disk</li>
+                        <li>&nbsp;&nbsp;the Id (= file name) of the secret</li>
+                        <li>&nbsp;&nbsp;the key/IV that were used to encrypt the secret before storing it to disk</li>
                     </ul>
                 </li>
                 <li>&nbsp;&nbsp;The link will be enrypted with the RSA public key of the web service.</li>
@@ -108,7 +108,7 @@
                         <li>&nbsp;&nbsp;AES key and IV</li>
                         <li>&nbsp;&nbsp;receiver</li>
                         <li>&nbsp;&nbsp;context</li>
-                        <li>&nbsp;&nbsp;secret (AES encrypted by random key/iv)</li>
+                        <li>&nbsp;&nbsp;secret (AES encrypted by random key/IV)</li>
                     </ul>
                 </li>
                 <li>&nbsp;&nbsp;The receiver will get an email with the encrypted link.</li>
@@ -116,7 +116,7 @@
             <p>When opening the link,</p>
             <ul>
                 <li>&nbsp;&nbsp;the link is decrypted using the RSA private key of the web service.</li>
-                <li>&nbsp;&nbsp;The stored data is read from the file which id (= file name) was inside the decrypted
+                <li>&nbsp;&nbsp;The stored data is read from the file whose Id was in the decrypted
                     link data.
                 </li>
                 <li>&nbsp;&nbsp;The AES key and IV inside the file is decrypted using the RSA private key of the web
@@ -133,7 +133,7 @@
                         </li>
                         <li>&nbsp;&nbsp;if the user matches the process continues:
                             <ul>
-                                <li>&nbsp;&nbsp;The key/iv inside the decrypted link data is used to rebuild the secret.
+                                <li>&nbsp;&nbsp;The key/IV inside the decrypted link data is used to rebuild the secret.
                                 </li>
                                 <li>&nbsp;&nbsp;The file is deleted</li>
                                 <li>&nbsp;&nbsp;The secret is shown to the authenticated user, the process ends.</li>
@@ -142,10 +142,10 @@
                     </ul>
                 </li>
             </ul>
-            <p>Since the data stored on disk is encrypted the RSA public key of the web service, a hacker could not read
+            <p>Since the data stored on disk is encrypted using the RSA public key of the web service, a hacker could not read
                 the secrets even if he had access to the files.</p>
             <p>The administrator of the web service could decrypt the file but not the secret itself because it
-                encrypted by a randomly chosen key/iv.</p>
+                encrypted by a randomly chosen key/IV.</p>
         </div>
     </main>
     <footer class="lmtyas-footer">

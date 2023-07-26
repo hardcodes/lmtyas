@@ -4,7 +4,7 @@ A web service written in Rust that allows an authenticated user to send secrets 
 
 In a perfect world we wouldn't need passwords anymore but more often than not we also still do need to tell them to other people. There is a world almost without passwords out there, e.g. have a look at [SQRL](https://www.grc.com/sqrl/sqrl.htm) or [fido2](https://en.wikipedia.org/wiki/FIDO2_Project). 
 
-Sending passwords by email is unsecure because most people are not able to receive encrypted emails. Sending passwords by snail mail is slow. Using a second channel, e.g. like a chat program, may work but often leaves traces or involves third parties you do not trust. Telling the via phone is next to impossible.
+Sending passwords by email is insecure because most people are not able to receive encrypted emails. Sending passwords by snail mail is slow. Using a second channel, e.g. like a chat program, may work but often leaves traces or involves third parties you do not trust. Telling the via phone is next to impossible.
 
 *"Let me tell you a secret" enters the stage*
 
@@ -14,7 +14,7 @@ Simply enter a
 - context (a hint what the secret is for) and
 - an email address of the receiver
 
-on the website driven by this web service and the receiver will get an email with a link that entitles to read the secret. The secret id and thus the receiver is encoded in the link and since authentication is needed to open the secret, we make sure that only the right person reads the secret.
+on the website driven by this web service and the receiver will get an email with a link that entitles to read the secret. The secret Id and thus the receiver is encoded in the link and since authentication is needed to open the secret, we make sure that only the right person reads the secret.
 
 ![tell a secret](./gfx/lmtyas-screenshot-001.png)
 
@@ -65,7 +65,7 @@ See [lmtyas-config.json](conf.dev/lmtyas-config.json) for an example configurati
 | },                               | <== end of object with common ldap configuration                                                          |
 | "oidc_configuration": {          | ==> object with optional oidc configuration                                                               |
 |     "provider_metadata_url":     | base url which serves `.well-known/openid-configuration`, e.g. `"https://acme.eu.auth0.com/"`             | 
-|     "client_id":                 | oidc client id of this application, e.g. `"Y2xpZW50X2lk"`                                                 |
+|     "client_id":                 | oidc client Id of this application, e.g. `"Y2xpZW50X2lk"`                                                 |
 |     "client_secret":             | oidc client secret of this application, e.g. `"Y2xpZW50X3NlY3JldA=="`                                     |
 |     "valid_user_regex":          | regex of valid user names (email), e.g. `"^[\\w\\d\\-]{3,8}@acme\\.local$"`                               |
 | },                               | <== end object with optional oidc configuration                                                           |
@@ -83,7 +83,7 @@ See [lmtyas-config.json](conf.dev/lmtyas-config.json) for an example configurati
         - `{ToDisplayName}` is replaced with the display name of the receiver,
         - `{FromDisplayName}` is replaced with the display name of the sender,
         - `{Context}` is replaced with the context entered in the web form.
-        - `{UrlPayload}` is replaced with the encrypted secret id to access the secret.
+        - `{UrlPayload}` is replaced with the encrypted secret Id to access the secret.
      
         URL must be in the template, see [mailtemplate.txt](./conf.dev/mailtemplate.txt).
 
@@ -257,7 +257,7 @@ If the service is (re-)started, a valid administrator (see `admin_accounts` in s
 The web service uses a combination of RSA public key encryption and AES symmetric encryption to secure
 the data. Only encryted data is stored on the disk.
 
-For security reasons the password for the RSA private key is not stored in the configuration file. It must be entered by the administrator every time the web service has been started. The password only lives in the service for the short time it is needed to load the private RSA key.
+For security reasons the password for the RSA private key is not stored in the configuration file. It must be entered by the administrator every time the web service gets started. The password only lives in the service for the short time it is needed to load the private RSA key.
 
 
 ## Security - Data Encryption - Workflow 
@@ -265,25 +265,25 @@ For security reasons the password for the RSA private key is not stored in the c
 After a new secret has been entered,
 
 - the receiver, context and the secret is encrypted with the public key of the web service.
-- A new AES key/iv pair is randomly chosen.
-    - The secret will additionaly be encrypted with the randomly chosen key/iv.
-    - The random key/iv will be encrypted with the RSA public key of the web service.
+- A new AES key/IV pair is randomly chosen.
+    - The secret will additionaly be encrypted with the randomly chosen key/IV.
+    - The random key/IV will be encrypted with the RSA public key of the web service.
 - A link for the email will be constructed of
-    - the id (= file name) of the secret
-    - the key/iv that were used to encrypt the secret before storing it to disk
+    - the Id (= file name) of the secret
+    - the key/IV that were used to encrypt the secret before storing it to disk
 - The link will be enrypted with the RSA public key of the web service.
 - data is stored on disk (encrypted by a randomly chosen generated AES key and IV using AES in CBC mode which itself are encrypted using the web service RSA public key):
     - AES key and IV
     - receiver
     - context
-    - secret (AES encrypted by random key/iv)
+    - secret (AES encrypted by random key/IV)
 - The receiver will get an email with the encrypted link.
 
 
 When opening the link,
 
 - the link is decrypted using the RSA private key of the web service.
-- The stored data is read from the file which id (= file name) was inside the decrypted link data.
+- The stored data is read from the file whose Id was in the decrypted link data.
 - The AES key and IV inside the file is decrypted using the RSA private key of the web service.
 - The data itself is decrypted using the AES key and IV.
 - The authenticated user is compared with the user stored in the file as receiver
@@ -292,13 +292,13 @@ When opening the link,
         - runtime data discarded.
         - The file will stay untouched, the process ends.
     - if the user matches the process continues:
-      - The key/iv inside the decrypted link data is used to rebuild the secret.
+      - The key/IV inside the decrypted link data is used to rebuild the secret.
       - The file is deleted
       - The secret is shown to the authenticated user, the process ends.
 
-Since the data stored on disk is encrypted the RSA public key of the web service, a hacker could not read the secrets even if he had access to the files.
+Since the data stored on disk is encrypted using the RSA public key of the web service, a hacker could not read the secrets even if he had access to the files.
 
-The administrator of the web service could decrypt the file but not the secret itself because it encrypted by a randomly chosen key/iv. The only way the administrator could read the secret would be if he had access to the email with the link. We must assume that the administrator is a trustworthy person and the system running this service is designed in a way that supports the administrator in claiming that he has no access to the secrets (e.g. the administrator does not get blind copies of the emails). If the receiver of the secret waives the mail with the link in front of the administrator you have bigger problems at hand. If in doubt you can split the administrator role in two:
+The administrator of the web service could decrypt the file but not the secret itself because it encrypted by a randomly chosen key/IV. The only way the administrator could read the secret would be if he had access to the email with the link. We must assume that the administrator is a trustworthy person and the system running this service is designed in a way that supports the administrator in claiming that he has no access to the secrets (e.g. the administrator does not get blind copies of the emails). If the receiver of the secret waives the mail with the link in front of the administrator you have bigger problems at hand. If in doubt you can split the administrator role in two:
 
 1. The first administrator has knowledge about the password for the RSA private key of the webservice and access to the form that allows setting the password.
 2. The second administrator has access to the system itself. Even with some bogus mindset he had no access to the encrypted data.
@@ -376,7 +376,7 @@ To encrypt the password, you need the RSA public key, created in section *[Secur
     openssl rand 16 > aes_iv
     AES_IV=$(cat aes_iv)
     AES_IV_HEX=$(cat aes_iv|xxd -l 16 -c 16 -p)
-    # encrypt key and iv with RSA public key and encode result with base64
+    # encrypt key and IV with RSA public key and encode result with base64
     AES_KEY_IV_RSA=$(echo -n "${AES_KEY}${AES_IV}"|openssl pkeyutl -encrypt -inkey "${PUBLIC_KEY}" -pubin|base64 -w 0)
     # encrypt password with AES
     AES_SMIME_PASSWORD=$(openssl enc -nosalt -aes-256-cbc -K ${AES_KEY_HEX} -iv ${AES_IV_HEX} -in "${SMIME_PASSWORD_FILE}"|base64 -w 0)
