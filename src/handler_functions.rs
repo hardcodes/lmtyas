@@ -66,10 +66,10 @@ pub async fn still_alive(
     application_configuration: web::Data<ApplicationConfiguration>,
 ) -> impl Responder {
     if application_configuration
-        .rsa_password
+        .rsa_keys
         .read()
         .unwrap()
-        .rsa_private_key_password
+        .rsa_private_key
         .is_some()
     {
         HttpResponse::Ok().body("Yes sir, I can boogie!")
