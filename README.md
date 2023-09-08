@@ -144,6 +144,29 @@ User=lmtyas
 Group=lmtyas
 WorkingDirectory=/opt/lmtyas
 ExecStart=/opt/lmtyas/lmtyassvc --config-file \${lmtyasCFGFILE}
+# the settings from here on may not work with older versions of systemd!
+NoNewPrivileges=true
+PrivateTmp=yes
+RestrictNamespaces=uts ipc pid user cgroup
+RestrictAddressFamilies=AF_INET
+RestrictSUIDSGID=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+ProtectKernelLogs=yes
+ProtectHome=yes
+ProtectHostname=yes
+ProtectSystem=strict
+ProtectClock=yes
+ProtectKernelLogs=yes
+ProtectProc=invisible
+PrivateUsers=yes
+InaccessibleDirectories=/home /root
+CapabilityBoundingSet=CAP_NET_BIND_SERVICE
+ReadWritePaths=/opt/lmtyas/output
+MemoryDenyWriteExecute=yes
+DevicePolicy=closed
+LockPersonality=yes
 __EOF__
 
 # create systemd environment file
