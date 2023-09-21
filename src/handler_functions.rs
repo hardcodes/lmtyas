@@ -655,11 +655,20 @@ pub async fn get_authenticated_user_details(user: AuthenticatedUser) -> HttpResp
 /// the frontend.
 pub async fn get_validated_receiver_email(
     path: web::Path<String>,
-    _user: AuthenticatedUser,
+    user: AuthenticatedUser,
     application_configuration: web::Data<ApplicationConfiguration>,
 ) -> HttpResponse {
     debug!("get_validated_receiver_email()");
     let email = path.into_inner();
+    // Check if that looks like an email address before we query some external data source.
+    if !application_configuration.email_regex.is_match(&email) {
+        warn!(
+            "received invalid email format from user {}",
+            &user.user_name
+        );
+        return HttpResponse::ok_text_response(UNKOWN_RECEIVER_EMAIL.to_string());
+    }
+
     let receiver_email = match <UserDataImpl as GetUserData>::validate_email_address(
         &email,
         &application_configuration,

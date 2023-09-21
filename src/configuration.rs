@@ -28,6 +28,7 @@ use std::path::Path;
 use std::sync::{Arc, RwLock};
 #[cfg(feature = "mail-noauth-notls-smime")]
 pub use crate::mail_noauth_notls_smime::SendEMail;
+use regex::Regex;
 
 /// valid secure cipers for TLS1v2 and TLS 1v3
 const CIPHER_LIST: &str = concat!(
@@ -138,6 +139,7 @@ pub struct ApplicationConfiguration {
     // Stores an optional S/Mime certficate to sign the sent emails
     #[cfg(feature = "mail-noauth-notls-smime")]
     pub smime_certificate: Arc<RwLock<SmimeCertificate>>,
+    pub email_regex: Regex,
 }
 
 /// Build a new instance of ApplicationConfiguration
@@ -200,6 +202,7 @@ impl ApplicationConfiguration {
             )),
             #[cfg(feature = "mail-noauth-notls-smime")]
             smime_certificate: Arc::new(RwLock::new(SmimeCertificate::new())),
+            email_regex: Regex::new(crate::EMAIL_REGEX).expect("Cannot build generic email regex, see pub const EMAIL_REGEX in file lib.rs!"),
         }
     }
 
