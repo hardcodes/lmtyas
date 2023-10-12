@@ -40,7 +40,7 @@ pub const PROGRAM_AUTHORS: &str = env!("CARGO_PKG_AUTHORS");
 pub const PROGRAM_DESCRIPTION: &str = env!("CARGO_PKG_DESCRIPTION");
 pub const UNKOWN_RECEIVER_EMAIL: &str = "UNKOWN RECEIVER EMAIL";
 // generic regex to validate email address format
-pub const EMAIL_REGEX: &str = r#"^([a-zA-Z0-9_\-\.]+)@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.)|(([a-zA-Z0-9\-]+\.)+))([a-zA-Z]{2,5}|[0-9]{1,3})(\]?)$"#;
+pub const EMAIL_REGEX: &str = r"^([a-zA-Z0-9_\-\.]+)@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.)|(([a-zA-Z0-9\-]+\.)+))([a-zA-Z]{2,5}|[0-9]{1,3})(\]?)$";
 
 #[cfg(feature = "ldap-auth")]
 pub mod authentication_url {

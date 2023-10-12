@@ -97,13 +97,12 @@ pub fn build_new_authentication_cookie(
     domain: &str,
     rsa: &RsaKeys,
 ) -> Cookie<'static> {
-    let new_cookie = match rsa.rsa_private_key {
+    match rsa.rsa_private_key {
         Some(_) => {
             build_new_encrypted_authentication_cookie(cookie_value, max_age_seconds, domain, rsa)
         }
         None => build_new_base64_authentication_cookie(cookie_value, max_age_seconds, domain),
-    };
-    new_cookie
+    }
 }
 
 /// Builds a new HTTPResponse with an authentication cookie inside
@@ -117,12 +116,11 @@ pub fn build_new_authentication_cookie(
 ///
 /// - `HttpResponse`
 pub fn build_new_cookie_response(cookie: &Cookie, allowed_origin: String) -> HttpResponse {
-    let cookie_response = HttpResponse::build(StatusCode::OK)
+    HttpResponse::build(StatusCode::OK)
         .content_type("application/text")
         .append_header((http::header::SET_COOKIE, cookie.to_string()))
         .append_header(("Access-Control-Allow-Origin", allowed_origin))
-        .body("OK");
-    cookie_response
+        .body("OK")
 }
 
 /// Builds a new HTTPResponse with a SEE_OTHER status code and
