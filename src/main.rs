@@ -62,9 +62,10 @@ async fn main() -> std::io::Result<()> {
         "style-src 'self';",
     );
     info!(
-        "{} {} will bind to {}",
+        "{} {} ({}) will bind to {}",
         &lmtyas::PROGRAM_NAME,
         &lmtyas::PROGRAM_VERSION,
+        &lmtyas::BUILD_TYPE,
         &web_bind_address
     );
     HttpServer::new(move || {
