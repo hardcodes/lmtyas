@@ -1,5 +1,6 @@
 // tell the rust compiler which modules we have in extra files
 pub mod aes_functions;
+pub mod app_macro;
 pub mod authenticated_user;
 pub mod authentication_functions;
 #[cfg(feature = "ldap-auth")]
