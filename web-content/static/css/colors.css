@@ -1,22 +1,29 @@
 :root {
     --mainfont: #162152;
+    --main-bg: #FFFFFF;
     --input-invalid-border: #AD434A;
-    --input-ok-border: #49b35b;
+    --input-ok-border: #49B35B;
     --error-bg: #9D132A;
     --error-font: #FFFFFF;
     --error-border: red;
-    --ok-bg: #49b35b;
+    --ok-bg: #49B35B;
     --ok-font: #FFFFFF;
+    --ok-border: green;
     --form-bg:  #EEEEEE;
-    --button-enabled: #8ac1ff;
+    --form-border: #0655AF;
+    --button-font: #162152;
+    --button-border: #666666;
+    --button-shadow: #999999;
+    --button-enabled: #8AC1FF;
     --button-disabled: #EEEEEE;
-    --notify-bg: #0655af;
+    --notify-bg: #0655AF;
     --notify-font:#FFFFFF;
+    --msg-border: #666666;
     --msg-shadow: #999999;
     --spinner-border:  #C9C9C9;
     --spinner-border-top:  #001455;
     --ul-link-before: #0655AF;
-    --header-bg: #aac1dd;
+    --header-bg: #AAC1DD;
     --header-links-bg: #0655AF;
     --header-links-font: #000000;
     --header-links-hover-bg: #616161;
@@ -24,9 +31,10 @@
     --header-links-visited-font: #FFFFFF;
     --header-links-active-font: #FFFFFF;
     --header-links-active-bg: #060505;
+    --input-bg: #FFFFFF;
     --input-border: #CCCCCC;
     --input-ro-bg: #CCCCDD;
     --footer-font: #FFFFFF;
-    --footer-bg: #3f3973;
-    --footer-links-hover-bg: #88a1aa;
+    --footer-bg: #3F3973;
+    --footer-links-hover-bg: #88A1AA;
 }
