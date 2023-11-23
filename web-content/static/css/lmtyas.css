@@ -70,6 +70,15 @@ body{
     padding: 30px 30px;
 }
 
+div.container-center {
+    text-align: center;
+}
+  
+ul.center-left {
+    display: inline-block;
+    text-align: left;
+}
+
 ul {
     list-style: none;
 }
