@@ -125,6 +125,17 @@ pub async fn get_colors_css() -> impl Responder {
     NamedFile::open_async(file_path).await
 }
 
+/// Return the custom lmtyas.css file if it exists.
+pub async fn get_lmtyas_css() -> impl Responder {
+    let path_local = Path::new("local/css/lmtyas.css");
+    let path_static = Path::new("web-content/static/css/lmtyas.css");
+    let file_path = match path_local.exists() {
+        true => path_local,
+        _ => path_static,
+    };
+    NamedFile::open_async(file_path).await
+}
+
 /// Return the custom company-logo.png if it exists.
 pub async fn get_company_logo() -> impl Responder {
     let path_local = Path::new("local/gfx/company-logo.png");

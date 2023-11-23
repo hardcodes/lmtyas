@@ -127,6 +127,8 @@ macro_rules! app (
             .route("/gfx/company-logo.png", web::get().to(get_company_logo))
             // serve custom colors.css file if it exists
             .route("/css/colors.css", web::get().to(get_colors_css))
+            // serve custom lmtyas.css file if it exists
+            .route("/css/lmtyas.css", web::get().to(get_lmtyas_css))
             .service(Files::new("/", "./web-content/static/").index_file("index.html"))
             .service(
                 web::resource("").route(

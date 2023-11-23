@@ -259,6 +259,11 @@ To customize the favicon displayed for the site create a folder `local/gfx` and 
 To customize the colors applied to the css create a folder `local/css` and put a tweaked copy of the file [web-content/static/css/colors.css](./web-content/static/css/colors.css) into it.
 
 
+## Customization - css
+
+To customize the custom style sheet (css) create a folder `local/css` and put a tweaked copy of the file [web-content/static/css/lmtyas.css](./web-content/static/css/lmtyas.css) into it.
+
+
 # Set RSA password
 
 If the service is (re-)started, a valid administrator (see `admin_accounts` in section *[Configuration file](#configuration-file)*) must set the password of the RSA private key first. Therefore open the URL
