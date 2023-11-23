@@ -65,6 +65,7 @@ function startProgressSpinner() {
     div.setAttribute('id', 'ProgressSpinner');
     document.body.appendChild(div);
   }
+  document.getElementById("ProgressSpinner").classList.remove("lmtyas-hidden");
   document.getElementById("ProgressSpinner").classList.add("lmtyas-visible");
 }
 
