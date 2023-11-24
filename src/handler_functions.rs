@@ -309,6 +309,7 @@ pub async fn set_password_for_rsa_rivate_key(
 /// - `HttpResponse`
 pub async fn store_secret(
     bytes: Bytes,
+    user: AuthenticatedUser,
     application_configuration: web::Data<ApplicationConfiguration>,
 ) -> HttpResponse {
     debug!("store_secret()");
@@ -316,6 +317,7 @@ pub async fn store_secret(
     let form_data = match String::from_utf8(bytes_vec) {
         Ok(form_data) => form_data,
         Err(_) => {
+            warn!("could not parse form data to utf8 string!");
             return HttpResponse::err_text_response("ERROR: could not parse form data");
         }
     };
@@ -330,23 +332,27 @@ pub async fn store_secret(
     let mut parsed_form_data = match serde_json::from_str(&form_data) as Result<Secret, _> {
         Ok(parsed_form_data) => parsed_form_data,
         Err(_) => {
+            warn!("could not parse form data to json!");
             return HttpResponse::err_text_response("ERROR: could not parse json form data");
         }
     };
     debug!("parsed_form_data={:?}", &parsed_form_data);
     if parsed_form_data.from_email.len() > MAX_FORM_INPUT_LEN {
+        warn!("from email > {} chars!", MAX_FORM_INPUT_LEN);
         return HttpResponse::err_text_response(format!(
             "ERROR: from email > {} chars",
             MAX_FORM_INPUT_LEN
         ));
     }
     if parsed_form_data.to_email.len() > MAX_FORM_INPUT_LEN {
+        warn!("to email > {} chars!", MAX_FORM_INPUT_LEN);
         return HttpResponse::err_text_response(format!(
             "ERROR: to email > {} chars",
             MAX_FORM_INPUT_LEN
         ));
     }
     if parsed_form_data.context.len() > MAX_FORM_INPUT_LEN {
+        warn!("context > {} chars!", MAX_FORM_INPUT_LEN);
         return HttpResponse::err_text_response(format!(
             "ERROR: context > {} chars",
             MAX_FORM_INPUT_LEN
@@ -354,11 +360,22 @@ pub async fn store_secret(
     }
     let secret_length = get_base64_encoded_secret_len(&parsed_form_data.secret);
     if secret_length > MAX_FORM_INPUT_LEN {
+        warn!("secret > {} bytes!", MAX_FORM_INPUT_LEN);
         return HttpResponse::err_text_response(format!(
             "ERROR: secret > {} bytes!",
             MAX_FORM_INPUT_LEN
         ));
     }
+
+    // Check if that looks like an email address before we query some external data source.
+    if !application_configuration.email_regex.is_match(&parsed_form_data.to_email) {
+        warn!(
+            "received invalid email in form data from user {}",
+            &user.user_name
+        );
+        // we should return here but for now we just monitor the logs.
+    }
+
     let display_name = match <UserDataImpl as GetUserData>::get_receiver_display_name(
         &parsed_form_data.to_email,
         &application_configuration,
