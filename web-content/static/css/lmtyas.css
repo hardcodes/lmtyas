@@ -369,6 +369,12 @@ button:enabled{
     text-decoration: none;
 }
 
+.lmtyas-bottom{
+    position: fixed;
+    bottom: 0;
+}
+
+
 .center {
     margin: auto;
     width: 55%;
