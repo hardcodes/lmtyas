@@ -673,7 +673,7 @@ pub async fn get_validated_receiver_email(
     let email = path.into_inner();
     // Check if that looks like an email address before we query some external data source.
     if !application_configuration.email_regex.is_match(&email) {
-        warn!(
+        info!(
             "received invalid email format from user {}",
             &user.user_name
         );
@@ -688,7 +688,7 @@ pub async fn get_validated_receiver_email(
     {
         Ok(receiver_email) => receiver_email,
         Err(e) => {
-            debug!("cannot find mail address {}, error: {}", &email, &e);
+            info!("cannot find mail address {}, error: {}", &email, &e);
             return HttpResponse::ok_text_response(UNKOWN_RECEIVER_EMAIL.to_string());
         }
     };
