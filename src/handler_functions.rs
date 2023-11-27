@@ -370,7 +370,7 @@ pub async fn store_secret(
     // Check if that looks like an email address before we query some external data source.
     if !application_configuration.email_regex.is_match(&parsed_form_data.to_email) {
         warn!(
-            "received invalid email in form data from user {}",
+            "received invalid destination email address in form data from user {}",
             &user.user_name
         );
         // we should return here but for now we just monitor the logs.
@@ -385,16 +385,19 @@ pub async fn store_secret(
         Ok(display_name) => display_name,
         Err(e) => {
             info!(
-                "cannot find mail address {}, error: {}",
+                "cannot find email address {}, error: {}",
                 &parsed_form_data.to_email, &e
             );
             return HttpResponse::err_text_response(format!(
-                "ERROR: cannot find mail address {}",
+                "ERROR: cannot find email address {}",
                 &parsed_form_data.to_email
             ));
         }
     };
     parsed_form_data.to_display_name = display_name;
+    // whatever the user sends us, we will use the data we already know.
+    parsed_form_data.from_display_name = user.display_name();
+    parsed_form_data.from_email = user.mail;
     // aes encrypt the secret before rsa or hybrid rsa/aes encryption
     let aes_encryption_result = match parsed_form_data.secret.to_aes_enrypted_b64() {
         Ok(aes_encryption_result) => aes_encryption_result,
@@ -665,7 +668,7 @@ struct UserDetails {
 pub async fn get_authenticated_user_details(user: AuthenticatedUser) -> HttpResponse {
     debug!("get_authenticated_user_details()");
     let user_details = UserDetails {
-        display_name: format!("{} {}", &user.first_name, &user.last_name),
+        display_name: user.display_name(),
         mail: user.mail,
     };
     match serde_json::to_string(&user_details) {
