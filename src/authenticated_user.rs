@@ -72,6 +72,12 @@ impl AuthenticatedUser {
             time_stamp: Utc::now(),
         }
     }
+ 
+    /// get display name of authenticated user
+    /// (first name [SPACE] last name)
+    pub fn display_name(&self) -> String {
+        format!("{} {}", &self.first_name, &self.last_name).to_string()
+    }
 
     /// Update the timestamp before a cookie lifetime is expired to
     /// stay in the hashmap
