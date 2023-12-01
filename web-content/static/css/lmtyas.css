@@ -68,6 +68,7 @@ body{
 
 .lmtyas-main{
     padding: 30px 30px;
+    min-height: 55vh;
 }
 
 div.container-center {
@@ -368,12 +369,6 @@ button:enabled{
     padding-right: 20px;
     text-decoration: none;
 }
-
-.lmtyas-bottom{
-    position: fixed;
-    bottom: 0;
-}
-
 
 .center {
     margin: auto;
