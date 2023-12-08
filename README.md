@@ -49,7 +49,7 @@ See [lmtyas-config.json](conf.dev/lmtyas-config.json) for an example configurati
 | },                               | <== end of object with email configuration details                                                        |
 | "admin_accounts"                 | array with valid admin accounts to set password, e.g. `["walter"]`                                        |
 | "max_authrequest_age_seconds"    | time in seconds an authentiction attempt is valid, e.g. `300`                                             |
-| "max_cookie_age_seconds"         | time in seconds an account is still logged in, e.g. `90` (forms keep accounts alive)                      |
+| "max_cookie_age_seconds"         | time in seconds an account is still logged in, e.g. `90` (forms keep accounts alive every 60 seconds)     |
 | "fqdn"                           | fqdn to use in redirects, e,g, `"my-server.local:8844"`                                                   |
 | "ldap_common_configuration": {   | ==> object with common ldap configuration                                                                 |
 |     "url"                        | url to connect to ldap server, e.g. `"ldap://127.0.0.1:3893"`                                             |

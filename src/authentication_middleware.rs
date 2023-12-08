@@ -230,27 +230,40 @@ where
             debug!("looking for cookie {}", &COOKIE_NAME);
             if let Some(cookie) = header_value.get_value_for_cookie_with_name(COOKIE_NAME) {
                 debug!("possible authorization cookie = {}", &cookie);
+                let max_cookie_age_seconds = application_configuration
+                    .configuration_file
+                    .max_cookie_age_seconds;
                 let rsa_read_lock = application_configuration.rsa_keys.read().unwrap();
                 // when the rsa key pair already has been loaded,
                 // the cookie value is encrypted with the rsa public
                 // key otherwise its simply base64 encoded.
                 let plain_cookie = get_plain_cookie_string(&cookie, &rsa_read_lock);
                 if let Ok(parsed_cookie_uuid) = Uuid::parse_str(&plain_cookie) {
-                    if let Some(auth_request) = application_configuration
+                    if let Some(authenticated_user) = application_configuration
                         .shared_authenticated_users
                         .read()
                         .unwrap()
                         .authenticated_users_hashmap
                         .get(&parsed_cookie_uuid)
                     {
+                        let invalid_cookie_age = Utc::now() - Duration::seconds(max_cookie_age_seconds);
                         // UUID inside cookie as referenced a `AuthenticatedUser`.
-                        if peer_ip.ne(&auth_request.peer_ip) {
+                        if peer_ip.ne(&authenticated_user.peer_ip) {
                             warn!(
-                                "Cookie stolen? peer_address = {:?}, auth_request = {}",
-                                &peer_ip, &auth_request
+                                "Cookie stolen? peer_address = {:?}, authenticated_user = {}",
+                                &peer_ip, &authenticated_user
+                            );
+                        // check cookie age
+                        } else if authenticated_user.time_stamp < invalid_cookie_age {
+                            // since the authenticated_user.time_stamp is updated every 60 seconds, it should not be
+                            // possible that we see cookies that are older than `max_cookie_age_seconds`.
+                            // A behaving browser would have deleted that cookie right now.
+                            warn!(
+                                "Cookie older than {} seconds! peer_address = {:?}, authenticated_user = {}",
+                                max_cookie_age_seconds, &peer_ip, &authenticated_user
                             );
                         } else {
-                            info!("user is already authenticated: {}", &auth_request);
+                            info!("user is already authenticated: {}", &authenticated_user);
 
                             let service_request_future = self.service.call(request);
 
