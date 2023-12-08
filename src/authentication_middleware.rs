@@ -134,6 +134,19 @@ impl SharedRequestData {
     /// Store a reuested url and return a uuid as reference for the IdP
     pub fn store_resource_request(&mut self, url: &str, peer_ip: &str) -> Option<uuid::Uuid> {
         debug!("store_resource_request()");
+
+        // A real user/browser will come back again and start a new authentication
+        // attempt. A possible attacker will simply knock on the server without
+        // following the redirect and stopped after reaching MAX_AUTH_REQUESTS. So the
+        // webservice won't consume all memory on the host.
+        // A cleanup thread will remove old entries after `max_authrequest_age_seconds`,
+        // so that the situation will resolve itself unless the server is still being
+        // hammered on.
+        if self.authentication_state_hashmap.len() >= MAX_AUTH_REQUESTS {
+            warn!("MAX_AUTH_REQUESTS exceeded, possible DOS attack!");
+            return None;
+        }
+
         let authentication_state = AuthenticationState::new(url, peer_ip);
         let unix_timestamp_seconds = authentication_state.time_stamp.timestamp() as u64;
         let unix_timestamp_subsec_nanos = authentication_state.time_stamp.timestamp_subsec_nanos();
@@ -144,20 +157,9 @@ impl SharedRequestData {
         );
         let request_uuid = Uuid::new_v1(ts, NODE_ID);
         debug!("built uuid {}", &request_uuid.to_string());
-        if self.authentication_state_hashmap.len() >= MAX_AUTH_REQUESTS {
-            // A real user/browser will come back again and start a new authentication
-            // attempt. A possible attacker will simply knock on the server without
-            // following the redirect and stopped after reaching MAX_AUTH_REQUESTS. So the
-            // webservice won't consume all memory on the host.
-            // A cleanup thread will remove old entries after `max_authrequest_age_seconds`,
-            // so that the situation will resolve itself unless the server is still being
-            // hammered on.
-            warn!("MAX_AUTH_REQUESTS exceeded, possible DOS attack!");
-            return None;
-        } else {
-            self.authentication_state_hashmap
-                .insert(request_uuid, authentication_state);
-        }
+        self.authentication_state_hashmap
+            .insert(request_uuid, authentication_state);
+
         debug!("returning uuid {}", &request_uuid.to_string());
         Some(request_uuid)
     }

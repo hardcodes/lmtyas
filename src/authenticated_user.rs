@@ -72,7 +72,7 @@ impl AuthenticatedUser {
             time_stamp: Utc::now(),
         }
     }
- 
+
     /// get display name of authenticated user
     /// (first name [SPACE] last name)
     pub fn display_name(&self) -> String {
@@ -166,6 +166,15 @@ impl SharedAuthenticatedUsersHashMap {
         mail: &str,
         peer_ip: &str,
     ) -> Option<uuid::Uuid> {
+        // A real user/browser will come back again and start a new authentication
+        // attempt. A possible attacker will simply knock on the server without beeing
+        // redirected to the authentication url again and stopped after reaching MAX_AUTH_USERS.
+        // So the webservice won't consume all memory on the host.
+        if self.authenticated_users_hashmap.len() >= MAX_AUTH_USERS {
+            warn!("MAX_AUTH_USERS exceeded, possible DOS attack!");
+            return None;
+        }
+
         // check if it's an administrator
         let scope = match self.admin_accounts.contains(&user_name.to_string()) {
             true => AccessScope::Administrator,
@@ -181,17 +190,9 @@ impl SharedAuthenticatedUsersHashMap {
             unix_timestamp_subsec_nanos,
         );
         let request_uuid = Uuid::new_v1(ts, NODE_ID);
-        if self.authenticated_users_hashmap.len() >= MAX_AUTH_USERS {
-            // A real user/browser will come back again and start a new authentication
-            // attempt. A possible attacker will simply knock on the server without beeing
-            // redirected to the authentication url again and stopped after reaching MAX_AUTH_USERS.
-            // So the webservice won't consume all memory on the host.
-            warn!("MAX_AUTH_USERS exceeded, possible DOS attack!");
-            return None;
-        } else {
-            self.authenticated_users_hashmap
-                .insert(request_uuid, authenticated_user);
-        }
+
+        self.authenticated_users_hashmap
+            .insert(request_uuid, authenticated_user);
         Some(request_uuid)
     }
 }
