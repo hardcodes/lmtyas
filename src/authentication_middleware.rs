@@ -257,8 +257,8 @@ where
                         } else if authenticated_user.time_stamp < invalid_cookie_age {
                             // A browser could hold a cookie that is older than 60 seconds and still valid, e.g. when
                             // an authenticated user is redirected to the index page. Since the authenticated_user.time_stamp
-                            // is updated every 60 seconds, it should not be possible that we see cookies that are older than
-                            // `max_cookie_age_seconds`.
+                            // is updated every 60 seconds on pages behind routes that require authentication, it should not be
+                            // possible that we see cookies that are older than `max_cookie_age_seconds`.
                             // A behaving browser would have deleted that cookie at this point.
                             // Requests with outdated cookies smell fishy!
                             warn!(
