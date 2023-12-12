@@ -190,7 +190,7 @@ sudo cp --recursive web-content/* /opt/l3umw/web-content/
 sudo chown -R lmtyas:lmtyas /opt/lmtyas/
 sudo find /opt/lmtyas/ -type f -exec chmod 640 {} \;
 sudo find /opt/lmtyas/ -type d -exec chmod 750 {} \;
-sudo chmod 750 /opt/lmtyas/lmtyas
+sudo chmod 550 /opt/lmtyas/lmtyas
 ```
 
 Create a [`/etc/lmtyas/lmtyas-config.json`](#configuration-file), the *[rsa keys](#security---data-encryption---rsa-keys)* and get a ssl certficate in PEM format --- this may be self signed, depending on your own personal needs; in a company context you probably want a signed certifcate from some sort of CA/PKI. Then
