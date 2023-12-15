@@ -7,7 +7,7 @@ use crate::TIMER_VEC_CAPACITY;
 use log::info;
 use timer::{Guard, Timer};
 
-const TIMER_INTERVAL: i64 = 5;
+const TIMER_INTERVAL_SECONDS: i64 = 5;
 pub struct TimerGuard(Vec<(Guard, Timer)>);
 
 /// Timer that calls a cleanup routine every 15 seconds
@@ -22,7 +22,7 @@ fn build_cleanup_authentication_state_hashmap_timer(
     let authentication_state_hashmap = application_configuration.shared_request_data.clone();
     (
         cleanup_authentication_state_hashmap_timer.schedule_repeating(
-            chrono::Duration::seconds(TIMER_INTERVAL),
+            chrono::Duration::seconds(TIMER_INTERVAL_SECONDS),
             move || {
                 cleanup_authentication_state_hashmap(&authentication_state_hashmap, auth_duration)
             },
@@ -43,7 +43,7 @@ fn build_cleanup_authenticated_users_hashmap_timer(
     let authenticated_users_hashmap = application_configuration.shared_authenticated_users.clone();
     (
         cleanup_authenticated_users_hashmap_timer.schedule_repeating(
-            chrono::Duration::seconds(TIMER_INTERVAL),
+            chrono::Duration::seconds(TIMER_INTERVAL_SECONDS),
             move || {
                 cleanup_authenticated_users_hashmap(&authenticated_users_hashmap, cookie_duration)
             },
@@ -67,7 +67,7 @@ fn build_cleanup_oidc_authentication_state_hashmap_timer(
         .clone();
     (
         cleanup_oidc_authentication_state_hashmap_timer.schedule_repeating(
-            chrono::Duration::seconds(TIMER_INTERVAL),
+            chrono::Duration::seconds(TIMER_INTERVAL_SECONDS),
             move || {
                 cleanup_oidc_authentication_data_hashmap(
                     &shared_oidc_verification_data,

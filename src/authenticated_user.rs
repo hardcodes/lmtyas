@@ -25,7 +25,8 @@ pub enum AccessScope {
     Administrator,
 }
 
-/// Holds the information of an authenticated user (name and timestamp of authentication).
+/// Holds the information of an authenticated user.
+/// (name, email and timestamp of authentication/cookie update).
 #[derive(Clone)]
 pub struct AuthenticatedUser {
     pub user_name: String,
@@ -48,12 +49,8 @@ impl fmt::Display for AuthenticatedUser {
     }
 }
 
-/// Administrators are still users just with a different scope
-pub struct AuthenticatedAdministrator(AuthenticatedUser);
-
-/// Holds the information of an authenticated user
 impl AuthenticatedUser {
-    /// Creates a new instance with the given user name and current time stamp.
+    /// Creates a new instance with the given user data and current time stamp.
     fn new(
         user_name: &str,
         first_name: &str,
@@ -79,12 +76,15 @@ impl AuthenticatedUser {
         format!("{} {}", &self.first_name, &self.last_name).to_string()
     }
 
-    /// Update the timestamp before a cookie lifetime is expired to
-    /// stay in the hashmap
+    /// Update the timestamp before a cookie lifetime is expired
+    /// to stay in the hashmap
     pub fn update_timestamp(&mut self) {
         self.time_stamp = Utc::now()
     }
 }
+
+/// Administrators are still users just with a different scope
+pub struct AuthenticatedAdministrator(AuthenticatedUser);
 
 /// Implementation of the FromRequest trait to
 /// extract an AuthenticatedUser from a HttpRequest
@@ -125,7 +125,7 @@ impl FromRequest for AuthenticatedAdministrator {
 }
 
 /// This hashmap uses the uuid that is generated when a new user is inserted
-/// as a key. The uuid is stored as cookie in the client browser.
+/// as a key. The uuid is stored as (encoded/enrypted) cookie in the client browser.
 pub type AuthenticatedUsersHashMap = HashMap<Uuid, AuthenticatedUser>;
 
 /// Information about authenticated users shared between the worker threads
@@ -134,8 +134,9 @@ pub struct SharedAuthenticatedUsersHashMap {
     pub authenticated_users_hashmap: AuthenticatedUsersHashMap,
     /// used by the uuid crate to build unique uuids across threads
     pub uuid_context: Context,
-    /// These accounts are administrators
-    /// Not derived from the ldap server because
+    /// These accounts are designated administrators
+    /// from the configuration file.
+    /// They are ot derived from the ldap server because
     /// other authentication methods may be
     /// implemented in future versions.
     /// It shouldn't be too many accounts anyway.
@@ -157,7 +158,7 @@ impl SharedAuthenticatedUsersHashMap {
         }
     }
 
-    /// Store an authenticated user name and return the uuid for the cookie
+    /// Store authenticated user data and return the uuid for the cookie
     pub fn new_cookie_uuid_for(
         &mut self,
         user_name: &str,
@@ -198,11 +199,12 @@ impl SharedAuthenticatedUsersHashMap {
 }
 
 /// Removes aged authenticated users.
+/// 
 /// This happens when the `max_cookie_age_seconds` from the configuration
-/// file have past.
+/// file have elapsed.
 /// The html files with forms call the route `/authenticated/keep_session_alive`
 /// once a minute, to update the cookie timestamp. Once they leave the forms,
-/// they will be removed, after `max_cookie_age_seconds`.
+/// they will be removed after `max_cookie_age_seconds` + [1, `cleanup_timers::TIMER_INTERVAL_SECONDS`].
 #[inline]
 pub fn cleanup_authenticated_users_hashmap(
     shared_authenticated_users: &Arc<RwLock<SharedAuthenticatedUsersHashMap>>,
