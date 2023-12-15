@@ -10,7 +10,7 @@ use timer::{Guard, Timer};
 const TIMER_INTERVAL_SECONDS: i64 = 5;
 pub struct TimerGuard(Vec<(Guard, Timer)>);
 
-/// Timer that calls a cleanup routine every 15 seconds
+/// Timer that calls a cleanup routine every TIMER_INTERVAL_SECONDS
 /// and removes used or aged authentication requests
 fn build_cleanup_authentication_state_hashmap_timer(
     application_configuration: &ApplicationConfiguration,
@@ -31,7 +31,7 @@ fn build_cleanup_authentication_state_hashmap_timer(
     )
 }
 
-/// Timer that calls a cleanup routine every 15 seconds
+/// Timer that calls a cleanup routine every TIMER_INTERVAL_SECONDS
 /// and removes expired user sessions
 fn build_cleanup_authenticated_users_hashmap_timer(
     application_configuration: &ApplicationConfiguration,
@@ -52,7 +52,7 @@ fn build_cleanup_authenticated_users_hashmap_timer(
     )
 }
 
-/// Timer that calls a cleanup routine every 15 seconds
+/// Timer that calls a cleanup routine every TIMER_INTERVAL_SECONDS
 /// and removes used or aged oidc authentication requests
 #[cfg(feature = "oidc-auth-ldap")]
 fn build_cleanup_oidc_authentication_state_hashmap_timer(
@@ -79,8 +79,8 @@ fn build_cleanup_oidc_authentication_state_hashmap_timer(
     )
 }
 
-/// Build a vector of timer guards and timers to keep
-/// the references until the program ends.
+/// Build a vector of timer guards and timers to
+/// hold on the references until the program ends.
 pub fn build_cleaup_timers(application_configuration: &ApplicationConfiguration) -> TimerGuard {
     let mut timer_guards: Vec<(Guard, Timer)> = Vec::with_capacity(TIMER_VEC_CAPACITY);
     timer_guards.push(build_cleanup_authentication_state_hashmap_timer(
