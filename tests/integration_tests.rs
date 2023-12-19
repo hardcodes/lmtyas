@@ -2,6 +2,8 @@ mod common;
 use common::SETUP_SINGLETON;
 #[cfg(feature = "ldap-auth")]
 pub use lmtyas::authentication_ldap::LdapLogin;
+#[cfg(feature = "oidc-auth-ldap")]
+use lmtyas::authentication_oidc::OidcUserDetails;
 use lmtyas::configuration::ApplicationConfiguration;
 #[cfg(any(feature = "ldap-auth", feature = "oidc-auth-ldap"))]
 use lmtyas::ldap_common::LdapSearchResult;
@@ -9,7 +11,8 @@ use lmtyas::ldap_common::LdapSearchResult;
 pub use lmtyas::mail_noauth_notls::SendEMail;
 #[cfg(feature = "mail-noauth-notls-smime")]
 pub use lmtyas::mail_noauth_notls_smime::SendEMail;
-
+#[cfg(feature = "oidc-auth-ldap")]
+use lmtyas::oidc_ldap::OidcUserLdapUserDetails;
 
 use std::path::Path;
 
@@ -182,6 +185,14 @@ async fn with_setup() {
             matches!(ldap_login_fail, Err(_)),
             "user bob should not be able to login with wrong password"
         );
+    }
+
+    #[cfg(feature = "oidc-auth-ldap")]
+    {
+        let oidc_user = OidcUserLdapUserDetails::get_oidc_user_details_from_email("bob@acme.local", &application_configuration).await;
+        assert!(oidc_user.is_ok(),"oidc user details for bob@acme.local should be found!");
+        let oidc_user = OidcUserLdapUserDetails::get_oidc_user_details_from_email("bobo@acme.local", &application_configuration).await;
+        assert!(oidc_user.is_err(),"oidc user details for bobo@acme.local should not be found!");
     }
 
     common::teardown(&mut setup_singleton_lock);
