@@ -446,7 +446,8 @@ impl Login for OidcConfiguration {
         }
     }
 
-    // This function is called once the confguration file has been read.
+    /// This function is called once the confguration file has been read
+    /// so that the `Regex` must only be built once.
     fn build_valid_user_regex(&mut self) -> Result<(), Box<dyn Error>> {
         let user_regex = Regex::new(&self.valid_user_regex)?;
         self.user_regex = Some(user_regex);
@@ -455,6 +456,8 @@ impl Login for OidcConfiguration {
 }
 
 impl AuthenticationRedirect for OidcConfiguration {
+    /// This function will be called when an unauthenticated users
+    /// requests a path that needs authentication.
     fn get_authentication_redirect_response(
         _request_path_with_query: &str,
         request_uuid: &Uuid,
