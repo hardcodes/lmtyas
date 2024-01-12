@@ -44,6 +44,7 @@ authentication-oidc = ["dep:openidconnect"]
 oidc-ldap = []
 get-userdata-ldap = []
 mail-noauth-notls = []
+# WILL BE REMOVED!
 mail-noauth-notls-smime = []
 no-userdata-backend = []
 
