@@ -4,7 +4,7 @@
 /// See answer from Ovidiu Gheorghies.
 #[macro_export]
 macro_rules! app (
-    ($application_configuration: expr, $content_security_policy: expr) => ({
+    ($application_configuration: expr, $content_security_policy: expr, $max_payload: expr) => ({
         App::new()
             // Enable the logger.
             .wrap(
@@ -32,6 +32,8 @@ macro_rules! app (
             )
             // clone of the application configuration
             .app_data(web::Data::new($application_configuration.clone()))
+            // By default, the payload size limit is 256kB and there is no mime type condition.
+            .app_data(web::PayloadConfig::new($max_payload))
             // set one route without authentication so that monitoring software can check if we are still running
             .service(web::scope("/monitoring").route("/still_alive", web::get().to(still_alive)))
             // routes without authentication to get information about the running server

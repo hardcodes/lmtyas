@@ -47,9 +47,9 @@ pub const BUILD_TYPE: &str = "release build";
 // generic regex to validate email address format
 pub const EMAIL_REGEX: &str = r"^([a-zA-Z0-9_\-\.]+)@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.)|(([a-zA-Z0-9\-]+\.)+))([a-zA-Z]{2,5}|[0-9]{1,3})(\]?)$";
 /// max length of form data
-pub const MAX_FORM_BYTES_LEN: usize = 11100;
+pub const MAX_FORM_BYTES_LEN: usize = 11_000;
 /// max length of form fields
-pub const MAX_FORM_INPUT_LEN: usize = 11000;
+pub const MAX_FORM_INPUT_LEN: usize = 11_000;
 
 #[cfg(feature = "ldap-auth")]
 pub mod authentication_url {

@@ -15,6 +15,7 @@ use lmtyas::login_user_trait::Login;
 use log::info;
 use std::io::Write;
 use std::path::Path;
+use lmtyas::MAX_FORM_BYTES_LEN;
 
 
 #[cfg(feature = "ldap-auth")]
@@ -74,7 +75,7 @@ async fn main() -> std::io::Result<()> {
     // Creating them this way makes them reusable for testing. Idea taken from
     // https://stackoverflow.com/questions/72415245/actix-web-integration-tests-reusing-the-main-thread-application
     // See answer from Ovidiu Gheorghies.
-    HttpServer::new(move || lmtyas::app!(application_configuration, content_security_policy))
+    HttpServer::new(move || lmtyas::app!(application_configuration, content_security_policy, MAX_FORM_BYTES_LEN))
     .keep_alive(std::time::Duration::from_secs(45))
     .bind_openssl(web_bind_address, ssl_acceptor_builder)?
     .run()
