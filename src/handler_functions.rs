@@ -19,6 +19,7 @@ use crate::secret_functions::Secret;
 #[cfg(feature = "mail-noauth-notls-smime")]
 use crate::string_trait::StringTrimNewline;
 use crate::UNKOWN_RECEIVER_EMAIL;
+use crate::{MAX_FORM_BYTES_LEN, MAX_FORM_INPUT_LEN};
 use actix_files::NamedFile;
 use actix_web::web::Bytes;
 use actix_web::{http::header, http::StatusCode, web, HttpRequest, HttpResponse, Responder};
@@ -39,10 +40,6 @@ type UserDataImpl = GetUserDataLdapBackend;
 /// Characters that will be percent encoded
 /// https://url.spec.whatwg.org/#fragment-percent-encode-set
 const FRAGMENT: &AsciiSet = &CONTROLS.add(b'/').add(b'=');
-/// max length of form data
-const MAX_FORM_BYTES_LEN: usize = 10100 * 10;
-/// max length of form fields
-const MAX_FORM_INPUT_LEN: usize = 10100;
 
 /// Redirect browser to our index page.
 pub async fn redirect_to_index(
@@ -368,7 +365,10 @@ pub async fn store_secret(
     }
 
     // Check if that looks like an email address before we query some external data source.
-    if !application_configuration.email_regex.is_match(&parsed_form_data.to_email) {
+    if !application_configuration
+        .email_regex
+        .is_match(&parsed_form_data.to_email)
+    {
         warn!(
             "received invalid destination email address in form data from user {}",
             &user.user_name
