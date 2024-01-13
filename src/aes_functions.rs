@@ -1,5 +1,5 @@
 use crate::base64_trait::{Base64StringConversions, Base64VecU8Conversions};
-use log::info;
+use openssl::error::ErrorStack;
 use openssl::rand::rand_bytes;
 use openssl::symm::{decrypt, encrypt, Cipher};
 use std::error::Error;
@@ -22,11 +22,11 @@ pub trait EncryptAes {
 
 /// custom error type
 #[derive(Debug, Clone)]
-pub struct AesEncryptionError;
+pub struct AesEncryptionError(ErrorStack);
 /// custom formatter for our own error type
 impl fmt::Display for AesEncryptionError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "could not aes encrypt data!")
+        write!(f, "could not aes encrypt data: {:}", self.0)
     }
 }
 
@@ -45,10 +45,7 @@ impl EncryptAes for String {
         let mut iv_buf = [0; IV_LENGTH];
         rand_bytes(&mut iv_buf).unwrap();
         match encrypt(cipher, &key_buf, Some(&iv_buf), self.as_bytes()) {
-            Err(e) => {
-                info!("{}: {:?}", AesEncryptionError, &e);
-                Err(AesEncryptionError)
-            }
+            Err(e) => Err(AesEncryptionError(e)),
             Ok(encrypted_data) => {
                 let base64_encrypted_data = encrypted_data.to_base64_urlsafe_encoded();
                 let base64_key = key_buf.to_base64_urlsafe_encoded();

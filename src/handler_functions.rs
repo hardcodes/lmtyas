@@ -402,7 +402,8 @@ pub async fn store_secret(
     let aes_encryption_result = match parsed_form_data.secret.to_aes_enrypted_b64() {
         Ok(aes_encryption_result) => aes_encryption_result,
         Err(e) => {
-            return HttpResponse::err_text_response(format!("ERROR: {}", &e));
+            info!("{}", &e);
+            return HttpResponse::err_text_response("ERROR: could not aes encrypt data!");
         }
     };
     // store aes encrypted secret instead of plaintext secret
