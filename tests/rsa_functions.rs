@@ -55,7 +55,6 @@ fn rsa_functions() {
     );
 }
 
-
 #[test]
 fn rsa_functions_hybrid() {
     const RSA_PASSPHRASE: &str = "12345678901234";
@@ -109,5 +108,4 @@ fn rsa_functions_hybrid() {
         rsa_keys.hybrid_decrypt_str("RHVtbXk=").is_err(),
         "inputting invalid data into hybrid_decrypt_str should yield error"
     );
-
 }

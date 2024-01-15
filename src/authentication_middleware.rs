@@ -246,7 +246,8 @@ where
                         .authenticated_users_hashmap
                         .get(&parsed_cookie_uuid)
                     {
-                        let invalid_cookie_age = Utc::now() - Duration::seconds(max_cookie_age_seconds);
+                        let invalid_cookie_age =
+                            Utc::now() - Duration::seconds(max_cookie_age_seconds);
                         // UUID inside cookie as referenced a `AuthenticatedUser`.
                         if peer_ip.ne(&authenticated_user.peer_ip) {
                             warn!(

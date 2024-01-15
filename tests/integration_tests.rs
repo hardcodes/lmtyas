@@ -22,7 +22,8 @@ async fn with_setup() {
     // load configuration file with the ldap server connection details
     let application_configuration = ApplicationConfiguration::read_from_file(
         Path::new(common::WORKSPACE_DIR).join("conf.dev/lmtyas-config.json"),
-    ).await;
+    )
+    .await;
 
     // test sending mail before the server is has been started
     let send_mail_fail = application_configuration
@@ -189,10 +190,24 @@ async fn with_setup() {
 
     #[cfg(feature = "oidc-auth-ldap")]
     {
-        let oidc_user = OidcUserLdapUserDetails::get_oidc_user_details_from_email("bob@acme.local", &application_configuration).await;
-        assert!(oidc_user.is_ok(),"oidc user details for bob@acme.local should be found!");
-        let oidc_user = OidcUserLdapUserDetails::get_oidc_user_details_from_email("bobo@acme.local", &application_configuration).await;
-        assert!(oidc_user.is_err(),"oidc user details for bobo@acme.local should not be found!");
+        let oidc_user = OidcUserLdapUserDetails::get_oidc_user_details_from_email(
+            "bob@acme.local",
+            &application_configuration,
+        )
+        .await;
+        assert!(
+            oidc_user.is_ok(),
+            "oidc user details for bob@acme.local should be found!"
+        );
+        let oidc_user = OidcUserLdapUserDetails::get_oidc_user_details_from_email(
+            "bobo@acme.local",
+            &application_configuration,
+        )
+        .await;
+        assert!(
+            oidc_user.is_err(),
+            "oidc user details for bobo@acme.local should not be found!"
+        );
     }
 
     common::teardown(&mut setup_singleton_lock);

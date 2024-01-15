@@ -6,7 +6,7 @@ pub use crate::mail_noauth_notls::SendEMail;
 // #[cfg(feature = "mail-noauth-notls-smime")]
 // pub use crate::mail_noauth_notls_smime::SendEMail;
 use actix_web::web::Bytes;
-use actix_web::{web, HttpResponse, HttpRequest};
+use actix_web::{web, HttpRequest, HttpResponse};
 use async_trait::async_trait;
 use log::{debug, error};
 use std::error::Error;
@@ -16,7 +16,7 @@ pub trait Login {
     /// This function is called when a user logs in.
     ///
     /// Arguments
-    /// 
+    ///
     /// - `bytes`:                     the bytes send from the browser
     ///                                more complicated to parse than, e.g. using `web::Form<FormData>`
     ///                                but universal. Future versions might implement SAML and

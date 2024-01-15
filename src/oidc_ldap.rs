@@ -27,13 +27,13 @@ impl OidcUserDetails for OidcUserLdapUserDetails {
         };
         // dirty hack to build a json string from the ldap query result,
         // so it can be serialized.
-        let ldap_result: OidcUser = match serde_json::from_str(&ldap_search_result.replace(['[', ']'], ""))
-        {
-            Ok(r) => r,
-            Err(e) => {
-                return Err(e.into());
-            }
-        };
+        let ldap_result: OidcUser =
+            match serde_json::from_str(&ldap_search_result.replace(['[', ']'], "")) {
+                Ok(r) => r,
+                Err(e) => {
+                    return Err(e.into());
+                }
+            };
         Ok(OidcUser {
             user_name: ldap_result.user_name,
             first_name: ldap_result.first_name,

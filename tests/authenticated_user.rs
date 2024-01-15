@@ -10,7 +10,8 @@ const WORKSPACE_DIR: &str = env!("CARGO_MANIFEST_DIR");
 async fn authenticated_user() {
     let application_configuration = ApplicationConfiguration::read_from_file(
         Path::new(WORKSPACE_DIR).join("conf.dev/lmtyas-config.json"),
-    ).await;
+    )
+    .await;
     for user_count in 1..MAX_AUTH_USERS + 1 {
         let uuid_option: Option<uuid::Uuid>;
         {

@@ -22,19 +22,21 @@ pub trait EncryptAes {
 
 /// custom error type to carry on the OpenSSL `ErrorStack`
 #[derive(Debug, Clone)]
-pub struct AesEncryptionError{
-    details: String
+pub struct AesEncryptionError {
+    details: String,
 }
 
 impl AesEncryptionError {
     fn new(msg: &str) -> AesEncryptionError {
-        AesEncryptionError{details: msg.to_string()}
+        AesEncryptionError {
+            details: msg.to_string(),
+        }
     }
 }
 
 impl fmt::Display for AesEncryptionError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f,"{}",self.details)
+        write!(f, "{}", self.details)
     }
 }
 

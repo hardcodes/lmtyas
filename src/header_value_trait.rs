@@ -25,9 +25,9 @@ impl HeaderValueExctractor for actix_web::http::header::HeaderValue {
         if let Ok(header_value_str) = self.to_str() {
             let cookies = &header_value_str.split(';').collect::<Vec<_>>();
             for &cookie in cookies.iter() {
-                match &cookie.split_once('='){
-                    None => {},
-                    Some((key,value)) => {
+                match &cookie.split_once('=') {
+                    None => {}
+                    Some((key, value)) => {
                         if cookie_name.eq_ignore_ascii_case(key) {
                             return Some(value.to_string());
                         }

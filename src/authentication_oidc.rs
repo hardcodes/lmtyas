@@ -419,7 +419,7 @@ impl Login for OidcConfiguration {
                 &request_id.to_string(),
                 &email
             );
-            
+
             let rsa_read_lock = application_configuration.rsa_keys.read().unwrap();
             // when the rsa key pair already has been loaded,
             // the cookie value is encrypted with the rsa public

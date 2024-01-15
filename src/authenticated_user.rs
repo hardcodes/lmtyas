@@ -199,7 +199,7 @@ impl SharedAuthenticatedUsersHashMap {
 }
 
 /// Removes aged authenticated users.
-/// 
+///
 /// This happens when the `max_cookie_age_seconds` from the configuration
 /// file have elapsed.
 /// The html files with forms call the route `/authenticated/keep_session_alive`

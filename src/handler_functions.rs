@@ -402,7 +402,7 @@ pub async fn store_secret(
     let aes_encryption_result = match parsed_form_data.secret.to_aes_enrypted_b64() {
         Ok(aes_encryption_result) => aes_encryption_result,
         Err(e) => {
-            info!("could not aes encrypt data: {}", &e);
+            warn!("could not aes encrypt data: {}", &e);
             return HttpResponse::err_text_response("ERROR: could not aes encrypt data!");
         }
     };
@@ -413,6 +413,7 @@ pub async fn store_secret(
         match parsed_form_data.to_encrypted(&application_configuration.rsa_keys.read().unwrap()) {
             Ok(encrypted_form_data) => encrypted_form_data,
             Err(e) => {
+                warn!("could not create encrypted form data: {}", &e);
                 return HttpResponse::err_text_response(format!("ERROR: {}", &e));
             }
         };
@@ -457,6 +458,7 @@ pub async fn store_secret(
     {
         Ok(encrypted_url_payload) => encrypted_url_payload,
         Err(e) => {
+            warn!("could not rsa encrypt url payload: {}", &e);
             return HttpResponse::err_text_response(format!("ERROR: {}", &e));
         }
     };
@@ -577,6 +579,7 @@ pub async fn reveal_secret(
         .decrypt_str(&encrypted_url_payload)
     {
         Err(e) => {
+            warn!("could not rsa decrypt url payload: {}", &e);
             return HttpResponse::err_text_response(format!("ERROR: {}", &e));
         }
         Ok(url_payload) => url_payload,
@@ -639,6 +642,7 @@ pub async fn reveal_secret(
     aes_encrypted.secret = decrypted_secret;
     let json_response = match serde_json::to_string(&aes_encrypted) {
         Err(e) => {
+            warn!("could not build decrypted json struct: {}", &e);
             return HttpResponse::err_text_response(format!("ERROR: {}", &e));
         }
         Ok(json_response) => json_response,

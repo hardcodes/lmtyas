@@ -10,6 +10,8 @@ use crate::ldap_common::LdapCommonConfiguration;
 use crate::login_user_trait::Login;
 use crate::mail_configuration::SendEMailConfiguration;
 #[cfg(feature = "mail-noauth-notls-smime")]
+pub use crate::mail_noauth_notls_smime::SendEMail;
+#[cfg(feature = "mail-noauth-notls-smime")]
 use crate::mail_noauth_notls_smime::SmimeCertificate;
 use crate::rsa_functions::{RsaKeys, RsaPrivateKeyPassword};
 use crate::secret_functions::SharedSecretData;
@@ -20,15 +22,13 @@ use openidconnect::{
     ClientId, ClientSecret, IssuerUrl, RedirectUrl,
 };
 use openssl::ssl::{SslAcceptor, SslAcceptorBuilder, SslFiletype, SslMethod, SslOptions};
+use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::error::Error;
 use std::fs::File;
 use std::io::BufReader;
 use std::path::Path;
 use std::sync::{Arc, RwLock};
-#[cfg(feature = "mail-noauth-notls-smime")]
-pub use crate::mail_noauth_notls_smime::SendEMail;
-use regex::Regex;
 
 /// valid secure cipers for TLS1v2 and TLS 1v3
 const CIPHER_LIST: &str = concat!(
@@ -157,15 +157,18 @@ impl ApplicationConfiguration {
     /// # Returns
     ///
     /// - `ApplicationConfiguration`
-    pub async fn read_from_file<P: AsRef<Path>>(configuration_file_path: P) -> ApplicationConfiguration {
+    pub async fn read_from_file<P: AsRef<Path>>(
+        configuration_file_path: P,
+    ) -> ApplicationConfiguration {
         let config_file = ConfigurationFile::read_from_file(configuration_file_path)
             .expect("Cannot load the json configuration file!");
         #[cfg(feature = "authentication-oidc")]
         let provider_metadata = CoreProviderMetadata::discover_async(
             IssuerUrl::new(config_file.oidc_configuration.provider_metadata_url.clone())
                 .expect("Cannot build provider metadata url!"),
-                async_http_client,
-        ).await
+            async_http_client,
+        )
+        .await
         .expect("Cannot load oidc provider metadata");
         ApplicationConfiguration {
             configuration_file: config_file.clone(),
@@ -202,7 +205,9 @@ impl ApplicationConfiguration {
             )),
             #[cfg(feature = "mail-noauth-notls-smime")]
             smime_certificate: Arc::new(RwLock::new(SmimeCertificate::new())),
-            email_regex: Regex::new(crate::EMAIL_REGEX).expect("Cannot build generic email regex, see pub const EMAIL_REGEX in file lib.rs!"),
+            email_regex: Regex::new(crate::EMAIL_REGEX).expect(
+                "Cannot build generic email regex, see pub const EMAIL_REGEX in file lib.rs!",
+            ),
         }
     }
 
