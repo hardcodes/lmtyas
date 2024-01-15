@@ -20,13 +20,34 @@ pub trait EncryptAes {
     fn to_aes_enrypted_b64(&self) -> Result<AesEncryptionData, AesEncryptionError>;
 }
 
-/// custom error type
+/// custom error type to carry on the OpenSSL `ErrorStack`
 #[derive(Debug, Clone)]
-pub struct AesEncryptionError(ErrorStack);
-/// custom formatter for our own error type
+pub struct AesEncryptionError{
+    details: String
+}
+
+impl AesEncryptionError {
+    fn new(msg: &str) -> AesEncryptionError {
+        AesEncryptionError{details: msg.to_string()}
+    }
+}
+
 impl fmt::Display for AesEncryptionError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "could not aes encrypt data: {:}", self.0)
+        write!(f,"{}",self.details)
+    }
+}
+
+impl Error for AesEncryptionError {
+    fn description(&self) -> &str {
+        &self.details
+    }
+}
+
+/// Use Debug output of OpenSSL `ErrorStack` for our custom Error type.
+impl From<ErrorStack> for AesEncryptionError {
+    fn from(err: ErrorStack) -> Self {
+        AesEncryptionError::new(&format!("{:?}", err))
     }
 }
 
@@ -45,7 +66,7 @@ impl EncryptAes for String {
         let mut iv_buf = [0; IV_LENGTH];
         rand_bytes(&mut iv_buf).unwrap();
         match encrypt(cipher, &key_buf, Some(&iv_buf), self.as_bytes()) {
-            Err(e) => Err(AesEncryptionError(e)),
+            Err(e) => Err(AesEncryptionError::from(e)),
             Ok(encrypted_data) => {
                 let base64_encrypted_data = encrypted_data.to_base64_urlsafe_encoded();
                 let base64_key = key_buf.to_base64_urlsafe_encoded();

@@ -402,7 +402,7 @@ pub async fn store_secret(
     let aes_encryption_result = match parsed_form_data.secret.to_aes_enrypted_b64() {
         Ok(aes_encryption_result) => aes_encryption_result,
         Err(e) => {
-            info!("{}", &e);
+            info!("could not aes encrypt data: {}", &e);
             return HttpResponse::err_text_response("ERROR: could not aes encrypt data!");
         }
     };
@@ -631,6 +631,7 @@ pub async fn reveal_secret(
     let decrypted_secret = match aes_encrypted.secret.decrypt_b64_aes(key_base64, iv_base64) {
         Ok(decrypted_secret) => decrypted_secret,
         Err(e) => {
+            info!("could not aes decrypt data: {}", &e);
             return HttpResponse::err_text_response(format!("ERROR: {}", &e));
         }
     };
