@@ -86,6 +86,17 @@ impl AuthenticatedUser {
 /// Administrators are still users just with a different scope
 pub struct AuthenticatedAdministrator(AuthenticatedUser);
 
+/// custom formatter to suppress first name, last name and mail address
+impl fmt::Display for AuthenticatedAdministrator {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "(user_name={}, time_stamp={}, access_scope={:?}, peer_ip={})",
+            self.0.user_name, self.0.time_stamp, self.0.access_scope, self.0.peer_ip
+        )
+    }
+}
+
 /// Implementation of the FromRequest trait to
 /// extract an AuthenticatedUser from a HttpRequest
 /// Makes accessing user data in handler functions

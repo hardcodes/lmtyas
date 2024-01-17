@@ -186,12 +186,12 @@ pub async fn is_server_ready(
 ///
 /// - `HttpResponse`
 pub async fn set_password_for_rsa_rivate_key(
-    _admin: AuthenticatedAdministrator,
+    admin: AuthenticatedAdministrator,
     base64_encoded_password: web::Path<String>,
     application_configuration: web::Data<ApplicationConfiguration>,
 ) -> HttpResponse {
     if base64_encoded_password.len() > MAX_FORM_BYTES_LEN {
-        warn!("form data exceeds {} bytes!", MAX_FORM_BYTES_LEN);
+        warn!("form data exceeds {} bytes! {}", MAX_FORM_BYTES_LEN, &admin);
         return HttpResponse::err_text_response(format!(
             "ERROR: more than {} bytes of data sent",
             &MAX_FORM_BYTES_LEN
@@ -204,7 +204,7 @@ pub async fn set_password_for_rsa_rivate_key(
     let base64_decoded_password = match Vec::from_base64_encoded(base64_encoded_password.as_str()) {
         Ok(v) => v,
         Err(e) => {
-            warn!("Cannot decode base64 rsa password: {}", &e);
+            warn!("Cannot decode base64 rsa password: {}, {}", &e, &admin);
             return HttpResponse::err_text_response("ERROR: password was not set");
         }
     };
@@ -212,12 +212,13 @@ pub async fn set_password_for_rsa_rivate_key(
     let mut decoded_password = match String::from_utf8(base64_decoded_password) {
         Ok(password) => password.trim_matches(char::from(0)).to_string(),
         Err(e) => {
-            warn!("could not base64 decode password: {}", &e);
+            warn!("could not base64 decode password: {}, {}", &e, &admin);
             return HttpResponse::err_text_response("ERROR: password was not set");
         }
     };
     debug!("new rsa password = {}", &decoded_password);
     if decoded_password.len() > MAX_FORM_INPUT_LEN {
+        warn!("password > {} chars {}", MAX_FORM_INPUT_LEN, &admin);
         return HttpResponse::err_text_response(format!(
             "ERROR: password > {} chars",
             MAX_FORM_INPUT_LEN
@@ -227,22 +228,23 @@ pub async fn set_password_for_rsa_rivate_key(
         rsa_password_write_lock.rsa_private_key_password = Some(SecStr::from(decoded_password));
     } else {
         decoded_password.zeroize();
+        warn!("can not acquire a lock on system data! {}", &admin);
         return HttpResponse::err_text_response("ERROR: can not acquire a lock on system data!");
     }
     // the lock must be removed at this point because
     // application_configuration.load_rsa_keys()
     // will quire a lock on itself. If we don't remove the
     // lock here, we will never return...
-    info!("password has been set, loading rsa keys...");
+    info!("password has been set, loading rsa keys... {}", &admin);
     match application_configuration.load_rsa_keys() {
         Err(e) => {
             // loading the rsa keys did not work, throw the password away
             let _result = application_configuration.clear_rsa_password();
-            warn!("error loading rsa private key: {:?}", e);
+            warn!("error loading rsa private key: {:?}, {}", e, admin);
             HttpResponse::err_text_response("ERROR: could not load rsa private key!")
         }
         Ok(_) => {
-            info!("rsa keys have been loaded successfully");
+            info!("rsa keys have been loaded successfully {}", &admin);
             // Clear the password now, since the rsa keys have been loaded.
             let _result = application_configuration.clear_rsa_password();
             // load the S/Mime certificate if the feature is enabled
