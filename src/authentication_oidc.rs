@@ -73,10 +73,9 @@ impl fmt::Display for OidcVerificationData {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "(has_been_used={}, time_stamp={}, state={})",
+            "(has_been_used={}, time_stamp={})",
             self.has_been_used,
             self.time_stamp,
-            self.csrf_token.secret()
         )
     }
 }
