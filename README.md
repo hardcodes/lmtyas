@@ -20,7 +20,8 @@ on the website driven by this web service and the receiver will get an email wit
 
 Yes, identities can be stolen and/or hacked - but then you have got bigger problems at hand. Again, have a good look at [SQRL](https://www.grc.com/sqrl/sqrl.htm) or [fido2](https://en.wikipedia.org/wiki/FIDO2_Project).
 
-**NOTE**: secrets like passwords should be forced or at least encouraged to be changed after first use!
+- **NOTE 1**: Secrets like passwords should be forced or at least encouraged to be changed after first use!
+- **NOTE 2**: The email with the link also leaves traces, so other parties may come to knowledge that a secret has been sent. But in a company context this should be fine. The sole purpose of this tool is to protect the secret itself!
 
 
 # Configuration file
@@ -86,7 +87,6 @@ See [lmtyas-config.json](conf.dev/lmtyas-config.json) for an example configurati
         Depending on your authentication backends you may not know the data for each of the placeholders!
 - **NOTE 2** The objects `email_configuration`, `ldap_configuration` and `oidc_configuration` may be absent or differ, depending on the selected features. See section *[Compile and install -features](#compile-and-install---features)*.
 - **NOTE 3** The directive `mail_hint` may be absent. If so the default `firstname.lastname@acme.local` will be used.
-- **WARNING** Signing of emails does not work yet, do not use this feature!
 
 You need a SSL certificate and its unencrypted key in pem format. Create your own *[set of rsa keys](#security---data-encryption---rsa-keys)*.
 
@@ -371,6 +371,13 @@ Organizational Unit Name (eg, section) []:org
 Common Name (e.g. server FQDN or YOUR name) []:acme.local
 Email Address []:rainer.zufall@acme.local
 ```
+
+
+## Security - Email - Signature
+
+If you want to sign the emails sent by this tool, think about using a mailserver on the same host that does the signing for you, e.g. like [Postfix](https://www.postfix.org/) with the [signing-milter](https://signing-milter.org/) (or this link [for the systemd-daemon](https://github.com/smeinecke/signing-milter)).
+
+A good german documentation can be found at the [University of Münster](https://www.uni-muenster.de/imperia/md/content/iv-sicherheit/signing-milter.pdf).
 
 
 # Monitoring
