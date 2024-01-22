@@ -13,11 +13,7 @@ use crate::get_userdata_trait::NoUserDataBackend;
 use crate::http_traits::CustomHttpResponse;
 #[cfg(feature = "mail-noauth-notls")]
 pub use crate::mail_noauth_notls::SendEMail;
-#[cfg(feature = "mail-noauth-notls-smime")]
-pub use crate::mail_noauth_notls_smime::SendEMail;
 use crate::secret_functions::Secret;
-#[cfg(feature = "mail-noauth-notls-smime")]
-use crate::string_trait::StringTrimNewline;
 use crate::UNKOWN_RECEIVER_EMAIL;
 use crate::{MAX_FORM_BYTES_LEN, MAX_FORM_INPUT_LEN};
 use actix_files::NamedFile;
@@ -247,48 +243,6 @@ pub async fn set_password_for_rsa_rivate_key(
             info!("rsa keys have been loaded successfully {}", &admin);
             // Clear the password now, since the rsa keys have been loaded.
             let _result = application_configuration.clear_rsa_password();
-            // load the S/Mime certificate if the feature is enabled
-            #[cfg(feature = "mail-noauth-notls-smime")]
-            {
-                info!("decrypting S/Mime private key password...");
-                let rsa_read_lock = application_configuration.rsa_keys.read().unwrap();
-                let decrypted_password = match rsa_read_lock.hybrid_decrypt_str(
-                    &application_configuration
-                        .configuration_file
-                        .email_configuration
-                        .mail_smime_configuration
-                        .enrypted_password,
-                ) {
-                    Err(e) => {
-                        warn!("could not decrypt S/Mime private key password: {:?}", e);
-                        return HttpResponse::err_text_response(
-                            "ERROR: could not load S/Mime configuration!",
-                        );
-                    }
-                    Ok(mut password) => {
-                        String::trim_newline(&mut password);
-                        debug!("password: {}", &password);
-                        SecStr::from(password)
-                    }
-                };
-                info!("sucessfully decrypted S/Mime private key password.");
-                let mut smime_certificate_write_lock =
-                    application_configuration.smime_certificate.write().unwrap();
-                if let Err(e) = smime_certificate_write_lock.load_smime_certificate(
-                    &application_configuration
-                        .configuration_file
-                        .email_configuration
-                        .mail_smime_configuration
-                        .rsa_private_key_file,
-                    &decrypted_password,
-                ) {
-                    warn!("could not load S/Mime configuration: {:?}", e);
-                    return HttpResponse::err_text_response(
-                        "ERROR: could not load S/Mime configuration!",
-                    );
-                }
-            }
-
             // Delete cookie after rsa password has been set because it
             // is not enrypted yet.
             HttpResponse::ok_text_response_with_empty_unix_epoch_cookie("OK")
@@ -498,31 +452,10 @@ pub async fn store_secret(
         &uuid.to_string()
     );
 
-    #[cfg(not(feature = "mail-noauth-notls-smime"))]
-    let mail_signature = None;
-    #[cfg(feature = "mail-noauth-notls-smime")]
-    let mail_signature = match application_configuration
-        .smime_certificate
-        .read()
-        .unwrap()
-        .sign_mail_body(mail_body)
-    {
-        Err(e) => {
-            warn!("error signing email: {}", &e);
-            return HttpResponse::err_text_response("ERROR: cannot sign email!");
-        }
-        Ok(signature) => Some(signature),
-    };
-
     if let Err(e) = &application_configuration
         .configuration_file
         .email_configuration
-        .send_mail(
-            &parsed_form_data.to_email,
-            mail_subject,
-            mail_body,
-            mail_signature,
-        )
+        .send_mail(&parsed_form_data.to_email, mail_subject, mail_body)
     {
         warn!(
             "error sending email to {} for secret {}: {}",

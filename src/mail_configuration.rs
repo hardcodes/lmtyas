@@ -1,5 +1,3 @@
-#[cfg(feature = "mail-noauth-notls-smime")]
-use crate::mail_noauth_notls_smime::SmimeConfiguration;
 use serde::Deserialize;
 use std::error::Error;
 use std::fs;
@@ -16,8 +14,6 @@ pub struct SendEMailConfiguration {
     pub mail_subject: String,
     pub mail_template_file: Box<Path>,
     pub mail_credentails: Option<EMailCredentials>,
-    #[cfg(feature = "mail-noauth-notls-smime")]
-    pub mail_smime_configuration: SmimeConfiguration,
 }
 
 impl SendEMailConfiguration {
@@ -89,12 +85,10 @@ pub trait SendEMail {
     /// - `mail_to`:          mail address of the receiver of the secret.
     /// - `mail_subject`:     subject of the mail
     /// - `mail_body`:        body of the mail
-    /// - `mail_signature`:   optional mail signature
     fn send_mail(
         &self,
         mail_to: &str,
         mail_subject: &str,
         mail_body: &str,
-        mail_signature: Option<Vec<u8>>,
     ) -> Result<(), Box<dyn Error>>;
 }

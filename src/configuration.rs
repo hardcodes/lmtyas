@@ -9,10 +9,6 @@ use crate::ldap_common::LdapCommonConfiguration;
 #[cfg(any(feature = "ldap-auth", feature = "authentication-oidc"))]
 use crate::login_user_trait::Login;
 use crate::mail_configuration::SendEMailConfiguration;
-#[cfg(feature = "mail-noauth-notls-smime")]
-pub use crate::mail_noauth_notls_smime::SendEMail;
-#[cfg(feature = "mail-noauth-notls-smime")]
-use crate::mail_noauth_notls_smime::SmimeCertificate;
 use crate::rsa_functions::{RsaKeys, RsaPrivateKeyPassword};
 use crate::secret_functions::SharedSecretData;
 #[cfg(feature = "authentication-oidc")]
@@ -136,9 +132,6 @@ pub struct ApplicationConfiguration {
     /// stores the optional oidc verification data
     #[cfg(feature = "oidc-auth-ldap")]
     pub shared_oidc_verification_data: Arc<RwLock<SharedOidcVerificationDataHashMap>>,
-    // Stores an optional S/Mime certficate to sign the sent emails
-    #[cfg(feature = "mail-noauth-notls-smime")]
-    pub smime_certificate: Arc<RwLock<SmimeCertificate>>,
     pub email_regex: Regex,
 }
 
@@ -203,8 +196,6 @@ impl ApplicationConfiguration {
             shared_oidc_verification_data: Arc::new(RwLock::new(
                 SharedOidcVerificationDataHashMap::new(),
             )),
-            #[cfg(feature = "mail-noauth-notls-smime")]
-            smime_certificate: Arc::new(RwLock::new(SmimeCertificate::new())),
             email_regex: Regex::new(crate::EMAIL_REGEX).expect(
                 "Cannot build generic email regex, see pub const EMAIL_REGEX in file lib.rs!",
             ),

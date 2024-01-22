@@ -74,8 +74,7 @@ impl fmt::Display for OidcVerificationData {
         write!(
             f,
             "(has_been_used={}, time_stamp={})",
-            self.has_been_used,
-            self.time_stamp,
+            self.has_been_used, self.time_stamp,
         )
     }
 }
