@@ -4,7 +4,7 @@ A web service written in Rust that allows an authenticated user to send secrets 
 
 In a perfect world we wouldn't need passwords anymore but more often than not we also still do need to tell them to other people. There is a world almost without passwords out there, e.g. have a look at [SQRL](https://www.grc.com/sqrl/sqrl.htm) or [fido2](https://en.wikipedia.org/wiki/FIDO2_Project). 
 
-Sending passwords by email is insecure because most people are not able to receive encrypted emails. Sending passwords by snail mail is slow. Using a second channel, e.g. like a chat program, may work but often leaves traces or involves third parties you do not trust. Telling the via phone is next to impossible.
+Sending passwords by email is insecure because most people are not able to receive encrypted emails. Sending passwords by snail mail is slow. Using a second channel, e.g. like a chat program, may work but often leaves traces of the secret or involves third parties you do not trust. Telling the via phone is next to impossible.
 
 *"Let me tell you a secret" enters the stage*
 
@@ -21,7 +21,7 @@ on the website driven by this web service and the receiver will get an email wit
 Yes, identities can be stolen and/or hacked - but then you have got bigger problems at hand. Again, have a good look at [SQRL](https://www.grc.com/sqrl/sqrl.htm) or [fido2](https://en.wikipedia.org/wiki/FIDO2_Project).
 
 - **NOTE 1**: Secrets like passwords should be forced or at least encouraged to be changed after first use!
-- **NOTE 2**: The email with the link also leaves traces, so other parties may come to knowledge that a secret has been sent. But in a company context this should be fine. The sole purpose of this tool is to protect the secret itself!
+- **NOTE 2**: The email with the link also leaves traces, so other parties may become aware that a secret has been sent and what it is meant for. But in a company context this should be fine. The sole purpose of this tool is to protect the secret itself!
 
 
 # Configuration file
