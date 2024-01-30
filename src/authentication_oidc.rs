@@ -130,7 +130,7 @@ pub struct OidcUser {
 /// user details after oidc login (= we got a valid id token)
 /// The default implementation in `oidc_ldap.rs` uses an
 /// external ldap server to do that. Using the ID/access token
-/// to do so would also be possible in another implemenation.
+/// to do so would also be possible in another implementation.
 #[async_trait(?Send)]
 pub trait OidcUserDetails {
     /// use the given email address to query user details
