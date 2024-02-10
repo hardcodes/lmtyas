@@ -455,7 +455,12 @@ pub async fn store_secret(
     if let Err(e) = &application_configuration
         .configuration_file
         .email_configuration
-        .send_mail(&parsed_form_data.to_email, mail_subject, mail_body)
+        .send_mail(
+            &parsed_form_data.to_email,
+            &parsed_form_data.from_email,
+            mail_subject,
+            mail_body,
+        )
     {
         warn!(
             "error sending email to {} for secret {}: {}",

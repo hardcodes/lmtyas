@@ -13,6 +13,7 @@ impl SendEMail for SendEMailConfiguration {
     fn send_mail(
         &self,
         mail_to: &str,
+        mail_reply_to: &str,
         mail_subject: &str,
         mail_body: &str,
     ) -> Result<(), Box<dyn Error>> {
@@ -22,9 +23,14 @@ impl SendEMail for SendEMailConfiguration {
         )?;
         let parsed_mail_to =
             Mailbox::parse_with_context_on_error(mail_to, ParseMailAddressErrorContext::ToAddress)?;
+        let parsed_reply_to = Mailbox::parse_with_context_on_error(
+            mail_reply_to,
+            ParseMailAddressErrorContext::ReplyToAddress,
+        )?;
         let email_message = Message::builder()
             .from(parsed_mail_from)
             .to(parsed_mail_to)
+            .reply_to(parsed_reply_to)
             .subject(mail_subject)
             .header(ContentType::TEXT_PLAIN)
             .user_agent(PROGRAM_NAME.to_string())

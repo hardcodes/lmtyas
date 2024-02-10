@@ -39,6 +39,7 @@ pub enum ParseMailAddressErrorContext {
     ToAddress,
     CCAddress,
     BCCAddress,
+    ReplyToAddress,
 }
 
 /// This trait adds functionality to the lettre crate
@@ -83,11 +84,14 @@ pub trait SendEMail {
     /// # Arguments
     ///
     /// - `mail_to`:          mail address of the receiver of the secret.
+    /// - `mail_reply_to`:    mail address of the sender of the secret, so that replys will
+    ///                       not go to the technical sender address.
     /// - `mail_subject`:     subject of the mail
     /// - `mail_body`:        body of the mail
     fn send_mail(
         &self,
         mail_to: &str,
+        mail_reply_to: &str,
         mail_subject: &str,
         mail_body: &str,
     ) -> Result<(), Box<dyn Error>>;
