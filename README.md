@@ -26,7 +26,7 @@ Yes, identities can be stolen and/or hacked - but then you have got bigger probl
 
 # Configuration file
 
-See [lmtyas-config.json](conf.dev/lmtyas-config.json) for an example configuration binding to `127.0.0.1:8844`.
+See [lmtyas-config.json](resources/config/lmtyas-config.json) for an example configuration binding to `127.0.0.1:8844`.
 
 | config item                      | config data                                                                                               |
 |----------------------------------|-----------------------------------------------------------------------------------------------------------|
@@ -82,7 +82,7 @@ See [lmtyas-config.json](conf.dev/lmtyas-config.json) for an example configurati
         - `{Context}` is replaced with the context entered in the web form.
         - `{UrlPayload}` is replaced with the encrypted secret Id to access the secret.
      
-        URL must be in the template, see [mailtemplate.txt](./conf.dev/mailtemplate.txt).
+        URL must be in the template, see [mailtemplate.txt](./resources/config/mailtemplate.txt).
 
         Depending on your authentication backends you may not know the data for each of the placeholders!
 - **NOTE 2** The objects `email_configuration`, `ldap_configuration` and `oidc_configuration` may be absent or differ, depending on the selected features. See section *[Compile and install -features](#compile-and-install---features)*.
@@ -445,7 +445,7 @@ Really easy to set up:
     ```
 3. configure
 
-    See [ldap.conf](./conf.dev/ldap.conf)
+    See [ldap.conf](./resources/tests/ldap/ldap.conf)
 
     Password hashes were created this way:
 
@@ -458,7 +458,7 @@ Really easy to set up:
 4. run
 
     ```bash
-    glauth -c conf.dev/ldap.conf
+    glauth -c resources/tests/ldap/ldap.conf
     ```
 5. test
 

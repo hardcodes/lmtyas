@@ -11,7 +11,7 @@
         "mail_server_port": 2525,
         "mail_from": "IT-department <do-not-reply@acme.local>",
         "mail_subject": "Your new password for {Context}",
-        "mail_template_file": "conf.dev/mailtemplate.txt"
+        "mail_template_file": "resources/config/mailtemplate.txt"
     },
     "admin_accounts": ["walter"],
     "max_authrequest_age_seconds": 300,

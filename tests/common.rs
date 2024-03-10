@@ -31,12 +31,12 @@ pub fn setup(setup_lock: &mut MutexGuard<ExternalHelperApplications>) {
     //
     // 1. start ldap server
     //
-    //    `glauth -c conf.dev/ldap.conf`
+    //    `glauth -c resources/tests/ldap/ldap.conf`
     let glauth = Command::new("glauth")
         .args([
             "-c",
             Path::new(WORKSPACE_DIR)
-                .join("conf.dev/ldap.conf")
+                .join("resources/tests/ldap/ldap.conf")
                 .to_str()
                 .unwrap(),
         ])

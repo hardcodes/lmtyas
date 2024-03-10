@@ -19,7 +19,7 @@ use std::path::Path;
 async fn with_setup() {
     // load configuration file with the ldap server connection details
     let application_configuration = ApplicationConfiguration::read_from_file(
-        Path::new(common::WORKSPACE_DIR).join("conf.dev/lmtyas-config.json"),
+        Path::new(common::WORKSPACE_DIR).join("resources/config/lmtyas-config.json"),
     )
     .await;
 
