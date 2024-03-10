@@ -12,6 +12,7 @@ use crate::http_traits::CustomHttpResponse;
 pub use crate::login_user_trait::Login;
 #[cfg(feature = "oidc-ldap")]
 use crate::oidc_ldap::OidcUserLdapUserDetails;
+use crate::MAX_AUTHREQUEST_AGE_SECONDS;
 use actix_web::{
     http, http::Method, http::StatusCode, web, web::Bytes, web::Query, HttpRequest, HttpResponse,
 };
@@ -87,7 +88,9 @@ pub fn cleanup_oidc_authentication_data_hashmap(
     shared_oidc_verfication_data: &Arc<RwLock<SharedOidcVerificationDataHashMap>>,
     max_age_in_seconds: i64,
 ) {
-    let time_to_delete = Utc::now() - Duration::seconds(max_age_in_seconds);
+    let time_to_delete = Utc::now()
+        - Duration::try_seconds(max_age_in_seconds)
+            .unwrap_or_else(|| Duration::try_seconds(MAX_AUTHREQUEST_AGE_SECONDS).unwrap());
     let shared_oidc_verfication_data_read_lock = shared_oidc_verfication_data.read().unwrap();
     let mut items_to_remove: Vec<uuid::Uuid> = Vec::new();
     shared_oidc_verfication_data_read_lock

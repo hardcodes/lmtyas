@@ -5,6 +5,7 @@ use uuid::v1::{Context, Timestamp};
 use uuid::Uuid;
 extern crate env_logger;
 use crate::authentication_functions::get_authenticated_user;
+use crate::MAX_COOKIE_AGE_SECONDS;
 use actix_web::{dev::Payload, error::ErrorUnauthorized, Error, FromRequest, HttpRequest};
 use chrono::Duration;
 use std::fmt;
@@ -221,7 +222,9 @@ pub fn cleanup_authenticated_users_hashmap(
     shared_authenticated_users: &Arc<RwLock<SharedAuthenticatedUsersHashMap>>,
     max_age_in_seconds: i64,
 ) {
-    let time_to_delete = Utc::now() - Duration::seconds(max_age_in_seconds);
+    let time_to_delete = Utc::now()
+        - Duration::try_seconds(max_age_in_seconds)
+            .unwrap_or_else(|| Duration::try_seconds(MAX_COOKIE_AGE_SECONDS).unwrap());
     let shared_authenticated_users_read_lock = shared_authenticated_users.read().unwrap();
     let mut items_to_remove: Vec<uuid::Uuid> = Vec::new();
     for (k, v) in &shared_authenticated_users_read_lock.authenticated_users_hashmap {

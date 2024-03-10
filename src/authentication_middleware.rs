@@ -7,6 +7,7 @@ use crate::authentication_oidc::OidcConfiguration;
 use crate::configuration::ApplicationConfiguration;
 use crate::cookie_functions::{get_plain_cookie_string, COOKIE_NAME};
 use crate::header_value_trait::HeaderValueExctractor;
+use crate::{MAX_AUTHREQUEST_AGE_SECONDS, MAX_COOKIE_AGE_SECONDS};
 #[cfg(any(feature = "ldap-auth", feature = "oidc-auth-ldap"))]
 use actix_web::dev::{forward_ready, Service, ServiceRequest, ServiceResponse, Transform};
 use actix_web::{body::EitherBody, http, http::StatusCode, web, Error, HttpRequest, HttpResponse};
@@ -85,7 +86,9 @@ pub fn cleanup_authentication_state_hashmap(
     shared_request_data: &Arc<RwLock<SharedRequestData>>,
     max_age_in_seconds: i64,
 ) {
-    let time_to_delete = Utc::now() - Duration::seconds(max_age_in_seconds);
+    let time_to_delete = Utc::now()
+        - Duration::try_seconds(max_age_in_seconds)
+            .unwrap_or_else(|| Duration::try_seconds(MAX_AUTHREQUEST_AGE_SECONDS).unwrap());
     let shared_request_data_read_lock = shared_request_data.read().unwrap();
     let mut items_to_remove: Vec<uuid::Uuid> = Vec::new();
     for (k, v) in &shared_request_data_read_lock.authentication_state_hashmap {
@@ -246,8 +249,10 @@ where
                         .authenticated_users_hashmap
                         .get(&parsed_cookie_uuid)
                     {
-                        let invalid_cookie_age =
-                            Utc::now() - Duration::seconds(max_cookie_age_seconds);
+                        let invalid_cookie_age = Utc::now()
+                            - Duration::try_seconds(max_cookie_age_seconds).unwrap_or_else(|| {
+                                Duration::try_seconds(MAX_COOKIE_AGE_SECONDS).unwrap()
+                            });
                         // UUID inside cookie as referenced a `AuthenticatedUser`.
                         if peer_ip.ne(&authenticated_user.peer_ip) {
                             warn!(

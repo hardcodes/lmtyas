@@ -48,6 +48,10 @@ pub const EMAIL_REGEX: &str = r"^([a-zA-Z0-9_\-\.]+)@((\[[0-9]{1,3}\.[0-9]{1,3}\
 pub const MAX_FORM_BYTES_LEN: usize = 11_000;
 /// max length of form fields
 pub const MAX_FORM_INPUT_LEN: usize = 11_000;
+// fallback value if the value in the config file is out of bounds.
+pub const MAX_AUTHREQUEST_AGE_SECONDS: i64 = 300;
+// fallback value if the value in the config file is out of bounds.
+pub const MAX_COOKIE_AGE_SECONDS: i64 = 120;
 
 #[cfg(feature = "ldap-auth")]
 pub mod authentication_url {
