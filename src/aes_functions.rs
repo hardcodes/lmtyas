@@ -27,9 +27,12 @@ pub struct AesEncryptionError {
 }
 
 impl AesEncryptionError {
-    fn new(msg: &str) -> AesEncryptionError {
-        AesEncryptionError {
-            details: msg.to_string(),
+    fn new<S>(msg: S) -> Self
+    where
+        S: Into<String>,
+    {
+        Self {
+            details: msg.into(),
         }
     }
 }
@@ -49,7 +52,7 @@ impl Error for AesEncryptionError {
 /// Use Debug output of OpenSSL `ErrorStack` for our custom Error type.
 impl From<ErrorStack> for AesEncryptionError {
     fn from(err: ErrorStack) -> Self {
-        AesEncryptionError::new(&format!("{:?}", err))
+        AesEncryptionError::new(format!("{:?}", err))
     }
 }
 

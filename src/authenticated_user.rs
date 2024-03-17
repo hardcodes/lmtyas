@@ -52,21 +52,24 @@ impl fmt::Display for AuthenticatedUser {
 
 impl AuthenticatedUser {
     /// Creates a new instance with the given user data and current time stamp.
-    fn new(
-        user_name: &str,
-        first_name: &str,
-        last_name: &str,
-        mail: &str,
+    fn new<S>(
+        user_name: S,
+        first_name: S,
+        last_name: S,
+        mail: S,
         access_scope: AccessScope,
-        peer_ip: &str,
-    ) -> AuthenticatedUser {
-        AuthenticatedUser {
-            user_name: String::from(user_name),
-            first_name: String::from(first_name),
-            last_name: String::from(last_name),
-            mail: String::from(mail),
+        peer_ip: S,
+    ) -> Self
+    where
+        S: Into<String>,
+    {
+        Self {
+            user_name: user_name.into(),
+            first_name: first_name.into(),
+            last_name: last_name.into(),
+            mail: mail.into(),
             access_scope,
-            peer_ip: String::from(peer_ip),
+            peer_ip: peer_ip.into(),
             time_stamp: Utc::now(),
         }
     }
