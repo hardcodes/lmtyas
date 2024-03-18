@@ -6,7 +6,7 @@ use async_trait::async_trait;
 
 /// This trait is used to force one implementation of a get_display_name()
 /// function. The implementation may change depending on the authentication
-/// method used.
+/// method and/or backend used.
 #[async_trait]
 pub trait GetUserData {
     /// This function is called when a secret is transmitted
@@ -32,6 +32,8 @@ pub struct NoUserDataBackend;
 
 #[async_trait]
 impl GetUserData for NoUserDataBackend {
+    /// Default implementation that returns an empy
+    /// String as display name.
     async fn get_receiver_display_name(
         _mail: &str,
         _application_configuration: &web::Data<ApplicationConfiguration>,
@@ -39,6 +41,9 @@ impl GetUserData for NoUserDataBackend {
         Ok("".to_string())
     }
 
+    /// Default implementation that returns the
+    /// given email address; the form interprets this
+    /// as "email address is valid".
     async fn validate_email_address(
         mail: &str,
         _application_configuration: &web::Data<ApplicationConfiguration>,
