@@ -393,7 +393,7 @@ curl --insecure https://127.0.0.1:8844/monitoring/still_alive
 
 # Icon source
 
-See [license.md](./gfx/license.md).
+See [license.md](resources/gfx/license.md).
 
 
 # Development
