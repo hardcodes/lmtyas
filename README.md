@@ -16,7 +16,7 @@ Simply enter a
 
 on the website driven by this web service and the receiver will get an email with a link that entitles to read the secret. The secret Id and thus the receiver is encoded in the link and since authentication is needed to open the secret, we make sure that only the right person reads the secret.
 
-![tell a secret](./gfx/lmtyas-screenshot-001.png)
+![tell a secret](resources/gfx/lmtyas-screenshot-001.png)
 
 Yes, identities can be stolen and/or hacked - but then you have got bigger problems at hand. Again, have a good look at [SQRL](https://www.grc.com/sqrl/sqrl.htm) or [fido2](https://en.wikipedia.org/wiki/FIDO2_Project).
 
