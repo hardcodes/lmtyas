@@ -566,7 +566,7 @@ pub async fn reveal_secret(
     // check if user is entitled to reveal this secret
     if aes_encrypted.to_email.to_lowercase() != user.mail.to_lowercase() {
         warn!(
-            "user{} (mail = {}) wants to access secret {} (to_email = {})",
+            "user {} (mail = {}) wants unjustified access to secret {} (entitled to_email = {})",
             &user.user_name, &user.mail, &uuid, &aes_encrypted.to_email
         );
         return HttpResponse::err_text_response("ERROR: access to secret not permitted!");
