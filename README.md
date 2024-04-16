@@ -359,17 +359,17 @@ The keys can be created with the `openssl` command:
 For development a self signed certificate was used, in production you can use a certificate from any CA that you trust (or your browser, to be more specific).
 
 ```bash
-[ -d "ignore" ] || mkdir ignore; cd ignore
-openssl req -x509 -sha256 -nodes -days 365 -newkey rsa:4096 -keyout lmtyas-selfsigned.key -out lmtyas-selfsigned-cert.pem
+[ -d "resources/tests/ssl" ] || mkdir -p "resources/tests/ssl"; cd "resources/tests/ssl"
+openssl req -x509 -sha256 -nodes -days 3650 -newkey rsa:4096 -keyout lmtyas-selfsigned.key -out lmtyas-selfsigned-cert.pem
 Generating a RSA private key
 (...)
 Country Name (2 letter code) [AU]:DE   
 State or Province Name (full name) [Some-State]:NRW 
-Locality Name (eg, city) []:lab
-Organization Name (eg, company) [Internet Widgits Pty Ltd]:acme.local
-Organizational Unit Name (eg, section) []:org
-Common Name (e.g. server FQDN or YOUR name) []:acme.local
-Email Address []:rainer.zufall@acme.local
+Locality Name (eg, city) []:DORTMUND
+Organization Name (eg, company) [Internet Widgits Pty Ltd]:ACME
+Organizational Unit Name (eg, section) []:HQ
+Common Name (e.g. server FQDN or YOUR name) []:lmtyas.home.arpa
+Email Address []:rainer.zufall@lmtyas.home.arpa
 ```
 
 

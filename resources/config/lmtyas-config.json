@@ -1,7 +1,7 @@
 {
     "web_bind_address": "127.0.0.1:8844",
-    "ssl_private_key_file": "ignore/lmtyas-selfsigned.key",
-    "ssl_certificate_chain_file": "ignore/lmtyas-selfsigned-cert.pem",
+    "ssl_private_key_file": "resources/tests/ssl/lmtyas-selfsigned.key",
+    "ssl_certificate_chain_file": "resources/tests/ssl/lmtyas-selfsigned-cert.pem",
     "rsa_private_key_file": "ignore/lmtyas_rsa_private.key",
     "rsa_public_key_file": "ignore/lmtyas_rsa_public.key",
     "secret_directory": "ignore/secrets",
@@ -9,7 +9,7 @@
     "email_configuration" : {
         "mail_server_address": "127.0.0.1",
         "mail_server_port": 2525,
-        "mail_from": "IT-department <do-not-reply@acme.local>",
+        "mail_from": "IT-department <do-not-reply@lmtyas.acme.home.arpa>",
         "mail_subject": "Your new password for {Context}",
         "mail_template_file": "resources/config/mailtemplate.txt"
     },
