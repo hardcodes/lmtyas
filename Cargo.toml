@@ -36,7 +36,7 @@ uuid = { version = "1", features = ["v1"] }
 zeroize = "1.5.7"
 
 [features]
-default = ["oidc-auth-ldap", "mail-noauth-notls"]
+default = ["oidc-auth-ldap", "mail-noauth-notls", "api-access-token"]
 ldap-auth = ["ldap-common", "get-userdata-ldap"]
 ldap-common = []
 oidc-auth-ldap = ["authentication-oidc", "oidc-ldap", "ldap-common", "get-userdata-ldap"]
@@ -45,6 +45,7 @@ oidc-ldap = []
 get-userdata-ldap = []
 mail-noauth-notls = []
 no-userdata-backend = []
+api-access-token = []
 
 [dev-dependencies]
 actix-rt = "*"

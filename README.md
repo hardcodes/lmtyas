@@ -353,9 +353,49 @@ The keys can be created with the `openssl` command:
 
 **NOTE3** You need to store the password for the RSA private key in a save place, e.g. some sort of password manager. Every time the service is (re-)started, the password must be entered, before the system works.
 
-**NOTE4** The password for the private RSA test key is the very unsecure value of "12345678901234".
+**NOTE4** The password for the private RSA test key is the very **unsecure** value of `12345678901234`.
 
 
+## Security - API Token - RSA Signing Keys
+
+- **NOTE1**: the password for the RSA API signing private key will be stored in encrypted form in the configuration file, so that it can only be used when the application has been restarted and the RSA private key from section [Security - Data Encryption - RSA Keys](#security---data-encryption---rsa-keys) has been loaded.
+- **Note2**: you must use at least 2048 bits for the rsa key (modulus >= 256) to make sure we can encrypt/decrypt all the data with the rsa key pair.
+
+The keys can be created with the `openssl` command:
+
+- **RSA private key**
+
+    ```bash
+    [ -d "resources/tests/rsa" ] || mkdir -p "resources/tests/rsa"; cd "resources/tests/rsa"
+    openssl genrsa -out lmtyas_api_private.key -aes256 4096
+    # (...)
+    Enter PEM pass phrase:
+    Verifying - Enter PEM pass phrase:
+    ```
+  -**NOTE3** The password for the private RSA API signing test key is the very **unsecure** value of `12345678901234`.
+- **RSA public key**
+
+    ```bash
+    openssl rsa -in lmtyas_api_private.key -pubout > lmtyas_api_public.key
+    Enter pass phrase for lmtyas_api_private.key:
+    writing RSA key
+    ```
+- **Encrypt password**
+
+  The password of the private key file `resources/tests/rsa/lmtyas_api_private.key` can be encrypted via an unix shell:
+
+  ```bash
+  echo -n "12345678901234"|openssl pkeyutl -encrypt -inkey resources/tests/rsa/lmtyas_rsa_public.key -pubin|base64 --wrap 0
+  7BWfV8/GaG1LySQjQJ4LfnE+TfhQ/DAG16RafwWsaoJBKuipRz5tkr2JKvqqIvXtaJr4UsAuSL7Vzp2fJFxsGlnqL8dEP7zoMFVM9IswNCJ1ivUln3YE9vCLdLk6U+17ku6TVBQ4mq5ypbksblcmkhFXrHG0SPxhe9JxhM81LA6Uqr5cn/26HBEGNX9F32khYXVtPm7kXBE8bmobvkT04BQsiv7Vi+CV6CgygP14R924K3+ZDVyYeUxOPVR521qEMQ2limmF4LARGseuXM7ZyKRUrYMYnK2i21sukmaCJ0iwqEPkXoR3KdKbC8s7jNvnAKvZcjAt4MbUeL5BJ1x3tRZQFqas8UpPsYJhjIRbT8kc2buyNVzf9R6tGYBZRMXpAI4/+uBc4VENKZoc0j4/aYJBrP3J8EbhjB9zg8PO4PCiO1hF6AfLSFRUm6BgS/lWsry0Tz1ia1cEn1hGurKjeAGk7XbiAkn3fcp9g0vDaCEMCXFkMMZwpmHx/uoRlaHuPAX5Yyxh247ieVItMQY1SvrIISbGwm/KVQEJBtuCI4rM6TdPcfyGyBRWG2qcVJItfC082L7+sebdMyxsD9pjsFaMMneF0nlvUMPVAumddq1jFRCrsDD+UAsRk1dExV7BC/3UJKsSeyhrjaxyXVI1y4Mvg6JoaxdPcTUnDqFRo8w=
+  ```
+
+  Decryption for validation:
+
+  ```bash
+  echo -n "7BWfV8/GaG1LySQjQJ4LfnE+TfhQ/DAG16RafwWsaoJBKuipRz5tkr2JKvqqIvXtaJr4UsAuSL7Vzp2fJFxsGlnqL8dEP7zoMFVM9IswNCJ1ivUln3YE9vCLdLk6U+17ku6TVBQ4mq5ypbksblcmkhFXrHG0SPxhe9JxhM81LA6Uqr5cn/26HBEGNX9F32khYXVtPm7kXBE8bmobvkT04BQsiv7Vi+CV6CgygP14R924K3+ZDVyYeUxOPVR521qEMQ2limmF4LARGseuXM7ZyKRUrYMYnK2i21sukmaCJ0iwqEPkXoR3KdKbC8s7jNvnAKvZcjAt4MbUeL5BJ1x3tRZQFqas8UpPsYJhjIRbT8kc2buyNVzf9R6tGYBZRMXpAI4/+uBc4VENKZoc0j4/aYJBrP3J8EbhjB9zg8PO4PCiO1hF6AfLSFRUm6BgS/lWsry0Tz1ia1cEn1hGurKjeAGk7XbiAkn3fcp9g0vDaCEMCXFkMMZwpmHx/uoRlaHuPAX5Yyxh247ieVItMQY1SvrIISbGwm/KVQEJBtuCI4rM6TdPcfyGyBRWG2qcVJItfC082L7+sebdMyxsD9pjsFaMMneF0nlvUMPVAumddq1jFRCrsDD+UAsRk1dExV7BC/3UJKsSeyhrjaxyXVI1y4Mvg6JoaxdPcTUnDqFRo8w="|base64 -d|openssl pkeyutl -decrypt -inkey resources/tests/rsa/lmtyas_rsa_private.key
+  Enter pass phrase for lmtyas_rsa_private.key:
+  12345678901234
+  ```
 
 
 ## Security - Web Service - SSL/TLS

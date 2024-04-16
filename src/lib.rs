@@ -72,3 +72,7 @@ pub mod authentication_url {
 pub const TIMER_VEC_CAPACITY: usize = 3;
 #[cfg(not(feature = "oidc-auth-ldap"))]
 pub const TIMER_VEC_CAPACITY: usize = 2;
+
+#[cfg(feature = "api-access-token")]
+pub const ACCESS_TOKEN_HEADER_ALG: &str = "RS256";
+pub const ACCESS_TOKEN_HEADER_TYP: &str = "JWT";
