@@ -32,17 +32,17 @@ See [lmtyas-config.json](resources/config/lmtyas-config.json) for an example con
 |----------------------------------|-----------------------------------------------------------------------------------------------------------|
 | {                                | ==> begin of root object                                                                                  |
 | "web_bind_address"               | ip address and port to bind to, e.g. `"127.0.0.1:8844"`                                                   |
-| "ssl_private_key_file"           | path/filename of the SSL private key, e.g. `"/etc/lmtyas/lmtyas-selfsigned.key"`                          |
-| "ssl_certificate_chain_file"     | path/filename of the SSL certificate chain, e.g. `"/etc/lmtyas/lmtyas-selfsigned-cert.pem"`               |
-| "rsa_private_key_file"           | path/filename of the RSA private key file, e.g. `"/etc/lmtyas/lmtyas_rsa_private.key"`                    |
-| "rsa_public_key_file"            | path/filename of the RSA public key file, e.g. `"ignore/lmtyas_rsa_public.key"`                           |
+| "ssl_private_key_file"           | path/filename of the SSL private key, e.g. `"resources/tests/ssl/lmtyas/lmtyas-selfsigned.key"`           |
+| "ssl_certificate_chain_file"     | path/filename of the SSL certificate chain, e.g. `"resources/tests/ssl/lmtyas-selfsigned-cert.pem"`       |
+| "rsa_private_key_file"           | path/filename of the RSA private key file, e.g. `"resources/tests/rsa/lmtyas_rsa_private.key"`            |
+| "rsa_public_key_file"            | path/filename of the RSA public key file, e.g. `"resources/tests/rsa/lmtyas_rsa_public.key"`              |
 | "secret_directory"               | path to store the secret files, e.g. `"output/secrets"`                                                   |
 | "email_configuration" : {        | ==> object with email configuration details                                                               |
 |     "mail_server_address"        | name or ip address of mail server, e.g.`"127.0.0.1"`                                                      |
 |     "mail_server_port"           | port number of mail server, e.g. `2525`                                                                   |
-|     "mail_from"                  | mail address that sends secrets, e.g. `"IT-department <do-not-reply@acme.local>"`                         |
+|     "mail_from"                  | mail address that sends secrets, e.g. `"IT-department <do-not-reply@lmtyas.acme.home.arpa>"`              |
 |     "mail_subject"               | subject used in mails, e.g. `"Your new password for {Context}"`                                           |
-|     "mail_template_file"         | path/filename of mail template, e.g. `"etc/lmtas/mailtemplate.txt"`                                       |
+|     "mail_template_file"         | path/filename of mail template, e.g. `"resources/tests/config/mailtemplate.txt"`                          |
 | },                               | <== end of object with email configuration details                                                        |
 | "admin_accounts"                 | array with valid admin accounts to set password, e.g. `["walter"]`                                        |
 | "max_authrequest_age_seconds"    | time in seconds an authentiction attempt is valid, e.g. `300`                                             |
@@ -337,7 +337,7 @@ The keys can be created with the `openssl` command:
 - **RSA private key**
 
     ```bash
-    [ -d "ignore" ] || mkdir ignore; cd ignore
+    [ -d "resources/tests/rsa" ] || mkdir -p "resources/tests/rsa"; cd "resources/tests/rsa"
     openssl genrsa -out lmtyas_rsa_private.key -aes256 4096
     # (...)
     Enter pass phrase for lmtyas_encrypt_key:
@@ -351,7 +351,11 @@ The keys can be created with the `openssl` command:
     writing RSA key
     ```
 
-**NOTE** You need to store the password for the RSA private key in a save place, e.g. some sort of password manager. Every time the service is (re-)started, the password must be entered, before the system works.
+**NOTE3** You need to store the password for the RSA private key in a save place, e.g. some sort of password manager. Every time the service is (re-)started, the password must be entered, before the system works.
+
+**NOTE4** The password for the private RSA test key is the very unsecure value of "12345678901234".
+
+
 
 
 ## Security - Web Service - SSL/TLS
@@ -616,11 +620,12 @@ Tests are at the moment far from complete.
 ## Testing the code - prerequisites
 
 - Before some of the tests are executed, a mail dummy mail server and a `glauth` ldap server are started, see section *[Development](#development)*.
-- A Rsa public and private key with passphrase "12345678901234" are expected to exist in the folder `ignore`:
-  - `ignore/lmtyas_rsa_private.key`
-  - `ignore/lmtyas_rsa_public.key`
+- A Rsa public and private key with passphrase "12345678901234" are expected to exist in the folder `resources/tests/rsa`:
+  - `resources/tests/rsa/lmtyas_rsa_private.key`
+  - `resources/tests/rsa/lmtyas_rsa_public.key`
 
   See section *[Security - Data Encryption - RSA Keys](#security---data-encryption---rsa-keys)* how to create them.
+- A folder `ignore/secrets` should exist.
 
 
 ## Testing the code - run tests

@@ -16,8 +16,8 @@ fn rsa_functions() {
     let secure_rsa_passphrase = SecStr::from(RSA_PASSPHRASE);
     let mut rsa_keys = RsaKeys::new();
     if let Err(e) = rsa_keys.read_from_files(
-        Path::new(WORKSPACE_DIR).join("ignore/lmtyas_rsa_private.key"),
-        Path::new(WORKSPACE_DIR).join("ignore/lmtyas_rsa_public.key"),
+        Path::new(WORKSPACE_DIR).join("resources/tests/rsa/lmtyas_rsa_private.key"),
+        Path::new(WORKSPACE_DIR).join("resources/tests/rsa/lmtyas_rsa_public.key"),
         &secure_rsa_passphrase,
     ) {
         panic!("cannot load rsa keys! {}", &e);
@@ -66,8 +66,8 @@ fn rsa_functions_hybrid() {
     let secure_rsa_passphrase = SecStr::from(RSA_PASSPHRASE);
     let mut rsa_keys = RsaKeys::new();
     if let Err(e) = rsa_keys.read_from_files(
-        Path::new(WORKSPACE_DIR).join("ignore/lmtyas_rsa_private.key"),
-        Path::new(WORKSPACE_DIR).join("ignore/lmtyas_rsa_public.key"),
+        Path::new(WORKSPACE_DIR).join("resources/tests/rsa/lmtyas_rsa_private.key"),
+        Path::new(WORKSPACE_DIR).join("resources/tests/rsa/lmtyas_rsa_public.key"),
         &secure_rsa_passphrase,
     ) {
         panic!("cannot load rsa keys! {}", &e);

@@ -2,8 +2,8 @@
     "web_bind_address": "127.0.0.1:8844",
     "ssl_private_key_file": "resources/tests/ssl/lmtyas-selfsigned.key",
     "ssl_certificate_chain_file": "resources/tests/ssl/lmtyas-selfsigned-cert.pem",
-    "rsa_private_key_file": "ignore/lmtyas_rsa_private.key",
-    "rsa_public_key_file": "ignore/lmtyas_rsa_public.key",
+    "rsa_private_key_file": "resources/tests/rsa/lmtyas_rsa_private.key",
+    "rsa_public_key_file": "resources/tests/rsa/lmtyas_rsa_public.key",
     "secret_directory": "ignore/secrets",
     "login_context": "ACME LDAP account",
     "email_configuration" : {

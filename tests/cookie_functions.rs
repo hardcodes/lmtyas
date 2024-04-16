@@ -39,8 +39,8 @@ fn cookie_functions() {
 
     let secure_rsa_passphrase = SecStr::from(RSA_PASSPHRASE);
     if let Err(e) = rsa_keys.read_from_files(
-        Path::new(WORKSPACE_DIR).join("ignore/lmtyas_rsa_private.key"),
-        Path::new(WORKSPACE_DIR).join("ignore/lmtyas_rsa_public.key"),
+        Path::new(WORKSPACE_DIR).join("resources/tests/rsa/lmtyas_rsa_private.key"),
+        Path::new(WORKSPACE_DIR).join("resources/tests/rsa/lmtyas_rsa_public.key"),
         &secure_rsa_passphrase,
     ) {
         panic!("cannot load rsa keys! {}", &e);
