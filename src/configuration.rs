@@ -155,6 +155,19 @@ impl ApplicationConfiguration {
     ) -> ApplicationConfiguration {
         let config_file = ConfigurationFile::read_from_file(configuration_file_path)
             .expect("Cannot load the json configuration file!");
+        if !Path::new(
+            config_file
+                .email_configuration
+                .mail_template_file
+                .as_os_str(),
+        )
+        .exists()
+        {
+            panic!(
+                "mail template does not exist: {:?}",
+                config_file.email_configuration.mail_template_file.as_ref()
+            );
+        }
         #[cfg(feature = "authentication-oidc")]
         let provider_metadata = CoreProviderMetadata::discover_async(
             IssuerUrl::new(config_file.oidc_configuration.provider_metadata_url.clone())
