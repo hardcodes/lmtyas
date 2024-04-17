@@ -91,6 +91,10 @@ macro_rules! app (
                     .route("/keep_session_alive", web::get().to(keep_session_alive)),
             )
             .service(
+                web::scope("api")
+                .route("/v1/secret", web::post().to(api_store_secret))
+            )
+            .service(
                 web::scope("html")
                     .wrap(CheckAuthentication)
                     .service(Files::new("/", "web-content/authenticated/").index_file("tell.html")),

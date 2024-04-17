@@ -2,6 +2,7 @@
 /// if it has the given name
 pub trait HeaderValueExctractor {
     fn get_value_for_cookie_with_name(&self, cookie_name: &str) -> Option<String>;
+    fn get_bearer_token_value(&self) -> Option<String>;
 }
 
 /// Implementation of the HeaderValueExctractor trait.
@@ -33,6 +34,16 @@ impl HeaderValueExctractor for actix_web::http::header::HeaderValue {
                         }
                     }
                 };
+            }
+        }
+        None
+    }
+
+    fn get_bearer_token_value(&self) -> Option<String> {
+        if let Ok(header_value_str) = self.to_str() {
+            match header_value_str.split_once(' ') {
+                None => {}
+                Some((_bearer_prefix, token_value)) => return Some(token_value.to_string()),
             }
         }
         None

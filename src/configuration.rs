@@ -1,3 +1,5 @@
+#[cfg(feature = "api-access-token")]
+use crate::access_token::AccessTokenConfiguration;
 use crate::authenticated_user::SharedAuthenticatedUsersHashMap;
 use crate::authentication_middleware::SharedRequestData;
 #[cfg(feature = "authentication-oidc")]
@@ -63,6 +65,8 @@ pub struct ConfigurationFile {
     pub login_hint: String,
     pub mail_hint: Option<String>,
     pub imprint: Imprint,
+    #[cfg(feature = "api-access-token")]
+    pub access_token_configuration: AccessTokenConfiguration,
 }
 
 impl ConfigurationFile {

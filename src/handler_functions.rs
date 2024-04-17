@@ -1,5 +1,7 @@
 //#[macro_use]
 extern crate env_logger;
+#[cfg(feature = "api-access-token")]
+use crate::access_token::AccessTokenPayload;
 use crate::aes_functions::{DecryptAes, EncryptAes};
 use crate::authenticated_user::{AuthenticatedAdministrator, AuthenticatedUser};
 use crate::authentication_functions::update_authenticated_user_cookie_lifetime;
@@ -285,7 +287,7 @@ pub async fn store_secret(
     let mut parsed_form_data = match serde_json::from_str(&form_data) as Result<Secret, _> {
         Ok(parsed_form_data) => parsed_form_data,
         Err(_) => {
-            warn!("could not parse form data to json!");
+            warn!("could not parse json form data!");
             return HttpResponse::err_text_response("ERROR: could not parse json form data");
         }
     };
@@ -696,4 +698,23 @@ pub async fn not_found_404() -> HttpResponse {
     HttpResponse::build(StatusCode::NOT_FOUND)
         .content_type("text/html; charset=UTF-8")
         .body(file_content)
+}
+
+/// Stores a secret and its meta date as encrypted file on disk.Unkown
+/// This function is used by scripts where the caller presents
+/// an authentication token that we provided manually beforehand.
+#[cfg(feature = "api-access-token")]
+pub async fn api_store_secret(
+    _req: HttpRequest,
+    access_token_payload: AccessTokenPayload,
+) -> HttpResponse {
+    debug!("access_token_payload = {}", &access_token_payload);
+    HttpResponse::ok_text_response(access_token_payload.sub.to_string())
+}
+
+/// Default route if feature is disabled.
+#[cfg(not(feature = "api-access-token"))]
+pub async fn api_store_secret(_req: HttpRequest) -> HttpResponse {
+    warn!("route access forbidden!");
+    HttpResponse::err_text_response("ERROR forbidden!")
 }

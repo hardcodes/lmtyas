@@ -35,7 +35,9 @@
         "client_secret": "secret",
         "valid_user_regex": "^[\\w\\d\\-]{3,8}@acme\\.local$"
     },
-
+    "access_token_configuration": {
+        "api_access_files": "resources/tests/access_token_files"
+    },
     "login_hint": "A.C.M.E. LDAP account",
     "mail_hint": "hint:firstname.lastname@acme.local",
     "imprint": {
