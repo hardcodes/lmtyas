@@ -1,4 +1,4 @@
-use crate::base64_trait::{Base64StringConversions, Base64VecU8Conversions};
+use crate::{access_token, base64_trait::Base64VecU8Conversions};
 use crate::configuration::ApplicationConfiguration;
 use crate::header_value_trait::HeaderValueExctractor;
 use actix_web::{
@@ -7,16 +7,21 @@ use actix_web::{
     http, web, Error, FromRequest, HttpRequest,
 };
 use log::{debug, warn};
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use std::fmt;
 use std::future::Future;
 use std::path::Path;
 use std::pin::Pin;
 use uuid::Uuid;
+use chrono::DateTime;
+use std::fs::read_to_string;
+
+
+const BEGIN_EPOCH: i64 = 1;
 
 /// Payload of an access token, that can be used for scripting.
 ///
-/// It resembles a JWT but it is reduced for our purposes.
+/// It resembles a JWT but it is reduced to our purpose.
 ///
 /// ```json
 /// {
@@ -116,6 +121,7 @@ fn get_access_token_payload(req: &HttpRequest) -> Result<AccessTokenPayload, Err
             warn!("Token file {} does not exist!", &path.display());
             return Err(ErrorUnauthorized("Unkown access token!"));
         }
+  
         let rsa_read_lock = application_configuration.rsa_keys.read().unwrap();
         if let Ok(decrypted_jti) = rsa_read_lock.decrypt_str(&bearer_token.jti) {
             debug!("decrypted_jti = {}", &decrypted_jti);
@@ -127,18 +133,62 @@ fn get_access_token_payload(req: &HttpRequest) -> Result<AccessTokenPayload, Err
                 return Err(ErrorForbidden("Invalid access token!"));
             }
         }
+        let access_token_file = match AccessTokenFile::read_from_disk(path){
+            Err(e) => {
+                warn!("Cannot read access token file: {}", &e);
+                return Err(ErrorUnauthorized("Unkown access token!"));
+            },
+            Ok(access_token_file) => access_token_file,
+        };
+
+        if let Err(validation_error) = validate_access_token(&bearer_token, &access_token_file){
+            warn!("{}", &validation_error);
+            return Err(ErrorForbidden("Invalid access token!"));
+        }
+
+        // TODO: check ip addresses
         return Ok(bearer_token);
     }
     warn!("No valid access token found!");
     Err(ErrorForbidden("No access token found!"))
 }
 
+fn validate_access_token(access_token: &AccessTokenPayload, access_token_file: &AccessTokenFile) -> Result<(),Box<dyn std::error::Error>>{
+    if access_token.nbf != access_token_file.nbf{
+        return Err("tampered access token, nbf does not match".into());
+    }
+    if access_token.exp != access_token_file.exp{
+        return Err("tampered access token, exp does not match".into());
+    }
+    let now = chrono::offset::Local::now();
+    debug!("now = {}", &now);
+    let exp = DateTime::from_timestamp(access_token_file.exp,0).expect("Invalid exp timestamp!");
+    let nbf = DateTime::from_timestamp(access_token_file.nbf,0).expect("Invalid nbf timestamp!");
+    if exp < now {
+        return Err("Access token expired!".into());
+    }
+    if nbf > now{
+        return Err("Access token not yet valid!".into());
+    }
+    Ok(())
+}
+
 #[derive(Clone, Debug, Deserialize)]
 pub struct AccessTokenConfiguration {
     pub api_access_files: String,
 }
+
+#[derive(Deserialize)]
 pub struct AccessTokenFile {
     pub ip_adresses: Vec<String>,
-    pub nbf: String,
-    pub exp: String,
+    pub nbf: i64,
+    pub exp: i64,
+}
+
+impl AccessTokenFile{
+    fn read_from_disk<P: AsRef<Path>>(path: P) -> Result<AccessTokenFile, Box<dyn std::error::Error>> {
+        let content = std::fs::read_to_string(&path)?;
+        let access_token_file: AccessTokenFile = serde_json::from_str(&content)?;
+        Ok(access_token_file)
+    }
 }
