@@ -66,6 +66,9 @@ See [lmtyas-config.json](resources/config/lmtyas-config.json) for an example con
 |     "client_secret":             | oidc client secret of this application, e.g. `"Y2xpZW50X3NlY3JldA=="`                                     |
 |     "valid_user_regex":          | regex of valid user names (email), e.g. `"^[\\w\\d\\-]{3,8}@acme\\.local$"`                               |
 | },                               | <== end object with optional oidc configuration                                                           |
+| "access_token_configuration": {  | ==> object with access token configuration                                                                |
+|     "api_access_files":          | directory with access token files, e.g. `"resources/tests/access_token_files"`                            |
+| },                               | <== end object with access token configuration                                                            |
 | "login_hint"                     | hint for users which account to use for login, e.g. `"A.C.M.E. LDAP account"`                             |
 | "mail_hint"                      | optional hint what mail address format should be used, e.g. `givenname.surname@acme.local`                |
 | "imprint": {                     | ==> object with imprint link data                                                                         |
@@ -85,7 +88,7 @@ See [lmtyas-config.json](resources/config/lmtyas-config.json) for an example con
         URL must be in the template, see [mailtemplate.txt](./resources/config/mailtemplate.txt).
 
         Depending on your authentication backends you may not know the data for each of the placeholders!
-- **NOTE 2** The objects `email_configuration`, `ldap_configuration` and `oidc_configuration` may be absent or differ, depending on the selected features. See section *[Compile and install -features](#compile-and-install---features)*.
+- **NOTE 2** The objects `email_configuration`, `ldap_configuration`, `access_token_configuration` and `oidc_configuration` may be absent or differ, depending on the selected features. See section *[Compile and install -features](#compile-and-install---features)*.
 - **NOTE 3** The directive `mail_hint` may be absent. If so the default `firstname.lastname@acme.local` will be used.
 
 You need a SSL certificate and its unencrypted key in pem format. Create your own *[set of rsa keys](#security---data-encryption---rsa-keys)*.
@@ -166,7 +169,7 @@ LockPersonality=yes
 __EOF__
 
 # create systemd environment file
-sudo mkdir /etc/lmtays
+sudo mkdir /etc/lmtays/
 sudo cat << __EOF__ > /etc/lmtyas/lmtyas-systemd.conf
 lmtyasCFGFILE="/etc/lmtyas/lmtyas-config.json"
 __EOF__
@@ -178,9 +181,10 @@ sudo systemctl daemon-reload
 sudo systemctl enable lmtyas.service
 sudo systemctl unmask lmtyas.service
 # copy binary
+mkdir -p /opt/lmtyas/access_token_files
 sudo cp target/release/lmtyas /opt/lmtyas/
 # copy files
-sudo cp --recursive web-content/* /opt/l3umw/web-content/
+sudo cp --recursive web-content/* /opt/lmtyas/web-content/
 
 # fix owner and acl
 sudo chown -R lmtyas:lmtyas /opt/lmtyas/
@@ -202,7 +206,7 @@ sudo systemctl start lmtyas.service
 
 Also see [Cargo.toml](./Cargo.toml), section `[features]`.
 
-- Default: **oidc-auth-ldap**, **mail-noauth-notls** (users are authenticated with an external oidc server: Authorization Code Flow with Proof Key for Code Exchange (PKCE). The only scope used is `email`, user details are queried from an external ldap server and emails are sent through a smtp server with no authentication and no encryption)
+- Default: **oidc-auth-ldap**, **mail-noauth-notls**, **api-access-token** (users are authenticated with an external oidc server: Authorization Code Flow with Proof Key for Code Exchange (PKCE). The only scope used is `email`, user details are queried from an external ldap server and emails are sent through a smtp server with no authentication and no encryption. Sending secrets via access token is enabled.)
 
   You may ask why we need oidc when we have a ldap server, we use to query user details: when an oidc server is available, your users know the look and feel of the login page. This way they may be more confidend to enter their credentials. Maybe you even use 2FA for your oidc solution, so why not benefit?
 
@@ -227,11 +231,12 @@ Also see [Cargo.toml](./Cargo.toml), section `[features]`.
 - **mail-noauth-notls**: send mails to user via mail server that does not need authentication and uses no encrypted transport.
 - **get-userdata-ldap**: query userdata (frist and last name by email address of secret receiver) from a ldap server.
 - **no-userdata-backend**: use this, when there is no backend (like e.g., a ldap server) to query userdata.
+- **api-access-token**: send secrets with an access token, see section [Security - API Token](#security---api-token).
 
 So far these combinations make sense:
 
-- `default = ["oidc-auth-ldap", "mail-noauth-notls"]`
-- `default = ["ldap-auth", "mail-noauth-notls"]`
+- `default = ["oidc-auth-ldap", "mail-noauth-notls", "api-access-token"]`
+- `default = ["ldap-auth", "mail-noauth-notls", "api-access-token"]`
 
 
 # Customization
@@ -356,48 +361,6 @@ The keys can be created with the `openssl` command:
 **NOTE4** The password for the private RSA test key is the very **unsecure** value of `12345678901234`.
 
 
-## Security - API Token - RSA Signing Keys
-
-- **NOTE1**: the password for the RSA API signing private key will be stored in encrypted form in the configuration file, so that it can only be used when the application has been restarted and the RSA private key from section [Security - Data Encryption - RSA Keys](#security---data-encryption---rsa-keys) has been loaded.
-- **Note2**: you must use at least 2048 bits for the rsa key (modulus >= 256) to make sure we can encrypt/decrypt all the data with the rsa key pair.
-
-The keys can be created with the `openssl` command:
-
-- **RSA private key**
-
-    ```bash
-    [ -d "resources/tests/rsa" ] || mkdir -p "resources/tests/rsa"; cd "resources/tests/rsa"
-    openssl genrsa -out lmtyas_api_private.key -aes256 4096
-    # (...)
-    Enter PEM pass phrase:
-    Verifying - Enter PEM pass phrase:
-    ```
-  -**NOTE3** The password for the private RSA API signing test key is the very **unsecure** value of `12345678901234`.
-- **RSA public key**
-
-    ```bash
-    openssl rsa -in lmtyas_api_private.key -pubout > lmtyas_api_public.key
-    Enter pass phrase for lmtyas_api_private.key:
-    writing RSA key
-    ```
-- **Encrypt password**
-
-  The password of the private key file `resources/tests/rsa/lmtyas_api_private.key` can be encrypted via an unix shell:
-
-  ```bash
-  echo -n "12345678901234"|openssl pkeyutl -encrypt -inkey resources/tests/rsa/lmtyas_rsa_public.key -pubin|base64 --wrap 0
-  7BWfV8/GaG1LySQjQJ4LfnE+TfhQ/DAG16RafwWsaoJBKuipRz5tkr2JKvqqIvXtaJr4UsAuSL7Vzp2fJFxsGlnqL8dEP7zoMFVM9IswNCJ1ivUln3YE9vCLdLk6U+17ku6TVBQ4mq5ypbksblcmkhFXrHG0SPxhe9JxhM81LA6Uqr5cn/26HBEGNX9F32khYXVtPm7kXBE8bmobvkT04BQsiv7Vi+CV6CgygP14R924K3+ZDVyYeUxOPVR521qEMQ2limmF4LARGseuXM7ZyKRUrYMYnK2i21sukmaCJ0iwqEPkXoR3KdKbC8s7jNvnAKvZcjAt4MbUeL5BJ1x3tRZQFqas8UpPsYJhjIRbT8kc2buyNVzf9R6tGYBZRMXpAI4/+uBc4VENKZoc0j4/aYJBrP3J8EbhjB9zg8PO4PCiO1hF6AfLSFRUm6BgS/lWsry0Tz1ia1cEn1hGurKjeAGk7XbiAkn3fcp9g0vDaCEMCXFkMMZwpmHx/uoRlaHuPAX5Yyxh247ieVItMQY1SvrIISbGwm/KVQEJBtuCI4rM6TdPcfyGyBRWG2qcVJItfC082L7+sebdMyxsD9pjsFaMMneF0nlvUMPVAumddq1jFRCrsDD+UAsRk1dExV7BC/3UJKsSeyhrjaxyXVI1y4Mvg6JoaxdPcTUnDqFRo8w=
-  ```
-
-  Decryption for validation:
-
-  ```bash
-  echo -n "7BWfV8/GaG1LySQjQJ4LfnE+TfhQ/DAG16RafwWsaoJBKuipRz5tkr2JKvqqIvXtaJr4UsAuSL7Vzp2fJFxsGlnqL8dEP7zoMFVM9IswNCJ1ivUln3YE9vCLdLk6U+17ku6TVBQ4mq5ypbksblcmkhFXrHG0SPxhe9JxhM81LA6Uqr5cn/26HBEGNX9F32khYXVtPm7kXBE8bmobvkT04BQsiv7Vi+CV6CgygP14R924K3+ZDVyYeUxOPVR521qEMQ2limmF4LARGseuXM7ZyKRUrYMYnK2i21sukmaCJ0iwqEPkXoR3KdKbC8s7jNvnAKvZcjAt4MbUeL5BJ1x3tRZQFqas8UpPsYJhjIRbT8kc2buyNVzf9R6tGYBZRMXpAI4/+uBc4VENKZoc0j4/aYJBrP3J8EbhjB9zg8PO4PCiO1hF6AfLSFRUm6BgS/lWsry0Tz1ia1cEn1hGurKjeAGk7XbiAkn3fcp9g0vDaCEMCXFkMMZwpmHx/uoRlaHuPAX5Yyxh247ieVItMQY1SvrIISbGwm/KVQEJBtuCI4rM6TdPcfyGyBRWG2qcVJItfC082L7+sebdMyxsD9pjsFaMMneF0nlvUMPVAumddq1jFRCrsDD+UAsRk1dExV7BC/3UJKsSeyhrjaxyXVI1y4Mvg6JoaxdPcTUnDqFRo8w="|base64 -d|openssl pkeyutl -decrypt -inkey resources/tests/rsa/lmtyas_rsa_private.key
-  Enter pass phrase for lmtyas_rsa_private.key:
-  12345678901234
-  ```
-
-
 ## Security - Web Service - SSL/TLS
 
 For development a self signed certificate was used, in production you can use a certificate from any CA that you trust (or your browser, to be more specific).
@@ -414,6 +377,92 @@ Organization Name (eg, company) [Internet Widgits Pty Ltd]:ACME
 Organizational Unit Name (eg, section) []:HQ
 Common Name (e.g. server FQDN or YOUR name) []:lmtyas.home.arpa
 Email Address []:rainer.zufall@lmtyas.home.arpa
+```
+
+
+## Security - API Token
+
+**Server side**
+
+Execute the following in a Unix shell:
+
+```bash
+# List of IP addresses from which passwords are to be sent via script.
+# This should be done as sparingly as possible.
+IPADDRESSES='"192.168.42.78","192.168.42.79"'
+# Expiration date of the access token
+ENDDATE=$(date -d "Dec 31 2028" +%s)
+# This e-mail address is entered by the server as the sender of the password
+EMAIL="IT scripting team <do-not-reply@lmtyas.acme.home.arpa>"
+# This is the name of the sender in the email, the {FromDisplayName} field from
+# from the template is replaced here. It should make sense in context of the
+# salutation used in the template.
+DISPLAYNAME="our scriptig team"
+
+# Do not change anything here!
+NOW=$(date +%s)
+UUID=$(uuidgen)
+```
+
+In a subsequent step, create the file for the server:
+
+```bash
+cat << __EOF__ > "${UUID}"
+{
+    "ip_adresses": [${IPADDRESSES}],
+    "nbf": ${NOW},
+    "exp": ${ENDDATE},
+    "from_email": "${EMAIL}",
+    "from_display_name": "${DISPLAYNAME}"
+}
+__EOF__
+```
+
+The file generated in this way must be copied to the server to the configured `api_access_files`. Change the owner of the file to to service user, e.g. `lmtyas` and the permissions to `440` (read only).
+
+
+**Access token**
+
+The same values must be used for `NOW` and `ENDDATE` as well as `UUID` that are used in the server file!
+
+```bash
+# The UUID is encrypted here with the server's RSA public key and encoded in Base64.
+JTI=$(echo -n "${UUID}"|openssl pkeyutl -encrypt -inkey <public rsa key file> -pubin|base64 --wrap 0)
+```
+
+Now "generate" the access token:
+
+```bash
+cat << __EOF__
+{
+    "iss": "https://127.0.0.1:8844",
+    "sub": "${UUID}",
+    "aud": "https://127.0.0.1:8844/api/v1/secret",
+    "nbf": ${NOW},
+    "exp": ${ENDDATE},
+    "jti": "${JTI}"
+}
+__EOF__
+```
+
+The values for `iss` and `aud` do technically not really matter, they are just meant for the user of the access token. so that they know, what the token is used for.
+
+You can use this web service to tell them the token in a secure way ;-)
+
+**Token usage**
+
+Use a base64 encoded value for the `"Secret":"<value>"` part, like e.g.
+
+```bash
+echo -n "super secret!"|base64 --wrap 0
+# result:
+c3VwZXIgc2VjcmV0IQ==
+```
+
+Here is an example utilizing `curl` to send a secret to user *Alice* via the URL `https://<server name or ip>:<port>/api/v1/secret`:
+
+```bash
+TOKEN=$(cat resources/tests/access_token_payload/test-token-payload.json|base64 --wrap 0);curl --insecure --include --header "Authorization: Bearer ${TOKEN}" --request POST --data '{"FromEmail":"","FromDisplayName":"","ToEmail":"alice@acme.local","ToDisplayName":"","Context":"script test","Secret":"c3VwZXIgc2VjcmV0IQ=="}' https://127.0.0.1:8844/api/v1/secret
 ```
 
 
@@ -680,7 +729,7 @@ Tests are at the moment far from complete.
 - **ldap authentication**
 
   ```bash
-  cargo test --no-default-features --features ldap-auth,mail-noauth-notls
+  cargo test --no-default-features --features ldap-auth,mail-noauth-notls,api-access-token
   ```
 
 If test fails the external processes may still be running. To find and kill them and assuming you have no other processes with these speficics, you can enter
