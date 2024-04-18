@@ -294,7 +294,7 @@ pub async fn store_secret(
 /// Returns the length of a base64 decoded secret. If it cannot be decoded
 /// at all, MAX_FORM_INPUT_LEN + 1 will be returned as length.
 fn get_base64_encoded_secret_len(parsed_secret: &str) -> usize {
-    let decoded_secret = match Vec::from_base64_encoded(parsed_secret) {
+    let mut decoded_secret = match Vec::from_base64_encoded(parsed_secret) {
         Ok(s) => s,
         Err(e) => {
             warn!("error decoding secret, assuming input too long: {}", &e);
@@ -304,7 +304,9 @@ fn get_base64_encoded_secret_len(parsed_secret: &str) -> usize {
     if decoded_secret.len() > MAX_FORM_INPUT_LEN {
         warn!("secret is too large: {} bytes!", &decoded_secret.len());
     }
-    decoded_secret.len()
+    let len = decoded_secret.len();
+    decoded_secret.zeroize();
+    len
 }
 
 /// Parses and validates secret form data, so that it can be used from
