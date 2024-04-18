@@ -18,6 +18,7 @@ use uuid::Uuid;
 /// Payload of an access token, that can be used for scripting.
 ///
 /// It resembles a JWT but it is reduced to our purpose.
+/// See resources/tests/access_token_payload/test-token-payload.json
 ///
 /// ```json
 /// {
@@ -31,11 +32,17 @@ use uuid::Uuid;
 /// ```
 #[derive(Deserialize)]
 pub struct AccessTokenPayload {
+    /// Inormation the the user
     pub iss: String,
+    /// The name of our access token file
     pub sub: Uuid,
+    /// Inormation the the user
     pub aud: String,
+    /// Not valid before (Unix timestamp)
     pub nbf: i64,
+    /// Expires at (Unix timestamp)
     pub exp: i64,
+    // Base64 encoded and rsa encrypted UUID that must match the `sub` value.
     pub jti: String,
 }
 
@@ -65,15 +72,19 @@ impl FromRequest for AccessTokenPayload {
     }
 }
 
+/// Extracts the access token from the request and validates it.
 fn get_access_token_payload(req: &HttpRequest) -> Result<AccessTokenPayload, Error> {
     let app_data: Option<&web::Data<ApplicationConfiguration>> = req.app_data();
     if app_data.is_none() {
         warn!("get_access_token_payload(): app_data is empty(none)!");
         return Err(ErrorUnauthorized("No app_data, configuration missing!"));
     }
+
+    // If for whatever reason more than one "Authorization: Bearer <token>" header is presented,
+    // we will loop over them but in the end the first one must fit.
     for header_value in req.head().headers().get_all(http::header::AUTHORIZATION) {
         let b64_bearer_token = match header_value.get_bearer_token_value() {
-            Some(encrypted_b64_bearer_token) => encrypted_b64_bearer_token,
+            Some(b64_bearer_token) => b64_bearer_token,
             None => {
                 warn!("Unkown bearer token value!");
                 return Err(ErrorUnauthorized("No access token found!"));
@@ -106,17 +117,6 @@ fn get_access_token_payload(req: &HttpRequest) -> Result<AccessTokenPayload, Err
         debug!("bearer_token = {}", &bearer_token);
         let application_configuration = app_data.unwrap().clone();
         let sub = bearer_token.sub.to_string();
-        let path = Path::new(
-            &application_configuration
-                .configuration_file
-                .access_token_configuration
-                .api_access_files,
-        )
-        .join(sub.clone());
-        if !path.exists() {
-            warn!("Token file {} does not exist!", &path.display());
-            return Err(ErrorUnauthorized("Unkown access token!"));
-        }
 
         let rsa_read_lock = application_configuration.rsa_keys.read().unwrap();
         if let Ok(decrypted_jti) = rsa_read_lock.decrypt_str(&bearer_token.jti) {
@@ -129,6 +129,22 @@ fn get_access_token_payload(req: &HttpRequest) -> Result<AccessTokenPayload, Err
                 return Err(ErrorForbidden("Invalid access token!"));
             }
         }
+
+        // Only try to read the access token file after validation that the "jit" value matches
+        // the "sub" value, so that changing the UUID ("sub" value) in the presented access token
+        // cannot be used to sniff out possible files.
+        let path = Path::new(
+            &application_configuration
+                .configuration_file
+                .access_token_configuration
+                .api_access_files,
+        )
+        .join(sub.clone());
+        if !path.exists() {
+            warn!("Token file {} does not exist!", &path.display());
+            return Err(ErrorUnauthorized("Unkown access token!"));
+        }
+
         let access_token_file = match AccessTokenFile::read_from_disk(path) {
             Err(e) => {
                 warn!("Cannot read access token file: {}", &e);
@@ -143,18 +159,25 @@ fn get_access_token_payload(req: &HttpRequest) -> Result<AccessTokenPayload, Err
         }
 
         let ip_address = get_peer_ip_address(&req);
-        if !access_token_file.ip_adresses.contains(&ip_address){
-            warn!("host at ip address {} is invalid for access token {}", &ip_address, &bearer_token);
+        if !access_token_file.ip_adresses.contains(&ip_address) {
+            warn!(
+                "host at ip address {} is invalid for access token {}",
+                &ip_address, &bearer_token
+            );
             return Err(ErrorForbidden("Invalid access token!"));
         }
-        info!("host at ip address {} presented valid access token {}", &ip_address, &bearer_token);
+        info!(
+            "host at ip address {} presented valid access token {}",
+            &ip_address, &bearer_token
+        );
         return Ok(bearer_token);
     }
     warn!("No valid access token found!");
     Err(ErrorForbidden("No access token found!"))
 }
 
-
+/// Checks if the values in the presented access token match
+/// those stored in the file on disk.
 #[inline(always)]
 fn validate_access_token(
     access_token: &AccessTokenPayload,
@@ -176,9 +199,9 @@ fn validate_access_token(
     if nbf > now {
         return Err("Access token not yet valid!".into());
     }
+    // We ignore the "iss" and "aud" values, they are just clues for the user of the access token.
     Ok(())
 }
-
 
 const UNKNOWN_PEER_IP: &str = "unknown peer";
 
@@ -190,20 +213,28 @@ fn get_peer_ip_address(request: &HttpRequest) -> String {
     }
 }
 
-
+/// Part of the configuration file for the lmtyas web service.
 #[derive(Clone, Debug, Deserialize)]
 pub struct AccessTokenConfiguration {
+    /// Name of the directory where the access token files are stored.
     pub api_access_files: String,
 }
 
+/// Counterpart for access tokens stored on disk. Should be more than
+/// fast enough to read these files each time.
 #[derive(Deserialize)]
 pub struct AccessTokenFile {
+    /// List of valid ip addresses that may present this access token
     pub ip_adresses: Vec<String>,
+    /// Not valid before (Unix timestamp)
     pub nbf: i64,
+    /// Expires at (Unix timestamp)
     pub exp: i64,
 }
 
 impl AccessTokenFile {
+    /// Reads the access token file at the given path
+    /// and tries to parse its json into `AccessTokenFile`.
     fn read_from_disk<P: AsRef<Path>>(
         path: P,
     ) -> Result<AccessTokenFile, Box<dyn std::error::Error>> {
