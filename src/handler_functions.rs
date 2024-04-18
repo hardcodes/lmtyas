@@ -333,8 +333,8 @@ async fn parse_and_validate_secret_form_data(
     }
     let mut parsed_form_data = match serde_json::from_str(&form_data) as Result<Secret, _> {
         Ok(parsed_form_data) => parsed_form_data,
-        Err(_) => {
-            warn!("could not parse json form data!");
+        Err(e) => {
+            warn!("could not parse json form data with secret: {}", &e);
             return Err("ERROR: could not parse json form data".into());
         }
     };
