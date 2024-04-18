@@ -7,7 +7,7 @@ use actix_web::{
     http, web, Error, FromRequest, HttpRequest,
 };
 use chrono::DateTime;
-use log::{debug, warn};
+use log::{debug, info, warn};
 use serde::Deserialize;
 use std::fmt;
 use std::future::Future;
@@ -142,13 +142,20 @@ fn get_access_token_payload(req: &HttpRequest) -> Result<AccessTokenPayload, Err
             return Err(ErrorForbidden("Invalid access token!"));
         }
 
-        // TODO: check ip addresses
+        let ip_address = get_peer_ip_address(&req);
+        if !access_token_file.ip_adresses.contains(&ip_address){
+            warn!("host at ip address {} is invalid for access token {}", &ip_address, &bearer_token);
+            return Err(ErrorForbidden("Invalid access token!"));
+        }
+        info!("host at ip address {} presented valid access token {}", &ip_address, &bearer_token);
         return Ok(bearer_token);
     }
     warn!("No valid access token found!");
     Err(ErrorForbidden("No access token found!"))
 }
 
+
+#[inline(always)]
 fn validate_access_token(
     access_token: &AccessTokenPayload,
     access_token_file: &AccessTokenFile,
@@ -171,6 +178,18 @@ fn validate_access_token(
     }
     Ok(())
 }
+
+
+const UNKNOWN_PEER_IP: &str = "unknown peer";
+
+#[inline(always)]
+fn get_peer_ip_address(request: &HttpRequest) -> String {
+    match request.peer_addr() {
+        None => UNKNOWN_PEER_IP.to_string(),
+        Some(s) => s.ip().to_string(),
+    }
+}
+
 
 #[derive(Clone, Debug, Deserialize)]
 pub struct AccessTokenConfiguration {
