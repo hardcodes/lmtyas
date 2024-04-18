@@ -276,122 +276,9 @@ pub async fn store_secret(
         }
     };
     
-    // aes encrypt the secret before rsa or hybrid rsa/aes encryption
-    let aes_encryption_result = match parsed_form_data.secret.to_aes_enrypted_b64() {
-        Ok(aes_encryption_result) => aes_encryption_result,
-        Err(e) => {
-            warn!("could not aes encrypt data: {}", &e);
-            return HttpResponse::err_text_response("ERROR: could not aes encrypt data!");
-        }
-    };
-    // store aes encrypted secret instead of plaintext secret
-    parsed_form_data.secret = aes_encryption_result.encrypted_data.clone();
-    // rsa encrypt all data
-    let encrypted_form_data =
-        match parsed_form_data.to_encrypted(&application_configuration.rsa_keys.read().unwrap()) {
-            Ok(encrypted_form_data) => encrypted_form_data,
-            Err(e) => {
-                warn!("could not create encrypted form data: {}", &e);
-                return HttpResponse::err_text_response(format!("ERROR: {}", &e));
-            }
-        };
-
-    // write data to disk
-    let uuid = application_configuration
-        .shared_secret
-        .write()
-        .unwrap()
-        .create_uuid();
-
-    let path = Path::new(
-        &application_configuration
-            .configuration_file
-            .secret_directory,
-    )
-    .join(uuid.to_string());
-    info!("writing secret to file {}", &path.display());
-    if let Err(e) = encrypted_form_data.write_to_disk(&path).await {
-        warn!("{}", &e);
-        return HttpResponse::err_text_response(format!(
-            "ERROR: could not write secret {} to disk!",
-            &path.display()
-        ));
-    };
-
-    info!("success, file {} written", &path.display());
-    // build url payload for email
-    let url_payload = format!(
-        "{};{};{}",
-        &uuid.to_string(),
-        &aes_encryption_result.encryption_iv,
-        aes_encryption_result.encryption_key
-    );
-    debug!("url_payload = {}", &url_payload);
-    // rsa encrypt url payload
-    let encrypted_url_payload = match application_configuration
-        .rsa_keys
-        .read()
-        .unwrap()
-        .encrypt_str(&url_payload)
-    {
-        Ok(encrypted_url_payload) => encrypted_url_payload,
-        Err(e) => {
-            warn!("could not rsa encrypt url payload: {}", &e);
-            return HttpResponse::err_text_response(format!("ERROR: {}", &e));
-        }
-    };
-    let encrypted_percent_encoded_url_payload =
-        utf8_percent_encode(&encrypted_url_payload, FRAGMENT);
-    debug!(
-        "encrypted_percent_encoded_url_payload = {}",
-        &encrypted_percent_encoded_url_payload
-    );
-    // send email to receiver
-    let mail_body_template = match application_configuration
-        .configuration_file
-        .email_configuration
-        .load_mail_template()
-    {
-        Ok(mail_body_template) => mail_body_template,
-        Err(e) => {
-            warn!("error loading mail template: {}", &e);
-            return HttpResponse::err_text_response("ERROR: cannot send email!");
-        }
-    };
-    let mail_body = &parsed_form_data.build_mail_body(
-        &mail_body_template,
-        &encrypted_percent_encoded_url_payload.to_string(),
-    );
-    let mail_subject = &parsed_form_data.build_context(
-        &application_configuration
-            .configuration_file
-            .email_configuration
-            .mail_subject,
-    );
-    info!(
-        "sending email to {} for secret {}",
-        &parsed_form_data.to_email,
-        &uuid.to_string()
-    );
-
-    if let Err(e) = &application_configuration
-        .configuration_file
-        .email_configuration
-        .send_mail(
-            &parsed_form_data.to_email,
-            &parsed_form_data.from_email,
-            mail_subject,
-            mail_body,
-        )
-    {
-        warn!(
-            "error sending email to {} for secret {}: {}",
-            &parsed_form_data.to_email,
-            &uuid.to_string(),
-            &e
-        );
-        return HttpResponse::err_text_response("ERROR: cannot send email!");
-    };
+    if let Err(e) = encrypt_store_send_secret(&mut parsed_form_data, &application_configuration).await{
+        return HttpResponse::err_text_response(e.to_string());
+    }
     HttpResponse::ok_text_response("OK")
 }
 
@@ -502,6 +389,131 @@ async fn parse_and_validate_secret_form_data(bytes: &Bytes, application_configur
     parsed_form_data.from_display_name = user.display_name();
     parsed_form_data.from_email = user.mail.clone();
     Ok(parsed_form_data)
+}
+
+
+/// Encrypts parsed secret form data,
+/// stores it on disk and sends the email with
+/// the link to reveal the secret.
+/// This way it can be used from multiple functions.
+async fn encrypt_store_send_secret(parsed_form_data: &mut Secret, application_configuration: &web::Data<ApplicationConfiguration>) -> Result <(), Box<dyn std::error::Error>>{
+    // aes encrypt the secret before rsa or hybrid rsa/aes encryption
+    let aes_encryption_result = match parsed_form_data.secret.to_aes_enrypted_b64() {
+        Ok(aes_encryption_result) => aes_encryption_result,
+        Err(e) => {
+            warn!("could not aes encrypt data: {}", &e);
+            return Err("ERROR: could not aes encrypt data!".into());
+        }
+    };
+    // store aes encrypted secret instead of plaintext secret
+    parsed_form_data.secret = aes_encryption_result.encrypted_data.clone();
+    // rsa encrypt all data
+    let encrypted_form_data =
+        match parsed_form_data.to_encrypted(&application_configuration.rsa_keys.read().unwrap()) {
+            Ok(encrypted_form_data) => encrypted_form_data,
+            Err(e) => {
+                warn!("could not create encrypted form data: {}", &e);
+                return Err(format!("ERROR: {}", &e).into());
+            }
+        };
+
+    // write data to disk
+    let uuid = application_configuration
+        .shared_secret
+        .write()
+        .unwrap()
+        .create_uuid();
+
+    let path = Path::new(
+        &application_configuration
+            .configuration_file
+            .secret_directory,
+    )
+    .join(uuid.to_string());
+    info!("writing secret to file {}", &path.display());
+    if let Err(e) = encrypted_form_data.write_to_disk(&path).await {
+        warn!("{}", &e);
+        return Err(format!(
+            "ERROR: could not write secret {} to disk!",
+            &path.display()
+        ).into());
+    };
+
+    info!("success, file {} written", &path.display());
+    // build url payload for email
+    let url_payload = format!(
+        "{};{};{}",
+        &uuid.to_string(),
+        &aes_encryption_result.encryption_iv,
+        aes_encryption_result.encryption_key
+    );
+    debug!("url_payload = {}", &url_payload);
+    // rsa encrypt url payload
+    let encrypted_url_payload = match application_configuration
+        .rsa_keys
+        .read()
+        .unwrap()
+        .encrypt_str(&url_payload)
+    {
+        Ok(encrypted_url_payload) => encrypted_url_payload,
+        Err(e) => {
+            warn!("could not rsa encrypt url payload: {}", &e);
+            return Err(format!("ERROR: {}", &e).into());
+        }
+    };
+    let encrypted_percent_encoded_url_payload =
+        utf8_percent_encode(&encrypted_url_payload, FRAGMENT);
+    debug!(
+        "encrypted_percent_encoded_url_payload = {}",
+        &encrypted_percent_encoded_url_payload
+    );
+    // send email to receiver
+    let mail_body_template = match application_configuration
+        .configuration_file
+        .email_configuration
+        .load_mail_template()
+    {
+        Ok(mail_body_template) => mail_body_template,
+        Err(e) => {
+            warn!("error loading mail template: {}", &e);
+            return Err("ERROR: cannot send email!".into());
+        }
+    };
+    let mail_body = &parsed_form_data.build_mail_body(
+        &mail_body_template,
+        &encrypted_percent_encoded_url_payload.to_string(),
+    );
+    let mail_subject = &parsed_form_data.build_context(
+        &application_configuration
+            .configuration_file
+            .email_configuration
+            .mail_subject,
+    );
+    info!(
+        "sending email to {} for secret {}",
+        &parsed_form_data.to_email,
+        &uuid.to_string()
+    );
+
+    if let Err(e) = &application_configuration
+        .configuration_file
+        .email_configuration
+        .send_mail(
+            &parsed_form_data.to_email,
+            &parsed_form_data.from_email,
+            mail_subject,
+            mail_body,
+        )
+    {
+        warn!(
+            "error sending email to {} for secret {}: {}",
+            &parsed_form_data.to_email,
+            &uuid.to_string(),
+            &e
+        );
+        return Err("ERROR: cannot send email!".into());
+    };
+    Ok(())
 }
 
 
