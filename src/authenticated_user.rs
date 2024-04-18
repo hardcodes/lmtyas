@@ -23,6 +23,7 @@ const NODE_ID: &[u8; 6] = &[0x27, 0x9b, 0xbe, 0x13, 0x86, 0x80];
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum AccessScope {
     User,
+    ScriptUser,
     Administrator,
 }
 
@@ -77,7 +78,9 @@ impl AuthenticatedUser {
     /// get display name of authenticated user
     /// (first name [SPACE] last name)
     pub fn display_name(&self) -> String {
-        format!("{} {}", &self.first_name, &self.last_name).to_string()
+        format!("{} {}", &self.first_name, &self.last_name)
+            .trim()
+            .to_string()
     }
 
     /// Update the timestamp before a cookie lifetime is expired

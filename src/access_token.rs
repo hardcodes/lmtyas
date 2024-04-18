@@ -62,9 +62,9 @@ impl fmt::Display for AccessTokenPayload {
 /// extract an AccessTokenPayload from a HttpRequest
 /// Makes accessing token data in handler functions
 /// easier.
-impl FromRequest for AccessTokenPayload {
+impl FromRequest for ValidatedAccessTokenPayload {
     type Error = Error;
-    type Future = Pin<Box<dyn Future<Output = Result<AccessTokenPayload, Error>>>>;
+    type Future = Pin<Box<dyn Future<Output = Result<ValidatedAccessTokenPayload, Error>>>>;
 
     fn from_request(req: &HttpRequest, _payload: &mut Payload) -> Self::Future {
         let req = req.clone();
@@ -73,7 +73,7 @@ impl FromRequest for AccessTokenPayload {
 }
 
 /// Extracts the access token from the request and validates it.
-fn get_access_token_payload(req: &HttpRequest) -> Result<AccessTokenPayload, Error> {
+fn get_access_token_payload(req: &HttpRequest) -> Result<ValidatedAccessTokenPayload, Error> {
     let app_data: Option<&web::Data<ApplicationConfiguration>> = req.app_data();
     if app_data.is_none() {
         warn!("get_access_token_payload(): app_data is empty(none)!");
@@ -140,10 +140,6 @@ fn get_access_token_payload(req: &HttpRequest) -> Result<AccessTokenPayload, Err
                 .api_access_files,
         )
         .join(sub.clone());
-        if !path.exists() {
-            warn!("Token file {} does not exist!", &path.display());
-            return Err(ErrorUnauthorized("Unkown access token!"));
-        }
 
         let access_token_file = match AccessTokenFile::read_from_disk(path) {
             Err(e) => {
@@ -170,7 +166,16 @@ fn get_access_token_payload(req: &HttpRequest) -> Result<AccessTokenPayload, Err
             "host at ip address {} presented valid access token {}",
             &ip_address, &bearer_token
         );
-        return Ok(bearer_token);
+        return Ok(ValidatedAccessTokenPayload{
+            iss: bearer_token.iss,
+            sub: bearer_token.sub.to_string(),
+            aud: bearer_token.aud,
+            nbf: bearer_token.nbf,
+            exp: bearer_token.exp,
+            from_email: access_token_file.from_email,
+            from_display_name: access_token_file.from_display_name,
+            ip_address
+        });
     }
     warn!("No valid access token found!");
     Err(ErrorForbidden("No access token found!"))
@@ -230,16 +235,61 @@ pub struct AccessTokenFile {
     pub nbf: i64,
     /// Expires at (Unix timestamp)
     pub exp: i64,
+    /// email address that will be inserted when sending
+    /// the email to the secret receiver
+    pub from_email: String,
+    /// display name that gets used in the email sent
+    /// to the secret receiver
+    pub from_display_name: String,
 }
 
 impl AccessTokenFile {
     /// Reads the access token file at the given path
     /// and tries to parse its json into `AccessTokenFile`.
-    fn read_from_disk<P: AsRef<Path>>(
+    pub fn read_from_disk<P: AsRef<Path>>(
         path: P,
     ) -> Result<AccessTokenFile, Box<dyn std::error::Error>> {
         let content = std::fs::read_to_string(&path)?;
         let access_token_file: AccessTokenFile = serde_json::from_str(&content)?;
         Ok(access_token_file)
+    }
+}
+
+/// Will be constructed after the access token has been verified.
+/// The data will be used in the handler function of the api request.
+/// This way the access token file must only be read once.
+pub struct ValidatedAccessTokenPayload {
+    /// Inormation the the user
+    pub iss: String,
+    /// The name of our access token file
+    pub sub: String,
+    /// Inormation the the user
+    pub aud: String,
+    /// Not valid before (Unix timestamp)
+    pub nbf: i64,
+    /// Expires at (Unix timestamp)
+    pub exp: i64,
+    /// email address that will be inserted when sending
+    /// the email to the secret receiver
+    pub from_email: String,
+    /// display name that gets used in the email sent
+    /// to the secret receiver
+    pub from_display_name: String,
+    /// ip_adress of the scripting host
+    pub ip_address: String,
+    
+}
+
+impl fmt::Display for ValidatedAccessTokenPayload {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "(sub={}, nbf={}, exp={}, from_email={}, from_display_name={})",
+            self.sub.to_string(),
+            self.nbf,
+            self.exp,
+            self.from_email,
+            self.from_display_name,
+        )
     }
 }

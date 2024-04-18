@@ -1,9 +1,9 @@
 //#[macro_use]
 extern crate env_logger;
 #[cfg(feature = "api-access-token")]
-use crate::access_token::AccessTokenPayload;
+use crate::access_token::ValidatedAccessTokenPayload;
 use crate::aes_functions::{DecryptAes, EncryptAes};
-use crate::authenticated_user::{AuthenticatedAdministrator, AuthenticatedUser};
+use crate::authenticated_user::{AccessScope, AuthenticatedAdministrator, AuthenticatedUser};
 use crate::authentication_functions::update_authenticated_user_cookie_lifetime;
 use crate::base64_trait::Base64VecU8Conversions;
 use crate::configuration::ApplicationConfiguration;
@@ -21,6 +21,7 @@ use crate::{MAX_FORM_BYTES_LEN, MAX_FORM_INPUT_LEN};
 use actix_files::NamedFile;
 use actix_web::web::Bytes;
 use actix_web::{http::header, http::StatusCode, web, HttpRequest, HttpResponse, Responder};
+use chrono::Utc;
 use log::{debug, info, warn};
 use percent_encoding::{percent_decode_str, utf8_percent_encode, AsciiSet, CONTROLS};
 use secstr::SecStr;
@@ -269,14 +270,22 @@ pub async fn store_secret(
 ) -> HttpResponse {
     debug!("store_secret()");
 
-    let mut parsed_form_data = match parse_and_validate_secret_form_data(&bytes, &application_configuration, &user).await{
+    let mut parsed_form_data = match parse_and_validate_secret_form_data(
+        &bytes,
+        &application_configuration,
+        &user,
+    )
+    .await
+    {
         Ok(parsed_form_data) => parsed_form_data,
         Err(e) => {
             return HttpResponse::err_text_response(e.to_string());
         }
     };
-    
-    if let Err(e) = encrypt_store_send_secret(&mut parsed_form_data, &application_configuration).await{
+
+    if let Err(e) =
+        encrypt_store_send_secret(&mut parsed_form_data, &application_configuration).await
+    {
         return HttpResponse::err_text_response(e.to_string());
     }
     HttpResponse::ok_text_response("OK")
@@ -300,7 +309,11 @@ fn get_base64_encoded_secret_len(parsed_secret: &str) -> usize {
 
 /// Parses and validates secret form data, so that it can be used from
 /// multpile functions.
-async fn parse_and_validate_secret_form_data(bytes: &Bytes, application_configuration: &web::Data<ApplicationConfiguration>, user: &AuthenticatedUser,) -> Result <Secret, Box<dyn std::error::Error>>{
+async fn parse_and_validate_secret_form_data(
+    bytes: &Bytes,
+    application_configuration: &web::Data<ApplicationConfiguration>,
+    user: &AuthenticatedUser,
+) -> Result<Secret, Box<dyn std::error::Error>> {
     let bytes_vec = bytes.to_vec();
     let form_data = match String::from_utf8(bytes_vec) {
         Ok(form_data) => form_data,
@@ -315,7 +328,8 @@ async fn parse_and_validate_secret_form_data(bytes: &Bytes, application_configur
         return Err(format!(
             "ERROR: more than {} bytes of data sent",
             &MAX_FORM_BYTES_LEN
-        ).into());
+        )
+        .into());
     }
     let mut parsed_form_data = match serde_json::from_str(&form_data) as Result<Secret, _> {
         Ok(parsed_form_data) => parsed_form_data,
@@ -327,35 +341,23 @@ async fn parse_and_validate_secret_form_data(bytes: &Bytes, application_configur
     debug!("parsed_form_data={:?}", &parsed_form_data);
     if parsed_form_data.from_email.len() > MAX_FORM_INPUT_LEN {
         warn!("from email > {} chars!", MAX_FORM_INPUT_LEN);
-        return Err(format!(
-            "ERROR: from email > {} chars",
-            MAX_FORM_INPUT_LEN
-        ).into());
+        return Err(format!("ERROR: from email > {} chars", MAX_FORM_INPUT_LEN).into());
     }
     if parsed_form_data.to_email.len() > MAX_FORM_INPUT_LEN {
         warn!("to email > {} chars!", MAX_FORM_INPUT_LEN);
-        return Err(format!(
-            "ERROR: to email > {} chars",
-            MAX_FORM_INPUT_LEN
-        ).into());
+        return Err(format!("ERROR: to email > {} chars", MAX_FORM_INPUT_LEN).into());
     }
     if parsed_form_data.context.len() > MAX_FORM_INPUT_LEN {
         warn!("context > {} chars!", MAX_FORM_INPUT_LEN);
-        return Err(format!(
-            "ERROR: context > {} chars",
-            MAX_FORM_INPUT_LEN
-        ).into());
+        return Err(format!("ERROR: context > {} chars", MAX_FORM_INPUT_LEN).into());
     }
     let secret_length = get_base64_encoded_secret_len(&parsed_form_data.secret);
     if secret_length > MAX_FORM_INPUT_LEN {
         warn!("secret > {} bytes!", MAX_FORM_INPUT_LEN);
-        return Err(format!(
-            "ERROR: secret > {} bytes!",
-            MAX_FORM_INPUT_LEN
-        ).into());
+        return Err(format!("ERROR: secret > {} bytes!", MAX_FORM_INPUT_LEN).into());
     }
-        // Check if that looks like an email address before we query some external data source.
-        if !application_configuration
+    // Check if that looks like an email address before we query some external data source.
+    if !application_configuration
         .email_regex
         .is_match(&parsed_form_data.to_email)
     {
@@ -381,7 +383,8 @@ async fn parse_and_validate_secret_form_data(bytes: &Bytes, application_configur
             return Err(format!(
                 "ERROR: cannot find email address {}",
                 &parsed_form_data.to_email
-            ).into());
+            )
+            .into());
         }
     };
     parsed_form_data.to_display_name = display_name;
@@ -391,12 +394,14 @@ async fn parse_and_validate_secret_form_data(bytes: &Bytes, application_configur
     Ok(parsed_form_data)
 }
 
-
 /// Encrypts parsed secret form data,
 /// stores it on disk and sends the email with
 /// the link to reveal the secret.
 /// This way it can be used from multiple functions.
-async fn encrypt_store_send_secret(parsed_form_data: &mut Secret, application_configuration: &web::Data<ApplicationConfiguration>) -> Result <(), Box<dyn std::error::Error>>{
+async fn encrypt_store_send_secret(
+    parsed_form_data: &mut Secret,
+    application_configuration: &web::Data<ApplicationConfiguration>,
+) -> Result<(), Box<dyn std::error::Error>> {
     // aes encrypt the secret before rsa or hybrid rsa/aes encryption
     let aes_encryption_result = match parsed_form_data.secret.to_aes_enrypted_b64() {
         Ok(aes_encryption_result) => aes_encryption_result,
@@ -433,10 +438,7 @@ async fn encrypt_store_send_secret(parsed_form_data: &mut Secret, application_co
     info!("writing secret to file {}", &path.display());
     if let Err(e) = encrypted_form_data.write_to_disk(&path).await {
         warn!("{}", &e);
-        return Err(format!(
-            "ERROR: could not write secret {} to disk!",
-            &path.display()
-        ).into());
+        return Err(format!("ERROR: could not write secret {} to disk!", &path.display()).into());
     };
 
     info!("success, file {} written", &path.display());
@@ -515,7 +517,6 @@ async fn encrypt_store_send_secret(parsed_form_data: &mut Secret, application_co
     };
     Ok(())
 }
-
 
 /// Loads a stored secret and decrypts it
 ///
@@ -731,11 +732,40 @@ pub async fn not_found_404() -> HttpResponse {
 /// an authentication token that we provided manually beforehand.
 #[cfg(feature = "api-access-token")]
 pub async fn api_store_secret(
-    _req: HttpRequest,
-    access_token_payload: AccessTokenPayload,
+    bytes: Bytes,
+    validated_access_token_payload: ValidatedAccessTokenPayload,
+    application_configuration: web::Data<ApplicationConfiguration>,
 ) -> HttpResponse {
-    debug!("access_token_payload = {}", &access_token_payload);
-    HttpResponse::ok_text_response(access_token_payload.sub.to_string())
+    debug!("api_store_Secret()");
+
+    // At this point the `AccessTokenPayload` has been validated,
+    // so that we can trust the date inside.
+    // We construct an artificial `AuthenticatedUser` to send the secret email.
+    let script_user = AuthenticatedUser {
+        user_name: validated_access_token_payload.sub,
+        first_name: validated_access_token_payload.from_display_name,
+        last_name: "".to_string(),
+        mail: validated_access_token_payload.from_email,
+        time_stamp: Utc::now(),
+        access_scope: AccessScope::ScriptUser,
+        peer_ip: validated_access_token_payload.ip_address,
+    };
+    let mut parsed_form_data =
+        match parse_and_validate_secret_form_data(&bytes, &application_configuration, &script_user)
+            .await
+        {
+            Ok(parsed_form_data) => parsed_form_data,
+            Err(e) => {
+                return HttpResponse::err_text_response(e.to_string());
+            }
+        };
+
+    if let Err(e) =
+        encrypt_store_send_secret(&mut parsed_form_data, &application_configuration).await
+    {
+        return HttpResponse::err_text_response(e.to_string());
+    }
+    HttpResponse::ok_text_response("OK")
 }
 
 /// Default route if feature is disabled.

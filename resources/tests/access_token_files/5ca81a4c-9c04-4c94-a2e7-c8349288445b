@@ -1,5 +1,7 @@
 {
     "ip_adresses": ["127.0.0.1"],
     "nbf": 1713275828,
-    "exp": 1861830000
+    "exp": 1861830000,
+    "from_email": "IT scripting team <do-not-reply@lmtyas.acme.home.arpa>",
+    "from_display_name": "our scriptig team"
 }
