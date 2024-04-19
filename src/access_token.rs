@@ -32,11 +32,11 @@ use uuid::Uuid;
 /// ```
 #[derive(Deserialize)]
 pub struct AccessTokenPayload {
-    /// Inormation the the user
+    /// Information for the access token user
     pub iss: String,
     /// The name of our access token file
     pub sub: Uuid,
-    /// Inormation the the user
+    /// Information for the access token user
     pub aud: String,
     /// Not valid before (Unix timestamp)
     pub nbf: i64,
@@ -53,9 +53,12 @@ impl fmt::Display for AccessTokenPayload {
 }
 
 /// Implementation of the FromRequest trait to
-/// extract an AccessTokenPayload from a HttpRequest
+/// extract an `AccessTokenPayload` from a `HttpRequest`
+/// and validate it. The info plus request `ip_address`,
+/// `from_email` and `from_display_name` from the associated
+/// `AccessTokenFile` is then returned as `ValidatedAccessTokenPayload`.
 /// Makes accessing token data in handler functions
-/// easier.
+/// easier and protects the route.
 impl FromRequest for ValidatedAccessTokenPayload {
     type Error = Error;
     type Future = Pin<Box<dyn Future<Output = Result<ValidatedAccessTokenPayload, Error>>>>;
@@ -92,7 +95,7 @@ fn get_access_token_payload(req: &HttpRequest) -> Result<ValidatedAccessTokenPay
         debug!("b64_bearer_token = {}", &b64_bearer_token);
         let bearer_token_json_utf8 = match Vec::from_base64_urlsafe_encoded(&b64_bearer_token) {
             Err(e) => {
-                warn!("Cannot decode base64 bearer token: {}", &e);
+                warn!("Cannot decode bearer token from base64: {}", &e);
                 return Err(ErrorUnauthorized("Access token has invalid base64!"));
             }
             Ok(bearer_token_json_utf8) => bearer_token_json_utf8,
@@ -114,7 +117,8 @@ fn get_access_token_payload(req: &HttpRequest) -> Result<ValidatedAccessTokenPay
                 }
             };
         debug!("bearer_token = {}", &bearer_token);
-        let application_configuration = app_data.unwrap().clone();
+        // we checked already, so unwrap() is ok.
+        let application_configuration = app_data.unwrap();
         let sub = bearer_token.sub.to_string();
 
         let rsa_read_lock = application_configuration.rsa_keys.read().unwrap();
@@ -129,8 +133,8 @@ fn get_access_token_payload(req: &HttpRequest) -> Result<ValidatedAccessTokenPay
             }
         }
 
-        // Only try to read the access token file after validation that the "jit" value matches
-        // the "sub" value, so that changing the UUID ("sub" value) in the presented access token
+        // Only try to read the access token file after validation that the `jti`` value matches
+        // the `sub` value, so that changing the UUID (a.k.a. `sub` value) in the presented access token
         // cannot be used to sniff out possible files.
         let path = Path::new(
             &application_configuration
@@ -140,6 +144,7 @@ fn get_access_token_payload(req: &HttpRequest) -> Result<ValidatedAccessTokenPay
         )
         .join(sub.clone());
 
+        // Read the file with the `sub` UUID as file name to validate the access token.
         let access_token_file = match AccessTokenFile::read_from_disk(path) {
             Err(e) => {
                 warn!("Cannot read access token file: {}", &e);
@@ -203,7 +208,7 @@ fn validate_access_token(
     if nbf > now {
         return Err("Access token not yet valid!".into());
     }
-    // We ignore the "iss" and "aud" values, they are just clues for the user of the access token.
+    // We ignore the `iss`and `aud` values, they are just clues for the user of the access token.
     Ok(())
 }
 
