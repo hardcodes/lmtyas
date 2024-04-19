@@ -44,6 +44,8 @@ pub const UNKOWN_RECEIVER_EMAIL: &str = "UNKOWN RECEIVER EMAIL";
 pub const BUILD_TYPE: &str = "DEBUG build";
 #[cfg(not(debug_assertions))]
 pub const BUILD_TYPE: &str = "release build";
+#[cfg(target_os = "windows")]
+compile_error!("target_os windows is not supported");
 // generic regex to validate email address format
 pub const EMAIL_REGEX: &str = r"^([a-zA-Z0-9_\-\.]+)@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.)|(([a-zA-Z0-9\-]+\.)+))([a-zA-Z]{2,5}|[0-9]{1,3})(\]?)$";
 /// max length of form data
