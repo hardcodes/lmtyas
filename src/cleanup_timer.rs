@@ -10,6 +10,16 @@ use timer::{Guard, Timer};
 const TIMER_INTERVAL_SECONDS: i64 = 5;
 pub struct TimerGuard(Vec<(Guard, Timer)>);
 
+impl TimerGuard {
+    /// Return the number of stored timers.
+    pub fn len(&self) -> usize {
+        self.0.len()
+    }
+    pub fn is_empty(&self) -> bool {
+        0 == self.0.len()
+    }
+}
+
 /// Timer that calls a cleanup routine every TIMER_INTERVAL_SECONDS
 /// and removes used or aged authentication requests
 fn build_cleanup_authentication_state_hashmap_timer(

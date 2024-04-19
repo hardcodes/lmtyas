@@ -51,7 +51,8 @@ async fn main() -> std::io::Result<()> {
     let ssl_acceptor_builder = application_configuration.get_ssl_acceptor_builder();
 
     // build cleanup timers and store references to keep them running
-    let _timer_guards = build_cleaup_timers(&application_configuration);
+    let timer_guards = build_cleaup_timers(&application_configuration);
+    info!("started {} cleanup timers", timer_guards.len());
 
     // values for the csp-header
     let content_security_policy = concat!(

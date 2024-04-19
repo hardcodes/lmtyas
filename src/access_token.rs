@@ -48,13 +48,7 @@ pub struct AccessTokenPayload {
 
 impl fmt::Display for AccessTokenPayload {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "(sub={}, nbf={}, exp={})",
-            self.sub.to_string(),
-            self.nbf,
-            self.exp
-        )
+        write!(f, "(sub={}, nbf={}, exp={})", self.sub, self.nbf, self.exp)
     }
 }
 
@@ -81,8 +75,13 @@ fn get_access_token_payload(req: &HttpRequest) -> Result<ValidatedAccessTokenPay
     }
 
     // If for whatever reason more than one "Authorization: Bearer <token>" header is presented,
-    // we will loop over them but in the end the first one must fit.
-    for header_value in req.head().headers().get_all(http::header::AUTHORIZATION) {
+    // we will look only at the first one.
+    if let Some(header_value) = req
+        .head()
+        .headers()
+        .get_all(http::header::AUTHORIZATION)
+        .next()
+    {
         let b64_bearer_token = match header_value.get_bearer_token_value() {
             Some(b64_bearer_token) => b64_bearer_token,
             None => {
@@ -154,7 +153,7 @@ fn get_access_token_payload(req: &HttpRequest) -> Result<ValidatedAccessTokenPay
             return Err(ErrorForbidden("Invalid access token!"));
         }
 
-        let ip_address = get_peer_ip_address(&req);
+        let ip_address = get_peer_ip_address(req);
         if !access_token_file.ip_adresses.contains(&ip_address) {
             warn!(
                 "host at ip address {} is invalid for access token {}",
@@ -166,7 +165,7 @@ fn get_access_token_payload(req: &HttpRequest) -> Result<ValidatedAccessTokenPay
             "host at ip address {} presented valid access token {}",
             &ip_address, &bearer_token
         );
-        return Ok(ValidatedAccessTokenPayload{
+        return Ok(ValidatedAccessTokenPayload {
             iss: bearer_token.iss,
             sub: bearer_token.sub.to_string(),
             aud: bearer_token.aud,
@@ -174,7 +173,7 @@ fn get_access_token_payload(req: &HttpRequest) -> Result<ValidatedAccessTokenPay
             exp: bearer_token.exp,
             from_email: access_token_file.from_email,
             from_display_name: access_token_file.from_display_name,
-            ip_address
+            ip_address,
         });
     }
     warn!("No valid access token found!");
@@ -277,7 +276,6 @@ pub struct ValidatedAccessTokenPayload {
     pub from_display_name: String,
     /// ip_adress of the scripting host
     pub ip_address: String,
-    
 }
 
 impl fmt::Display for ValidatedAccessTokenPayload {
@@ -285,11 +283,7 @@ impl fmt::Display for ValidatedAccessTokenPayload {
         write!(
             f,
             "(sub={}, nbf={}, exp={}, from_email={}, from_display_name={})",
-            self.sub.to_string(),
-            self.nbf,
-            self.exp,
-            self.from_email,
-            self.from_display_name,
+            self.sub, self.nbf, self.exp, self.from_email, self.from_display_name,
         )
     }
 }

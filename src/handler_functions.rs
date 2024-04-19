@@ -372,7 +372,7 @@ async fn parse_and_validate_secret_form_data(
 
     let display_name = match <UserDataImpl as GetUserData>::get_receiver_display_name(
         &parsed_form_data.to_email,
-        &application_configuration,
+        application_configuration,
     )
     .await
     {
