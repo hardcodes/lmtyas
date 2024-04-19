@@ -119,11 +119,18 @@ git clone git@github.com:hardcodes/lmtyas.git
 cd lmtyas
 cargo build --release
 # create user for running the service
-groupadd lmtyas
+sudo groupadd lmtyas
 sudo adduser --disabled-login --home /opt/lmtyas --no-create-home --system  --shell /usr/sbin/nologin --ingroup lmtyas lmtyas
 # create directory structure
-sudo mkdir -p /opt/lmtyas/web-content
+sudo mkdir -p /opt/lmtyas/access_token_files
 sudo mkdir -p /opt/lmtyas/output/secrets
+sudo mkdir -p /opt/lmtyas/web-content
+sudo mkdir /etc/lmtays/
+
+# copy binary
+sudo cp target/release/lmtyas /opt/lmtyas/
+# copy files
+sudo cp --recursive web-content/* /opt/lmtyas/web-content/
 
 # create systemd unit file
 sudo cat << __EOF__ > /etc/systemd/system/lmtyas.service
@@ -169,28 +176,22 @@ LockPersonality=yes
 __EOF__
 
 # create systemd environment file
-sudo mkdir /etc/lmtays/
 sudo cat << __EOF__ > /etc/lmtyas/lmtyas-systemd.conf
 lmtyasCFGFILE="/etc/lmtyas/lmtyas-config.json"
 __EOF__
 sudo chown root:lmtyas /etc/lmtyas/lmtyas-systemd.conf
 sudo chmod 640 /etc/lmtyas/lmtyas-systemd.conf
 
-# enable service
-sudo systemctl daemon-reload
-sudo systemctl enable lmtyas.service
-sudo systemctl unmask lmtyas.service
-# copy binary
-mkdir -p /opt/lmtyas/access_token_files
-sudo cp target/release/lmtyas /opt/lmtyas/
-# copy files
-sudo cp --recursive web-content/* /opt/lmtyas/web-content/
-
 # fix owner and acl
 sudo chown -R lmtyas:lmtyas /opt/lmtyas/
 sudo find /opt/lmtyas/ -type f -exec chmod 640 {} \;
 sudo find /opt/lmtyas/ -type d -exec chmod 750 {} \;
 sudo chmod 550 /opt/lmtyas/lmtyas
+
+# enable service
+sudo systemctl daemon-reload
+sudo systemctl enable lmtyas.service
+sudo systemctl unmask lmtyas.service
 ```
 
 Create a [`/etc/lmtyas/lmtyas-config.json`](#configuration-file), the *[rsa keys](#security---data-encryption---rsa-keys)* and get a ssl certficate in PEM format --- this may be self signed, depending on your own personal needs; in a company context you probably want a signed certifcate from some sort of CA/PKI. Then
@@ -209,6 +210,8 @@ Also see [Cargo.toml](./Cargo.toml), section `[features]`.
 - Default: **oidc-auth-ldap**, **mail-noauth-notls**, **api-access-token** (users are authenticated with an external oidc server: Authorization Code Flow with Proof Key for Code Exchange (PKCE). The only scope used is `email`, user details are queried from an external ldap server and emails are sent through a smtp server with no authentication and no encryption. Sending secrets via access token is enabled.)
 
   You may ask why we need oidc when we have a ldap server, we use to query user details: when an oidc server is available, your users know the look and feel of the login page. This way they may be more confidend to enter their credentials. Maybe you even use 2FA for your oidc solution, so why not benefit?
+
+  If you implement the `OidcUserDetails` for your oidc server, you don't need a ldap server. Pull requests are welcome.
 
   **HINT** When you use [auth0](https://auth0.com/) as oidc provider, the dependency section of the `openidconnect` crate must be changed from
 
@@ -231,12 +234,17 @@ Also see [Cargo.toml](./Cargo.toml), section `[features]`.
 - **mail-noauth-notls**: send mails to user via mail server that does not need authentication and uses no encrypted transport.
 - **get-userdata-ldap**: query userdata (frist and last name by email address of secret receiver) from a ldap server.
 - **no-userdata-backend**: use this, when there is no backend (like e.g., a ldap server) to query userdata.
-- **api-access-token**: send secrets with an access token, see section [Security - API Token](#security---api-token).
+- **api-access-token**: useful for scripted sending of secrets authenicated with an access token, see section [Security - API Token](#security---api-token).
 
 So far these combinations make sense:
 
 - `default = ["oidc-auth-ldap", "mail-noauth-notls", "api-access-token"]`
-- `default = ["ldap-auth", "mail-noauth-notls", "api-access-token"]`
+- `"ldap-auth", "mail-noauth-notls", "api-access-token"`
+  
+  ```bash
+  # compile with
+  cargo build --no-default-features --features ldap-auth,mail-noauth-notls,api-access-token
+  ```
 
 
 # Customization
@@ -264,7 +272,7 @@ To customize the custom style sheet (css) create a folder `local/css` and put a 
 
 # Set RSA password
 
-If the service is (re-)started, a valid administrator (see `admin_accounts` in section *[Configuration file](#configuration-file)*) must set the password of the RSA private key first. Therefore open the URL
+If the service is (re-)started, a valid administrator (see `admin_accounts` in section *[Configuration file](#configuration-file)*) must set the password of the RSA private key first. The rsa private key is loaded afterwards. Therefore open the URL
 
 `https://<dns name>:<port number>`
 
@@ -311,7 +319,7 @@ When opening the link,
 - the link is decrypted using the RSA private key of the web service.
 - The stored data is read from the file whose Id was in the decrypted link data.
 - The AES key and IV inside the file is decrypted using the RSA private key of the web service.
-- The data itself is decrypted using the AES key and IV.
+  - The data fields except the secret are decrypted using the AES key and IV.
 - The authenticated user is compared with the user stored in the file as receiver
     - if the user does not match,
         - an error will be shown and
@@ -324,7 +332,7 @@ When opening the link,
 
 Since the data stored on disk is encrypted using the RSA public key of the web service, a hacker could not read the secrets even if he had access to the files.
 
-The administrator of the web service could decrypt the file but not the secret itself because it encrypted by a randomly chosen key/IV. The only way the administrator could read the secret would be if he had access to the email with the link. We must assume that the administrator is a trustworthy person and the system running this service is designed in a way that supports the administrator in claiming that he has no access to the secrets (e.g. the administrator does not get blind copies of the emails). If the receiver of the secret waives the mail with the link in front of the administrator you have bigger problems at hand. If in doubt you can split the administrator role in two:
+The administrator of the web service could decrypt the file but not the secret itself because it's encrypted by a randomly chosen key/IV. The only way an administrator could read the secret would be if they had access to the email with the link. We must assume that the administrator is a trustworthy person and the system running this service is designed in a way that supports the administrator in claiming that he has no access to the secrets (e.g. the administrator does not get blind copies of the emails). If the receiver of the secret waives the mail with the link in front of the administrator you have bigger problems at hand. If in doubt you can split the administrator role in two:
 
 1. The first administrator has knowledge about the password for the RSA private key of the webservice and access to the form that allows setting the password.
 2. The second administrator has access to the system itself. Even with some bogus mindset he had no access to the encrypted data.
@@ -447,7 +455,7 @@ __EOF__
 
 The values for `iss` and `aud` do technically not really matter, they are just meant for the user of the access token. so that they know, what the token is used for.
 
-You can use this web service to tell them the token in a secure way ;-)
+You can use this web service to send them the token in a secure way ;-)
 
 **Token usage**
 
@@ -462,7 +470,9 @@ c3VwZXIgc2VjcmV0IQ==
 Here is an example utilizing `curl` to send a secret to user *Alice* via the URL `https://<server name or ip>:<port>/api/v1/secret`:
 
 ```bash
-TOKEN=$(cat resources/tests/access_token_payload/test-token-payload.json|base64 --wrap 0);curl --insecure --include --header "Authorization: Bearer ${TOKEN}" --request POST --data '{"FromEmail":"","FromDisplayName":"","ToEmail":"alice@acme.local","ToDisplayName":"","Context":"script test","Secret":"c3VwZXIgc2VjcmV0IQ=="}' https://127.0.0.1:8844/api/v1/secret
+TOKEN=$(cat resources/tests/access_token_payload/test-token-payload.json|base64 --wrap 0)
+# Add --insecure if your web service uses a self signed certificate.
+curl --include --header "Authorization: Bearer ${TOKEN}" --request POST --data '{"FromEmail":"","FromDisplayName":"","ToEmail":"alice@acme.local","ToDisplayName":"","Context":"script test","Secret":"c3VwZXIgc2VjcmV0IQ=="}' https://127.0.0.1:8844/api/v1/secret
 ```
 
 
