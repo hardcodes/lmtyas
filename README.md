@@ -1,6 +1,6 @@
 # lmtyas - Let me tell you a secret
 
-A web service written in Rust that allows an authenticated user to send secrets like passwords to other authenticated users.
+A web service written in Rust that allows an authenticated user to send secrets like passwords to other authenticated users in a secure way.
 
 In a perfect world we wouldn't need passwords anymore but more often than not we also still do need to tell them to other people. There is a world almost without passwords out there, e.g. have a look at [SQRL](https://www.grc.com/sqrl/sqrl.htm) or [fido2](https://en.wikipedia.org/wiki/FIDO2_Project). 
 
