@@ -58,7 +58,7 @@ function displaySubmission(resulttext) {
     stopForm(rsaForm, 10);
     if (typeof resulttext !== 'undefined') {
         if (resulttext == "OK") {
-            showSuccessMessage("Password for RSA private key is set.");
+            showSuccessMessage("RSA private key has been loaded successfully.");
         }
     }
 }
