@@ -3,7 +3,7 @@ use crate::configuration::ApplicationConfiguration;
 use crate::header_value_trait::HeaderValueExctractor;
 use actix_web::{
     dev::Payload,
-    error::{ErrorForbidden, ErrorUnauthorized},
+    error::{ErrorForbidden, ErrorServiceUnavailable, ErrorUnauthorized},
     http, web, Error, FromRequest, HttpRequest,
 };
 use chrono::DateTime;
@@ -73,8 +73,23 @@ impl FromRequest for ValidatedAccessTokenPayload {
 fn get_access_token_payload(req: &HttpRequest) -> Result<ValidatedAccessTokenPayload, Error> {
     let app_data: Option<&web::Data<ApplicationConfiguration>> = req.app_data();
     if app_data.is_none() {
+        // Should not happen!
         warn!("get_access_token_payload(): app_data is empty(none)!");
-        return Err(ErrorUnauthorized("No app_data, configuration missing!"));
+        return Err(ErrorServiceUnavailable(
+            "No app_data, configuration missing!",
+        ));
+    }
+    // we checked already, so unwrap() is ok.
+    let application_configuration = app_data.unwrap();
+    // Don't accept access tokens when the RSA private is unavailable.
+    if application_configuration
+        .rsa_keys
+        .read()
+        .unwrap()
+        .rsa_private_key
+        .is_none()
+    {
+        return Err(ErrorServiceUnavailable("System not ready for encryption!"));
     }
 
     // If for whatever reason more than one "Authorization: Bearer <token>" header is presented,
@@ -117,8 +132,6 @@ fn get_access_token_payload(req: &HttpRequest) -> Result<ValidatedAccessTokenPay
                 }
             };
         debug!("bearer_token = {}", &bearer_token);
-        // we checked already, so unwrap() is ok.
-        let application_configuration = app_data.unwrap();
         let sub = bearer_token.sub.to_string();
 
         let rsa_read_lock = application_configuration.rsa_keys.read().unwrap();
