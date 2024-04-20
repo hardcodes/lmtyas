@@ -729,9 +729,9 @@ pub async fn not_found_404() -> HttpResponse {
         .body(file_content)
 }
 
-/// Stores a secret and its meta date as encrypted file on disk.Unkown
+/// Stores a secret and its meta data as encrypted file on disk.
 /// This function is used by scripts where the caller presents
-/// an authentication token that we provided manually beforehand.
+/// an access token for authentication that we provided manually beforehand.
 #[cfg(feature = "api-access-token")]
 pub async fn api_store_secret(
     bytes: Bytes,
@@ -740,9 +740,11 @@ pub async fn api_store_secret(
 ) -> HttpResponse {
     debug!("api_store_Secret()");
 
-    // At this point the `AccessTokenPayload` has been validated,
-    // so that we can trust the date inside.
-    // We construct an artificial `AuthenticatedUser` to send the secret email.
+    // At this point the `AccessTokenPayload` has been validated
+    // and is presented as `ValidatedAccessTokenPayload` with extra
+    // meta data, like ip address, name and email of the sender.
+    // We construct an artificial `AuthenticatedUser` to send the email
+    // with the link to the secret.
     let script_user = AuthenticatedUser {
         user_name: validated_access_token_payload.sub,
         first_name: validated_access_token_payload.from_display_name,
