@@ -146,7 +146,7 @@ fn get_access_token_payload(req: &HttpRequest) -> Result<ValidatedAccessTokenPay
             }
         }
 
-        // Only try to read the access token file after validation that the `jti`` value matches
+        // Only try to read the access token file after validation that the `jti` value matches
         // the `sub` value, so that changing the UUID (a.k.a. `sub` value) in the presented access token
         // cannot be used to sniff out possible files.
         let path = Path::new(
