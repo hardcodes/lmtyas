@@ -320,13 +320,13 @@ async fn parse_and_validate_secret_form_data(
     let form_data = match String::from_utf8(bytes_vec) {
         Ok(form_data) => form_data,
         Err(_) => {
-            warn!("could not parse form data to utf8 string!");
+            warn!("could not parse form data to utf8 string! {}", &user);
             return Err("ERROR: could not parse form data".into());
         }
     };
     debug!("{}", form_data);
     if form_data.len() > MAX_FORM_BYTES_LEN {
-        warn!("form data exceeds {} bytes!", MAX_FORM_BYTES_LEN);
+        warn!("form data exceeds {} bytes! {}", MAX_FORM_BYTES_LEN, &user);
         return Err(format!(
             "ERROR: more than {} bytes of data sent",
             &MAX_FORM_BYTES_LEN
@@ -336,26 +336,29 @@ async fn parse_and_validate_secret_form_data(
     let mut parsed_form_data = match serde_json::from_str(&form_data) as Result<Secret, _> {
         Ok(parsed_form_data) => parsed_form_data,
         Err(e) => {
-            warn!("could not parse json form data with secret: {}", &e);
+            warn!(
+                "could not parse json form data with secret: {} {}",
+                &e, &user
+            );
             return Err("ERROR: could not parse json form data".into());
         }
     };
     debug!("parsed_form_data={:?}", &parsed_form_data);
     if parsed_form_data.from_email.len() > MAX_FORM_INPUT_LEN {
         warn!("from email > {} chars!", MAX_FORM_INPUT_LEN);
-        return Err(format!("ERROR: from email > {} chars", MAX_FORM_INPUT_LEN).into());
+        return Err(format!("ERROR: from email > {} chars {}", MAX_FORM_INPUT_LEN, &user).into());
     }
     if parsed_form_data.to_email.len() > MAX_FORM_INPUT_LEN {
         warn!("to email > {} chars!", MAX_FORM_INPUT_LEN);
-        return Err(format!("ERROR: to email > {} chars", MAX_FORM_INPUT_LEN).into());
+        return Err(format!("ERROR: to email > {} chars {}", MAX_FORM_INPUT_LEN, &user).into());
     }
     if parsed_form_data.context.len() > MAX_FORM_INPUT_LEN {
         warn!("context > {} chars!", MAX_FORM_INPUT_LEN);
-        return Err(format!("ERROR: context > {} chars", MAX_FORM_INPUT_LEN).into());
+        return Err(format!("ERROR: context > {} chars {}", MAX_FORM_INPUT_LEN, &user).into());
     }
     let secret_length = get_base64_encoded_secret_len(&parsed_form_data.secret);
     if secret_length > MAX_FORM_INPUT_LEN {
-        warn!("secret > {} bytes!", MAX_FORM_INPUT_LEN);
+        warn!("secret > {} bytes! {}", MAX_FORM_INPUT_LEN, &user);
         return Err(format!("ERROR: secret > {} bytes!", MAX_FORM_INPUT_LEN).into());
     }
     // Check if that looks like an email address before we query some external data source.
@@ -365,7 +368,7 @@ async fn parse_and_validate_secret_form_data(
     {
         warn!(
             "received invalid destination email address in form data from user {}",
-            &user.user_name
+            &user
         );
         // we should return here but for now we just monitor the logs.
     }
@@ -379,8 +382,8 @@ async fn parse_and_validate_secret_form_data(
         Ok(display_name) => display_name,
         Err(e) => {
             info!(
-                "cannot find email address {}, error: {}",
-                &parsed_form_data.to_email, &e
+                "cannot find receiver email address {}, error: {} {}",
+                &parsed_form_data.to_email, &e, &user
             );
             return Err(format!(
                 "ERROR: cannot find email address {}",
