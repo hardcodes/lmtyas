@@ -185,6 +185,7 @@ sudo chmod 640 /etc/lmtyas/lmtyas-systemd.conf
 # fix owner and acl
 sudo chown -R lmtyas:lmtyas /opt/lmtyas/
 sudo find /opt/lmtyas/ -type f -exec chmod 640 {} \;
+sudo find /opt/lmtyas/web-content -type f -exec chmod 440 {} \;
 sudo find /opt/lmtyas/ -type d -exec chmod 750 {} \;
 sudo chmod 550 /opt/lmtyas/lmtyas
 
