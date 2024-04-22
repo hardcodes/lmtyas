@@ -421,12 +421,16 @@ cat << __EOF__ > "${UUID}"
     "nbf": ${NOW},
     "exp": ${ENDDATE},
     "from_email": "${EMAIL}",
-    "from_display_name": "${DISPLAYNAME}"
+    "from_display_name": "${DISPLAYNAME}",
+    "iss": "https://127.0.0.1:8844",
+    "aud": "https://127.0.0.1:8844/api/v1/secret"
 }
 __EOF__
 ```
 
 The file generated in this way must be copied to the server to the configured `api_access_files`. Change the owner of the file to to service user, e.g. `lmtyas` and the permissions to `440` (read only).
+
+**NOTE**: `iss` and `aud` are optional and will only be validated if present in the access token file on the server side.
 
 
 **Access token**
@@ -454,6 +458,8 @@ __EOF__
 ```
 
 The values for `iss` and `aud` do technically not really matter, they are just meant for the user of the access token. so that they know, what the token is used for.
+
+**NOTE**: `iss` and `aud` will be validated if present in the access token file on the server side!
 
 You can use this web service to send them the token in a secure way ;-)
 

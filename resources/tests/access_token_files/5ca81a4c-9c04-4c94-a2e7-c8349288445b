@@ -3,5 +3,7 @@
     "nbf": 1713275828,
     "exp": 1861830000,
     "from_email": "IT scripting team <do-not-reply@lmtyas.acme.home.arpa>",
-    "from_display_name": "our scriptig team"
+    "from_display_name": "our scriptig team",
+    "iss": "https://127.0.0.1:8844",
+    "aud": "https://127.0.0.1:8844/api/v1/secret"
 }
