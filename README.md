@@ -122,11 +122,13 @@ cargo build --release
 sudo groupadd lmtyas
 sudo adduser --disabled-login --home /opt/lmtyas --no-create-home --system  --shell /usr/sbin/nologin --ingroup lmtyas lmtyas
 # create directory structure
+sudo mkdir /etc/lmtays/
 sudo mkdir -p /opt/lmtyas/access_token_files
 sudo mkdir -p /opt/lmtyas/output/secrets
 sudo mkdir -p /opt/lmtyas/web-content
-sudo mkdir /etc/lmtays/
-
+sudo mkdir -p /opt/lmtyas/local/css
+sudo mkdir -p /opt/lmtyas/local/gfx
+sudo mkdir -p /opt/lmtyas/local/js
 # copy binary
 sudo cp target/release/lmtyas /opt/lmtyas/
 # copy files
@@ -186,7 +188,8 @@ sudo chmod 640 /etc/lmtyas/lmtyas-systemd.conf
 sudo chown -R lmtyas:lmtyas /opt/lmtyas/
 sudo find /opt/lmtyas/ -type f -exec chmod 640 {} \;
 sudo find /opt/lmtyas/web-content -type f -exec chmod 440 {} \;
-sudo find /opt/lmtyas/ -type d -exec chmod 750 {} \;
+sudo find /opt/lmtyas/ -type d -exec chmod 550 {} \;
+chmod 750 output/secrets
 sudo chmod 550 /opt/lmtyas/lmtyas
 
 # enable service
