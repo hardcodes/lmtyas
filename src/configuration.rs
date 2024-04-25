@@ -13,6 +13,7 @@ use crate::login_user_trait::Login;
 use crate::mail_configuration::SendEMailConfiguration;
 use crate::rsa_functions::{RsaKeys, RsaPrivateKeyPassword};
 use crate::secret_functions::SharedSecretData;
+use log::info;
 #[cfg(feature = "authentication-oidc")]
 use openidconnect::{
     core::{CoreClient, CoreProviderMetadata},
@@ -173,6 +174,12 @@ impl ApplicationConfiguration {
             );
         }
         #[cfg(feature = "authentication-oidc")]
+        info!(
+            "getting provider metadata from {}",
+            &config_file.oidc_configuration.provider_metadata_url
+        );
+        #[cfg(feature = "authentication-oidc")]
+        // this call does not time out!
         let provider_metadata = CoreProviderMetadata::discover_async(
             IssuerUrl::new(config_file.oidc_configuration.provider_metadata_url.clone())
                 .expect("Cannot build provider metadata url!"),
