@@ -495,12 +495,22 @@ echo -n "super secret!"|base64 --wrap 0
 c3VwZXIgc2VjcmV0IQ==
 ```
 
-Here is an example utilizing `curl` to send a secret to user *Alice* via the URL `https://<server name or ip>:<port>/api/v1/secret`:
+Here is an example utilizing `curl` to send a secret to user *Alice* via the URL `https://<server name or ip address>:<port>/api/v1/secret`:
 
 ```bash
-TOKEN=$(cat resources/tests/access_token_payload/test-token-payload.json|base64 --wrap 0)
+FILECONTENT=$(cat resources/tests/access_token_payload/test-token-payload.json)
+TOKEN=$(echo -n "${FILECONTENT}"|base64 --wrap 0)
 # Add --insecure if your web service uses a self signed certificate.
-curl --include --header "Authorization: Bearer ${TOKEN}" --request POST --data '{"FromEmail":"","FromDisplayName":"","ToEmail":"alice@acme.local","ToDisplayName":"","Context":"script test","Secret":"c3VwZXIgc2VjcmV0IQ=="}' https://127.0.0.1:8844/api/v1/secret
+curl --include \
+--header "Authorization: Bearer ${TOKEN}" \
+--request POST \
+--data "{\"FromEmail\":\"\",\
+\"FromDisplayName\":\"\",\
+\"ToEmail\":\"alice@acme.local\",\
+\"ToDisplayName\":\"\",\
+\"Context\":\"script test\",\
+\"Secret\":\"c3VwZXIgc2VjcmV0IQ==\"}" \
+https://127.0.0.1:8844/api/v1/secret
 ```
 
 
