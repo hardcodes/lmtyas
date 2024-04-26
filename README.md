@@ -243,11 +243,27 @@ Also see [Cargo.toml](./Cargo.toml), section `[features]`.
 So far these combinations make sense:
 
 - `default = ["oidc-auth-ldap", "mail-noauth-notls", "api-access-token"]`
+  
+  ```bash
+  # compile with
+  cargo build --release
+  ```
+- `"oidc-auth-ldap", "mail-noauth-notls"`
+  
+  ```bash
+  # compile with
+  cargo build --release --no-default-features --features oidc-auth-ldap,mail-noauth-notls
+  ```
 - `"ldap-auth", "mail-noauth-notls", "api-access-token"`
   
   ```bash
   # compile with
-  cargo build --no-default-features --features ldap-auth,mail-noauth-notls,api-access-token
+  cargo build --release --no-default-features --features ldap-auth,mail-noauth-notls,api-access-token
+- `"ldap-auth", "mail-noauth-notls"`
+  
+  ```bash
+  # compile with
+  cargo build --release --no-default-features --features ldap-auth,mail-noauth-notls
   ```
 
 
