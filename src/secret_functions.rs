@@ -127,11 +127,13 @@ impl Secret {
     }
 
     /// Creates a new instance of `Secret` with decrypted data.
+    /// Afterwards the secret itself is still AES encrypted with
+    /// the key and IV that was stored inside the URL.
     ///
-    /// If data contains a dot, the secret value is encoded as
+    /// If a value contains a dot, the encryped value is encoded as
     /// `<VERSION-ID>.<BASE64ENCODED_KEY_IV>.<BASE64ENCODED_PAYLOAD>`.
-    /// `<BASE64ENCODED_KEY_IV> contains the AES key and IV are encrypted
-    /// using the RSA keypair, the `<BASE64ENCODED_PAYLOAD>` holds the secret
+    /// `<BASE64ENCODED_KEY_IV> contains the AES key and IV which are encrypted
+    /// using the RSA keypair, the `<BASE64ENCODED_PAYLOAD>` holds the value
     /// encrypted with a generated AES key and IV using AES in CBC mode.
     ///
     /// Else we fall back to RSA only and call `rsa_decrypt_str` for backwards compatibilty.
