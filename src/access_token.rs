@@ -135,7 +135,7 @@ fn get_access_token_payload(req: &HttpRequest) -> Result<ValidatedAccessTokenPay
         let sub = bearer_token.sub.to_string();
 
         let rsa_read_lock = application_configuration.rsa_keys.read().unwrap();
-        if let Ok(decrypted_jti) = rsa_read_lock.decrypt_str(&bearer_token.jti) {
+        if let Ok(decrypted_jti) = rsa_read_lock.rsa_decrypt_str(&bearer_token.jti) {
             debug!("decrypted_jti = {}", &decrypted_jti);
             if decrypted_jti != sub {
                 warn!(

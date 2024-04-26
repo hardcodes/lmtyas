@@ -95,7 +95,7 @@ impl RsaKeys {
     /// # Arguments
     ///
     /// - `plaintext_data`: a String slice with data to encrypt
-    pub fn encrypt_str(&self, plaintext_data: &str) -> Result<String, Box<dyn Error>> {
+    pub fn rsa_encrypt_str(&self, plaintext_data: &str) -> Result<String, Box<dyn Error>> {
         if self.rsa_public_key.is_none() {
             let box_err: Box<dyn Error> = "RSA public key is not set!".to_string().into();
             return Err(box_err);
@@ -221,10 +221,9 @@ impl RsaKeys {
     /// # Arguments
     ///
     /// - `encrypted_data`: a String slice with data to decrypt
-    pub fn decrypt_str(&self, encrypted_data: &str) -> Result<String, Box<dyn Error>> {
+    pub fn rsa_decrypt_str(&self, encrypted_data: &str) -> Result<String, Box<dyn Error>> {
         if self.rsa_private_key.is_none() {
-            let box_err: Box<dyn Error> = "RSA private key is not set!".to_string().into();
-            return Err(box_err);
+            return Err("RSA private key is not set!".into());
         }
         let raw_data = match Vec::from_base64_encoded(encrypted_data) {
             Ok(b) => b,
@@ -244,23 +243,35 @@ impl RsaKeys {
         match private_key.private_decrypt(&raw_data, &mut buf, Padding::PKCS1) {
             Err(e) => {
                 info!("Could not rsa decrypt given value: {}", &e);
-                let box_err: Box<dyn Error> =
-                    "Could not rsa decrypt given value".to_string().into();
-                Err(box_err)
+                Err("Could not rsa decrypt given value".into())
             }
             Ok(_) => {
                 let decrypted_data = match String::from_utf8(buf) {
                     Ok(s) => s,
                     Err(e) => {
                         info!("Could not convert decrypted data to utf8: {}", &e);
-                        let box_err: Box<dyn Error> = "Could not convert decrypted data to utf8"
-                            .to_string()
-                            .into();
-                        return Err(box_err);
+                        return Err("Could not convert decrypted data to utf8".into());
                     }
                 };
                 Ok(decrypted_data.trim_matches(char::from(0)).to_string())
             }
+        }
+    }
+
+    /// Convenience function that decrypts a base64
+    /// encoded String slice either with the stored
+    /// RSA private key or decrypts the stored AES
+    /// key and IV to decrypt the rest of the string.
+    ///
+    /// # Arguments
+    ///
+    /// - `encrypted_data`: a String slice with data to decrypt
+    #[inline]
+    pub fn decrypt_str(&self, encrypted_data: &str) -> Result<String, Box<dyn Error>> {
+        if encrypted_data.find('.').is_none() {
+            self.rsa_decrypt_str(encrypted_data)
+        } else {
+            self.hybrid_decrypt_str(encrypted_data)
         }
     }
 }

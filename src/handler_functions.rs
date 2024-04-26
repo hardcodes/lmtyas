@@ -460,7 +460,7 @@ async fn encrypt_store_send_secret(
         .rsa_keys
         .read()
         .unwrap()
-        .encrypt_str(&url_payload)
+        .rsa_encrypt_str(&url_payload)
     {
         Ok(encrypted_url_payload) => encrypted_url_payload,
         Err(e) => {
@@ -550,7 +550,7 @@ pub async fn reveal_secret(
         .rsa_keys
         .read()
         .unwrap()
-        .decrypt_str(&encrypted_url_payload)
+        .rsa_decrypt_str(&encrypted_url_payload)
     {
         Err(e) => {
             warn!("could not rsa decrypt url payload: {}", &e);
