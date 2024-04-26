@@ -294,11 +294,13 @@ To customize the custom style sheet (css) create a folder `local/css` and put a 
 
 If the service is (re-)started, a valid administrator (see `admin_accounts` in section *[Configuration file](#configuration-file)*) must set the password of the RSA private key first. The rsa private key is loaded afterwards. Therefore open the URL
 
-`https://<dns name>:<port number>`
+`https://<dns name or ip address>:<port number>/authenticated/sysop/sysop.html`
 
 **Example**
 
-`https://127.0.0.1:8844/authenticated/sysop/sysop.html` when running on localhost
+`https://127.0.0.1:8844/authenticated/sysop/sysop.html` when running on localhost or
+
+`https://let-me-tell-you-a-secret.home.arpa:8844/authenticated/sysop/sysop.html` if your local DNS server resolves that to the appropiate ip address.
 
 - **NOTE1**: the password for the RSA private key must be at least 14 characters long, it will be checked in the web form! 14 is the absolute minimum, better use 32 or 64 characters for the password.
 - **NOTE2**: the RSA key must have a minimum 2048 bit size to make sure that the data fits into it and can be encrypted.
