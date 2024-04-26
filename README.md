@@ -181,8 +181,6 @@ __EOF__
 sudo cat << __EOF__ > /etc/lmtyas/lmtyas-systemd.conf
 lmtyasCFGFILE="/etc/lmtyas/lmtyas-config.json"
 __EOF__
-sudo chown root:lmtyas /etc/lmtyas/lmtyas-systemd.conf
-sudo chmod 640 /etc/lmtyas/lmtyas-systemd.conf
 
 # fix owner and acl
 sudo chown -R lmtyas:lmtyas /opt/lmtyas/
@@ -191,6 +189,8 @@ sudo find /opt/lmtyas/web-content -type f -exec chmod 440 {} \;
 sudo find /opt/lmtyas/ -type d -exec chmod 550 {} \;
 chmod 750 output/secrets
 sudo chmod 550 /opt/lmtyas/lmtyas
+sudo chown -R root:lmtyas /etc/lmtyas/
+sudo chmod -R 640 /etc/lmtyas/
 
 # enable service
 sudo systemctl daemon-reload
