@@ -128,13 +128,13 @@ impl Secret {
 
     /// Creates a new instance of `Secret` with decrypted data.
     ///
-    /// If data contains a dot, the secret value
-    /// - itself is encrypted with a generated AES key and IV using AES in CBC mode,
-    /// - the AES key and IV are then encrypted using the RSA keypair,
-    /// - the result is encoded as `<VERSION-ID>.<BASE64ENCODED_KEY_IV>.<BASE64ENCODED_PAYLOAD>`
-    /// and hence `hybrid_decrypt_str` is called for decryption.
+    /// If data contains a dot, the secret value is encoded as
+    /// `<VERSION-ID>.<BASE64ENCODED_KEY_IV>.<BASE64ENCODED_PAYLOAD>`.
+    /// `<BASE64ENCODED_KEY_IV> contains the AES key and IV are encrypted
+    /// using the RSA keypair, the `<BASE64ENCODED_PAYLOAD>` holds the secret
+    /// encrypted with a generated AES key and IV using AES in CBC mode.
     ///
-    /// Else we fall back to RSA only and call `decrypt_str` for backwards compatibilty.
+    /// Else we fall back to RSA only and call `rsa_decrypt_str` for backwards compatibilty.
     pub fn to_decrypted(&self, rsa_keys: &RsaKeys) -> Result<Secret, Box<dyn Error>> {
         let decrypted_from_email = rsa_keys.decrypt_str(&self.from_email)?;
         let decrypted_from_display_name = rsa_keys.decrypt_str(&self.from_display_name)?;
