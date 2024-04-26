@@ -1,7 +1,6 @@
 use crate::authentication_oidc::{OidcUser, OidcUserDetails};
 use crate::configuration::ApplicationConfiguration;
 use async_trait::async_trait;
-use std::error::Error;
 
 /// Empty struct for trait implementation.
 pub struct OidcUserLdapUserDetails;
@@ -20,20 +19,13 @@ impl OidcUserDetails for OidcUserLdapUserDetails {
         {
             Ok(l) => l,
             Err(e) => {
-                let error_message = format!("cannot deserialize ldap result: {}", e);
-                let boxed_error = Box::<dyn Error + Send + Sync>::from(error_message);
-                return Err(boxed_error);
+                return Err(format!("cannot deserialize ldap result: {}", e).into());
             }
         };
         // dirty hack to build a json string from the ldap query result,
         // so it can be serialized.
         let ldap_result: OidcUser =
-            match serde_json::from_str(&ldap_search_result.replace(['[', ']'], "")) {
-                Ok(r) => r,
-                Err(e) => {
-                    return Err(e.into());
-                }
-            };
+            serde_json::from_str(&ldap_search_result.replace(['[', ']'], ""))?;
         Ok(OidcUser {
             user_name: ldap_result.user_name,
             first_name: ldap_result.first_name,

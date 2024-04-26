@@ -222,18 +222,22 @@ fn validate_access_token(
         return Err("Access token not yet valid!".into());
     }
     // Validate the `iss`and `aud` values only if present in the `AccessTokenFile`.
-    match &access_token_file.iss{
-        None => { info!("skipping iss validition");}
+    match &access_token_file.iss {
+        None => {
+            info!("skipping iss validition");
+        }
         Some(iss) => {
-            if *iss != access_token.iss{
+            if *iss != access_token.iss {
                 return Err("tampered access token, iss does not match".into());
             }
         }
     }
-    match &access_token_file.aud{
-        None => { info!("skipping aud validition");}
+    match &access_token_file.aud {
+        None => {
+            info!("skipping aud validition");
+        }
         Some(aud) => {
-            if *aud != access_token.aud{
+            if *aud != access_token.aud {
                 return Err("tampered access token, aud does not match".into());
             }
         }
