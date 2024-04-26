@@ -232,7 +232,7 @@ Also see [Cargo.toml](./Cargo.toml), section `[features]`.
   See https://github.com/ramosbugs/openidconnect-rs/issues/23.
 - **ldap-auth**: authenticate users with an external ldap server. Makes use of of the **ldap-common** and **get-userdata-ldap** feature.
 - **ldap-common**: holds the ldap configuration file and brings basic ldap functions to query users by name or email address.
-- **oidc-auth-ldap**: authenticate users with an external oidc server. Makes use of of the **authentication-oidc**, **oidc-ldap**, **ldap-common** and **get-userdata-ldap** feature.
+- **oidc-auth-ldap**: authenticate users with an external oidc server. Makes use of of the **authentication-oidc**, **oidc-ldap**, **ldap-common** and **get-userdata-ldap** feature. **NOTE**: right now the provider metadata server is only queried when the service is started. If the provider changes the configuration, the web service must be restarted!
 - **authentication-oidc**: holds the oidc implementation.
 - **oidc-ldap**: query user details from an external ldap server.
 - **mail-noauth-notls**: send mails to user via mail server that does not need authentication and uses no encrypted transport.
