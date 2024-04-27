@@ -13,6 +13,7 @@ use crate::login_user_trait::Login;
 use crate::mail_configuration::SendEMailConfiguration;
 use crate::rsa_functions::{RsaKeys, RsaPrivateKeyPassword};
 use crate::secret_functions::SharedSecretData;
+#[cfg(feature = "authentication-oidc")]
 use log::info;
 #[cfg(feature = "authentication-oidc")]
 use openidconnect::{
