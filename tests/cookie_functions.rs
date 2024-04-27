@@ -13,24 +13,24 @@ const WORKSPACE_DIR: &str = env!("CARGO_MANIFEST_DIR");
 #[test]
 fn cookie_functions() {
     const RSA_PASSPHRASE: &str = "12345678901234";
-    const COOKIE: &str = "my cookie";
+    const COOKIE_VALUE: &str = "my cookie";
 
     let mut rsa_keys = RsaKeys::new();
     let invalid_rsa_cookie =
-        build_new_encrypted_authentication_cookie(COOKIE, 90, COOKIE_PATH, &rsa_keys);
+        build_new_encrypted_authentication_cookie(COOKIE_VALUE, 90, COOKIE_PATH, &rsa_keys);
     assert_eq!(
         invalid_rsa_cookie.to_string(),
-        r#"lmtyas=invalid_rsa_cookie; HttpOnly; SameSite=Strict; Secure; Path=/; Domain=/; Max-Age=90"#,
+        r"lmtyas=invalid_rsa_cookie; HttpOnly; SameSite=Strict; Secure; Path=/; Domain=/; Max-Age=90",
         "should not be able to build rsa encrypted cookie without loaded keys!"
     );
 
-    let invalid_plain_base64_cookie = get_plain_cookie_string(COOKIE, &rsa_keys);
+    let invalid_plain_base64_cookie = get_plain_cookie_string(COOKIE_VALUE, &rsa_keys);
     assert_eq!(
         invalid_plain_base64_cookie, "invalid_base64_cookie",
         "should not be able to get plain cookie from this!"
     );
 
-    let base64_cookie = build_new_authentication_cookie(COOKIE, 90, COOKIE_PATH, &rsa_keys);
+    let base64_cookie = build_new_authentication_cookie(COOKIE_VALUE, 90, COOKIE_PATH, &rsa_keys);
     assert_eq!(
         base64_cookie.to_string(),
         r#"lmtyas=bXkgY29va2ll; HttpOnly; SameSite=Strict; Secure; Path=/; Domain=/; Max-Age=90"#,
@@ -46,14 +46,14 @@ fn cookie_functions() {
         panic!("cannot load rsa keys! {}", &e);
     };
 
-    let invalid_plain_rsa_cookie = get_plain_cookie_string(COOKIE, &rsa_keys);
+    let invalid_plain_rsa_cookie = get_plain_cookie_string(COOKIE_VALUE, &rsa_keys);
     assert_eq!(
         invalid_plain_rsa_cookie, "invalid_rsa_cookie_value",
         "should not be able to get plain cookie from this!"
     );
 
     let valid_rsa_cookie =
-        build_new_encrypted_authentication_cookie(COOKIE, 90, COOKIE_PATH, &rsa_keys);
+        build_new_encrypted_authentication_cookie(COOKIE_VALUE, 90, COOKIE_PATH, &rsa_keys);
     let rsa_cookie_as_str = valid_rsa_cookie.to_string();
     println!("rsa_cookie_as_str = {}", &rsa_cookie_as_str);
     let splitted_rsa_cookie_value: Vec<&str> = rsa_cookie_as_str.split(';').collect();
@@ -68,11 +68,11 @@ fn cookie_functions() {
     println!("cookie = {}", &cookie);
     let plain_cookie = get_plain_cookie_string(&cookie, &rsa_keys);
     assert_eq!(
-        plain_cookie, COOKIE,
+        plain_cookie, COOKIE_VALUE,
         "(1) cannot decrypt rsa encrypted cookie!"
     );
 
-    let valid_rsa_cookie = build_new_authentication_cookie(COOKIE, 90, COOKIE_PATH, &rsa_keys);
+    let valid_rsa_cookie = build_new_authentication_cookie(COOKIE_VALUE, 90, COOKIE_PATH, &rsa_keys);
     let rsa_cookie_as_str = valid_rsa_cookie.to_string();
     println!("rsa_cookie_as_str = {}", &rsa_cookie_as_str);
     let splitted_rsa_cookie_value: Vec<&str> = rsa_cookie_as_str.split(';').collect();
@@ -87,18 +87,18 @@ fn cookie_functions() {
     println!("cookie = {}", &cookie);
     let plain_cookie = get_plain_cookie_string(&cookie, &rsa_keys);
     assert_eq!(
-        plain_cookie, COOKIE,
+        plain_cookie, COOKIE_VALUE,
         "(2) cannot decrypt rsa encrypted cookie!"
     );
 
-    let base64_cookie = build_new_base64_authentication_cookie(COOKIE, 90, COOKIE_PATH);
+    let base64_cookie = build_new_base64_authentication_cookie(COOKIE_VALUE, 90, COOKIE_PATH);
     assert_eq!(
         base64_cookie.to_string(),
         r#"lmtyas=bXkgY29va2ll; HttpOnly; SameSite=Strict; Secure; Path=/; Domain=/; Max-Age=90"#,
         "cannot build base64 encoded cookie!"
     );
 
-    let base64_cookie = build_new_base64_authentication_cookie(COOKIE, 90, COOKIE_PATH);
+    let base64_cookie = build_new_base64_authentication_cookie(COOKIE_VALUE, 90, COOKIE_PATH);
     let cookie_response = build_new_cookie_response(&base64_cookie, COOKIE_PATH.to_string());
     assert_eq!(cookie_response.status(), StatusCode::OK);
 }
