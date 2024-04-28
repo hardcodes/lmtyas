@@ -539,7 +539,76 @@ See [license.md](resources/gfx/license.md).
 
 # Development
 
-## Development - dummy mail server
+For developing and testing the following components need to run besides the lmtyas web service:
+
+- ldap server
+
+  We make use of [glauth](https://glauth.github.io/) and its [docker container](https://hub.docker.com/r/glauth/glauth/tags).
+- mail server
+
+  We use [mailhog](https://github.com/mailhog/MailHog) and its [docker container](https://hub.docker.com/r/mailhog/mailhog/). When it's running, you can open [http://127.0.0.1:8025](http://127.0.0.1:8025) and see the mails sent by lmtyas. Plus clicking on the links is also possible.
+- oidc provider
+
+  We use [magnolia mock server](https://docs.magnolia-cms.com/magnolia-sso/3.1.x/guides/using-a-mock-oidc-server/) and its [docker container](https://hub.docker.com/r/magnolia/mock-oidc-user-server).
+
+  It accepts any user or password combination. Therefore it does not fill the email claim, we fake it in code! It should be clear: **do not ever use this in production!**
+
+
+## Development - container helper
+
+The containers can also be used with [podman](https://podman.io/), just add an alias to use the same commands:
+
+```bash
+alias docker=podman
+```
+
+**Starting the containers**
+
+
+```bash
+# ldap server
+docker run \
+  -d \
+  --rm \
+  --name lmtyas-glauth \
+  -p 3893:3893 \
+  -v ./resources/tests/ldap/ldap.conf:/app/config/config.cfg \
+  docker.io/glauth/glauth:latest
+# mail server
+docker run \
+  -d \
+  --rm \
+  --name lmtyas-mailhog \
+  -p 2525:1025 \
+  -p 8025:8025 \
+  docker.io/mailhog/mailhog:latest
+# oidc provider server
+docker run \
+  -d \
+  --rm \
+  --name lmtyas-oidc \
+  --env PORT=9090 \
+  --env CLIENT_ID=id \
+  --env CLIENT_SECRET=secret \
+  --env CLIENT_REDIRECT_URI=https://127.0.0.1:8844/authentication/callback \
+  --env CLIENT_LOGOUT_REDIRECT_URI=http://localhost:8080/.magnolia/admincentral \
+  -p 9090:9090 \
+  magnolia/mock-oidc-user-server:latest
+```
+
+**Stopping the containers**
+
+
+```bash
+docker stop lmtyas-glauth
+docker stop lmtyas-mailhog
+docker stop lmtyas-oidc
+```
+
+## Development - by hand
+
+
+### Development - by hand - dummy mail server
 
 Simply start one with this one line of python code:
 
@@ -550,7 +619,7 @@ python3 -m smtpd -n -c DebuggingServer 127.0.0.1:2525
 It will accept any incoming requests and dump the data to stdout.
 
 
-## Development - LDAP server
+### Development - by hand - LDAP server
 
 For developing of the default `ldap-auth` feature, I wanted a leightweight LDAP server without the hazzle of setting up an openldap server. I chose [glauth](https://github.com/glauth/glauth) written in Go.
 
