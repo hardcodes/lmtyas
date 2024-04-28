@@ -380,7 +380,7 @@ impl Login for OidcConfiguration {
                 Ok(faked_email) => Box::leak(faked_email.into_boxed_str()),
                 _ => "<debug_faked_email>",
             };
-            debug!("faked_email = {}", &faked_email);
+            warn!("faked_email = {}", &faked_email);
             faked_email
         } else {
             email
