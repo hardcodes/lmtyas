@@ -369,6 +369,9 @@ impl Login for OidcConfiguration {
             .unwrap_or("<not provided>");
         debug!("email (claim) = {}", &email);
 
+        /////////////////////////////////////////////////////////////////////////////////////
+        // WARNING
+        /////////////////////////////////////////////////////////////////////////////////////
         // Very dirty hack to fake an email address when using magnolia/mock-oidc-user-server
         // as development oidc server.
         #[cfg(debug_assertions)]
@@ -382,6 +385,7 @@ impl Login for OidcConfiguration {
         } else {
             email
         };
+        /////////////////////////////////////////////////////////////////////////////////////
 
         if !valid_user_regex.is_match(&email) {
             warn!(
