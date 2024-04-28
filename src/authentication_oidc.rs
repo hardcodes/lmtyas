@@ -363,13 +363,27 @@ impl Login for OidcConfiguration {
             &request_id
         );
         debug!("claims = {:?}", &claims);
-
         let email = claims
             .email()
             .map(|email| email.as_str())
             .unwrap_or("<not provided>");
+        debug!("email (claim) = {}", &email);
 
-        if !valid_user_regex.is_match(email) {
+        // Very dirty hack to fake an email address when using magnolia/mock-oidc-user-server
+        // as development oidc server.
+        #[cfg(debug_assertions)]
+        let email = if email == "<not provided>" {
+            let faked_email = match String::from_utf8(claims.subject().as_bytes().to_vec()) {
+                Ok(faked_email) => Box::leak(faked_email.into_boxed_str()),
+                _ => "<debug_faked_email>",
+            };
+            debug!("faked_email = {}", &faked_email);
+            faked_email
+        } else {
+            email
+        };
+
+        if !valid_user_regex.is_match(&email) {
             warn!(
                 "OIDC: claim email address {} does not match regex: {}",
                 &email,
