@@ -371,8 +371,12 @@ impl Login for OidcConfiguration {
 
         if !valid_user_regex.is_match(email) {
             warn!(
-                "OIDC: user email address from claim does not match regex: {}",
-                &email
+                "OIDC: claim email address {} does not match regex: {}",
+                &email,
+                &application_configuration
+                    .configuration_file
+                    .oidc_configuration
+                    .valid_user_regex
             );
             return login_fail_redirect;
         }
