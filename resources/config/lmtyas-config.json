@@ -30,7 +30,7 @@
         }
     },
     "oidc_configuration": {
-        "provider_metadata_url": "https://oidc.acme.home.arpa/",
+        "provider_metadata_url": "http://localhost:9090",
         "client_id": "id",
         "client_secret": "secret",
         "valid_user_regex": "^[\\w\\d\\-]{3,8}@acme\\.local$"
