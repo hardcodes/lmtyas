@@ -54,14 +54,15 @@ pub fn setup(setup_lock: &mut MutexGuard<ExternalHelperApplications>) {
         // 2. start dummy mail server
         //
         //    `python3 -m smtpd -n -c DebuggingServer 127.0.0.1:2525`
-        let mail_server = Command::new("python3")
+        let mail_server = Command::new("docker")
             .args([
-                "-m",
-                "smtpd",
-                "-n",
-                "-c",
-                "DebuggingServer",
-                "127.0.0.1:2525",
+                "run",
+                "-d",
+                "--rm",
+                "--name lmtyas-mailhog",
+                "-p 2525:1025",
+                "-p 8025:8025",
+                "docker.io/mailhog/mailhog:latest",
             ])
             .spawn()
             .expect("cannot start dummy mail server");
@@ -88,5 +89,5 @@ pub fn teardown(teardown_lock: &mut MutexGuard<ExternalHelperApplications>) {
         .kill()
         .expect("dummy mail server was not running");
     teardown_lock.setup_done = false;
-    std::thread::sleep(std::time::Duration::from_secs(1));
+    std::thread::sleep(std::time::Duration::from_secs(10));
 }
