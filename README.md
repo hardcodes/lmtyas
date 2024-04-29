@@ -863,7 +863,22 @@ Tests are at the moment far from complete.
   cargo test --no-default-features --features ldap-auth,mail-noauth-notls,api-access-token
   ```
 
-If test fails the external processes may still be running. To find and kill them and assuming you have no other processes with these speficics, you can enter
+If test fails the external helper services may still be running.
+
+**Using containers**
+
+```bash
+docker stop lmtyas-glauth
+docker stop lmtyas-mailhog
+docker stop lmtyas-oidc
+docker rm lmtyas-glauth
+docker rm lmtyas-mailhog
+docker rm lmtyas-oidc
+```
+
+**testing by hand**
+
+To find and kill them and assuming you have no other processes with these speficics, you can enter
 
 ```bash
 # kill glauth ldap server
