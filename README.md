@@ -107,7 +107,7 @@ The following services need to be available for `lmtyas` to work properly:
 
 - ldap server
 - mail server
-- oidc server (default, but optionally)
+- oidc server (default, but optional)
 
 
 # Compile and install
