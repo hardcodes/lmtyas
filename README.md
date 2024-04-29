@@ -96,7 +96,18 @@ You need a SSL certificate and its unencrypted key in pem format. Create your ow
 
 # External dependencies
 
+## External dependencies - libaries
+
 An installed `openssl` library is needed on the server side, the header files are needed on your development machine.
+
+
+## External dependencies - services
+
+The following services need to be available for `lmtyas` to work properly:
+
+- ldap server
+- mail server
+- oidc server (default, but optionally)
 
 
 # Compile and install
