@@ -114,7 +114,7 @@ The following services need to be available for `lmtyas` to work properly:
 
 Compiling probably works on any system that has a Rust compiler and recent OpenSSL packages including header files available.
 
-Here is an example that works for Ubutu 20.04 LTS , Ubuntu 22.04 LTS and CentOS7. Probably any recent Linux distro with Systemd will work. Every distro without Systemd will probably also work with some modifications for the startup process (you might want to look into [deamonize](https://software.clapper.org/daemonize/)).
+Here is an example that works for Ubutu 20.04 LTS , Ubuntu 22.04 LTS and CentOS7. Probably any recent Linux distro with Systemd will work. Every distro without Systemd or Unix system will probably also work with some modifications for the startup process (you might want to look into [deamonize](https://software.clapper.org/daemonize/)).
 
 Head over to [www.rust-lang.org](https://www.rust-lang.org/tools/install) and follow the instructions if you don't have a Rust compiler installed yet.
 
