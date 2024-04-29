@@ -76,3 +76,8 @@ pub mod authentication_url {
 pub const TIMER_VEC_CAPACITY: usize = 3;
 #[cfg(not(feature = "oidc-auth-ldap"))]
 pub const TIMER_VEC_CAPACITY: usize = 2;
+
+// command to start and stop containers
+#[cfg(debug_assertions)]
+pub const CONTAINER_COMMAND: &str = "podman";
+//pub const CONTAINER_COMMAND: &str = "docker";

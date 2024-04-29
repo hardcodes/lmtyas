@@ -9,6 +9,14 @@ use secstr::SecStr;
 use std::path::Path;
 
 const WORKSPACE_DIR: &str = env!("CARGO_MANIFEST_DIR");
+#[cfg(not(feature = "oidc-auth-ldap"))]
+const INVALID_RSA_COOKIE: &str = r"lmtyas=invalid_rsa_cookie; HttpOnly; SameSite=Strict; Secure; Path=/; Domain=/; Max-Age=90";
+#[cfg(feature = "oidc-auth-ldap")]
+const INVALID_RSA_COOKIE: &str = r"lmtyas=invalid_rsa_cookie; HttpOnly; SameSite=Lax; Secure; Path=/; Domain=/; Max-Age=90";
+#[cfg(not(feature = "oidc-auth-ldap"))]
+const BASE64_COOKIE: &str = r"lmtyas=bXkgY29va2ll; HttpOnly; SameSite=Strict; Secure; Path=/; Domain=/; Max-Age=90";
+#[cfg(feature = "oidc-auth-ldap")]
+const BASE64_COOKIE: &str = r"lmtyas=bXkgY29va2ll; HttpOnly; SameSite=Lax; Secure; Path=/; Domain=/; Max-Age=90";
 
 #[test]
 fn cookie_functions() {
@@ -20,7 +28,7 @@ fn cookie_functions() {
         build_new_encrypted_authentication_cookie(COOKIE_VALUE, 90, COOKIE_PATH, &rsa_keys);
     assert_eq!(
         invalid_rsa_cookie.to_string(),
-        r"lmtyas=invalid_rsa_cookie; HttpOnly; SameSite=Strict; Secure; Path=/; Domain=/; Max-Age=90",
+        INVALID_RSA_COOKIE,
         "should not be able to build rsa encrypted cookie without loaded keys!"
     );
 
@@ -33,7 +41,7 @@ fn cookie_functions() {
     let base64_cookie = build_new_authentication_cookie(COOKIE_VALUE, 90, COOKIE_PATH, &rsa_keys);
     assert_eq!(
         base64_cookie.to_string(),
-        r#"lmtyas=bXkgY29va2ll; HttpOnly; SameSite=Strict; Secure; Path=/; Domain=/; Max-Age=90"#,
+        BASE64_COOKIE,
         "cannot build base64 encoded cookie!"
     );
 
@@ -94,7 +102,7 @@ fn cookie_functions() {
     let base64_cookie = build_new_base64_authentication_cookie(COOKIE_VALUE, 90, COOKIE_PATH);
     assert_eq!(
         base64_cookie.to_string(),
-        r#"lmtyas=bXkgY29va2ll; HttpOnly; SameSite=Strict; Secure; Path=/; Domain=/; Max-Age=90"#,
+        BASE64_COOKIE,
         "cannot build base64 encoded cookie!"
     );
 

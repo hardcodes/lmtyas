@@ -562,6 +562,9 @@ The containers can also be used with [podman](https://podman.io/), just add an a
 alias docker=podman
 ```
 
+See also ` CONTAINER_COMMAND` in [lib.rs](src/lib.rs).
+
+
 **Starting the containers**
 
 
@@ -593,7 +596,7 @@ docker run \
   --env CLIENT_REDIRECT_URI=https://127.0.0.1:8844/authentication/callback \
   --env CLIENT_LOGOUT_REDIRECT_URI=http://localhost:8080/.magnolia/admincentral \
   -p 9090:9090 \
-  magnolia/mock-oidc-user-server:latest
+  docker.io/magnolia/mock-oidc-user-server:latest
 ```
 
 **Stopping the containers**

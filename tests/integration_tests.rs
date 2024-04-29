@@ -1,3 +1,4 @@
+mod authenticated_user_test;
 mod common;
 use common::SETUP_SINGLETON;
 #[cfg(feature = "ldap-auth")]
@@ -17,28 +18,6 @@ use std::path::Path;
 /// testing the functions that need external services in one go.
 #[actix_rt::test]
 async fn with_setup() {
-    // load configuration file with the ldap server connection details
-    let application_configuration = ApplicationConfiguration::read_from_file(
-        Path::new(common::WORKSPACE_DIR).join("resources/config/lmtyas-config.json"),
-    )
-    .await;
-
-    // test sending mail before the server is has been started
-    #[cfg(feature = "mail-noauth-notls")]
-    let send_mail_fail = application_configuration
-        .configuration_file
-        .email_configuration
-        .send_mail(
-            "alice@acme.local",
-            "bob@acme.local",
-            "mail_subject",
-            "mail_body",
-        );
-    assert!(
-        matches!(send_mail_fail, Err(_)),
-        "should not be able to send mails without server running"
-    );
-
     let mut setup_singleton_lock = SETUP_SINGLETON.lock().await;
     // set up external helper services, like e.g. ldap and dummy mail server
     common::setup(&mut setup_singleton_lock);
@@ -46,6 +25,17 @@ async fn with_setup() {
         setup_singleton_lock.setup_done,
         "setup is not done, cannot run tests!"
     );
+
+    // load configuration file with the ldap server connection details
+    let application_configuration = ApplicationConfiguration::read_from_file(
+        Path::new(common::WORKSPACE_DIR).join("resources/config/lmtyas-config.json"),
+    )
+    .await;
+
+    // Call test functions that need a loaded configuration file
+    // When feature "oidc-auth-ldap" is enabled, the configuration
+    // file cannot be loaded without the oidc helper service running.
+    crate::authenticated_user_test::test_authenticated_user(&application_configuration).await;
 
     #[cfg(feature = "mail-noauth-notls")]
     {
@@ -93,7 +83,7 @@ async fn with_setup() {
             matches!(send_mail_fail3, Err(_)),
             "should not be able to send mails with wrong address"
         );
-    }
+    } // end of mail testing
 
     #[cfg(feature = "ldap-common")]
     {
@@ -186,7 +176,7 @@ async fn with_setup() {
             matches!(user_not_found_by_mail_result, Err(_)),
             "expected not to find user b0b in ldap server by mail"
         );
-    }
+    } // end of common ldap testing
 
     #[cfg(feature = "ldap-auth")]
     {
@@ -211,7 +201,7 @@ async fn with_setup() {
             matches!(ldap_login_fail, Err(_)),
             "user bob should not be able to login with wrong password"
         );
-    }
+    } // end of ldap auth testing
 
     #[cfg(feature = "oidc-auth-ldap")]
     {
@@ -233,7 +223,7 @@ async fn with_setup() {
             oidc_user.is_err(),
             "oidc user details for bobo@acme.local should not be found!"
         );
-    }
+    } // end of oidc ldap testing
 
     common::teardown(&mut setup_singleton_lock);
 }

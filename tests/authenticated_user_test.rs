@@ -2,16 +2,8 @@ use lmtyas::authenticated_user::{
     cleanup_authenticated_users_hashmap, AccessScope, MAX_AUTH_USERS,
 };
 use lmtyas::configuration::ApplicationConfiguration;
-use std::path::Path;
 
-const WORKSPACE_DIR: &str = env!("CARGO_MANIFEST_DIR");
-
-#[actix_rt::test]
-async fn authenticated_user() {
-    let application_configuration = ApplicationConfiguration::read_from_file(
-        Path::new(WORKSPACE_DIR).join("resources/config/lmtyas-config.json"),
-    )
-    .await;
+pub async fn test_authenticated_user(application_configuration: &ApplicationConfiguration) {
     for user_count in 1..MAX_AUTH_USERS + 1 {
         let uuid_option: Option<uuid::Uuid>;
         {
