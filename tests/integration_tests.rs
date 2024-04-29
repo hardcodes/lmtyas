@@ -1,22 +1,39 @@
 mod authenticated_user_test;
 mod common;
+use actix_files::Files;
+use actix_web::{guard, middleware, web, App, HttpResponse, HttpServer};
 use common::SETUP_SINGLETON;
 #[cfg(feature = "ldap-auth")]
+use lmtyas::authentication_ldap::LdapCommonConfiguration;
+#[cfg(feature = "ldap-auth")]
 pub use lmtyas::authentication_ldap::LdapLogin;
+use lmtyas::authentication_middleware::CheckAuthentication;
+#[cfg(feature = "oidc-auth-ldap")]
+use lmtyas::authentication_oidc::OidcConfiguration;
 #[cfg(feature = "oidc-auth-ldap")]
 use lmtyas::authentication_oidc::OidcUserDetails;
+use lmtyas::authentication_url;
+use lmtyas::cleanup_timer::build_cleaup_timers;
 use lmtyas::configuration::ApplicationConfiguration;
+use lmtyas::handler_functions::*;
 #[cfg(any(feature = "ldap-auth", feature = "oidc-auth-ldap"))]
 use lmtyas::ldap_common::LdapSearchResult;
+use lmtyas::log_functions::extract_request_path;
+use lmtyas::login_user_trait::Login;
 #[cfg(feature = "mail-noauth-notls")]
 pub use lmtyas::mail_noauth_notls::SendEMail;
 #[cfg(feature = "oidc-auth-ldap")]
 use lmtyas::oidc_ldap::OidcUserLdapUserDetails;
-
+use lmtyas::MAX_FORM_BYTES_LEN;
 use std::path::Path;
 
+#[cfg(feature = "ldap-auth")]
+type AuthConfiguration = LdapCommonConfiguration;
+#[cfg(feature = "oidc-auth-ldap")]
+type AuthConfiguration = OidcConfiguration;
+
 /// testing the functions that need external services in one go.
-#[actix_rt::test]
+#[actix_web::test]
 async fn with_setup() {
     let mut setup_singleton_lock = SETUP_SINGLETON.lock().await;
     // set up external helper services, like e.g. ldap and dummy mail server
@@ -32,9 +49,12 @@ async fn with_setup() {
     )
     .await;
 
+    ///////////////////////////////////////////////////////////////////////////
+    // Test with configuration.
     // Call test functions that need a loaded configuration file
     // When feature "oidc-auth-ldap" is enabled, the configuration
     // file cannot be loaded without the oidc helper service running.
+    ///////////////////////////////////////////////////////////////////////////
     crate::authenticated_user_test::test_authenticated_user(&application_configuration).await;
 
     #[cfg(feature = "mail-noauth-notls")]
@@ -225,5 +245,62 @@ async fn with_setup() {
         );
     } // end of oidc ldap testing
 
+    ///////////////////////////////////////////////////////////////////////////
+    // At this point functions were only tested with a loaded configuration.
+    // Now we start the application itself.
+    ///////////////////////////////////////////////////////////////////////////
+    let web_bind_address = application_configuration
+        .configuration_file
+        .web_bind_address
+        .clone();
+    // load ssl keys
+    let ssl_acceptor_builder = application_configuration.get_ssl_acceptor_builder();
+
+    // build cleanup timers and store references to keep them running
+    let _timer_guards = build_cleaup_timers(&application_configuration);
+
+    // values for the csp-header
+    let content_security_policy = concat!(
+        "form-action 'self';",
+        "frame-ancestors 'none';",
+        "connect-src 'self';",
+        "default-src 'self';",
+        "script-src 'self';",
+        "style-src 'self';",
+    );
+
+    let server = HttpServer::new(move || {
+        lmtyas::app!(
+            application_configuration,
+            content_security_policy,
+            MAX_FORM_BYTES_LEN
+        )
+    })
+    .keep_alive(std::time::Duration::from_secs(45))
+    .bind_openssl(web_bind_address, ssl_acceptor_builder)
+    .unwrap()
+    .run();
+
+    ///////////////////////////////////////////////////////////////////////////
+    // Application is running.
+    ///////////////////////////////////////////////////////////////////////////
+
+    let client = reqwest::Client::builder()
+        .danger_accept_invalid_certs(true)
+        // .timeout(core::time::Duration::new(5,0))
+        .build()
+        .unwrap();
+    #[cfg(feature = "api-access-token")]
+    {
+        println!("starting request");
+        let token_url = "https://127.0.0.1:8844/api/v1/secret";
+        let response = client.post(token_url).send().await.unwrap();
+        assert!(response.status().is_success());
+    }
+
+    server.await.unwrap();
+    ///////////////////////////////////////////////////////////////////////////
+    // Cleanup.
+    ///////////////////////////////////////////////////////////////////////////
     common::teardown(&mut setup_singleton_lock);
 }
