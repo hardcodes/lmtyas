@@ -24,6 +24,7 @@ async fn with_setup() {
     .await;
 
     // test sending mail before the server is has been started
+    #[cfg(feature = "mail-noauth-notls")]
     let send_mail_fail = application_configuration
         .configuration_file
         .email_configuration
@@ -39,147 +40,153 @@ async fn with_setup() {
     );
 
     let mut setup_singleton_lock = SETUP_SINGLETON.lock().await;
-    // set up ldap and dummy mail server
+    // set up external helper services, like e.g. ldap and dummy mail server
     common::setup(&mut setup_singleton_lock);
     assert!(
         setup_singleton_lock.setup_done,
         "setup is not done, cannot run tests!"
     );
 
-    // test sending mail after the server is has been started
-    let send_mail_ok = application_configuration
-        .configuration_file
-        .email_configuration
-        .send_mail(
-            "alice@acme.local",
-            "bob@acme.local",
-            "mail_subject",
-            "mail_body",
+    #[cfg(feature = "mail-noauth-notls")]
+    {
+        // test sending mail after the server is has been started
+        let send_mail_ok = application_configuration
+            .configuration_file
+            .email_configuration
+            .send_mail(
+                "alice@acme.local",
+                "bob@acme.local",
+                "mail_subject",
+                "mail_body",
+            );
+        assert!(
+            matches!(send_mail_ok, Ok(_)),
+            "server should be running, why can I not send mails?"
         );
-    assert!(
-        matches!(send_mail_ok, Ok(_)),
-        "server should be running, why can I not send mails?"
-    );
 
-    // test sending mail after the server is has been started
-    let send_mail_fail2 = application_configuration
-        .configuration_file
-        .email_configuration
-        .send_mail(
-            "alice@acme.local",
-            "wrong mail address",
-            "mail_subject",
-            "mail_body",
+        // test sending mail after the server is has been started
+        let send_mail_fail2 = application_configuration
+            .configuration_file
+            .email_configuration
+            .send_mail(
+                "alice@acme.local",
+                "wrong mail address",
+                "mail_subject",
+                "mail_body",
+            );
+        assert!(
+            matches!(send_mail_fail2, Err(_)),
+            "should not be able to send mails with wrong address"
         );
-    assert!(
-        matches!(send_mail_fail2, Err(_)),
-        "should not be able to send mails with wrong address"
-    );
 
-    // test sending mail after the server is has been started
-    let send_mail_fail3 = application_configuration
-        .configuration_file
-        .email_configuration
-        .send_mail(
-            "alice@acme.local",
-            "<bob@acme.local",
-            "mail_subject",
-            "mail_body",
+        // test sending mail after the server is has been started
+        let send_mail_fail3 = application_configuration
+            .configuration_file
+            .email_configuration
+            .send_mail(
+                "alice@acme.local",
+                "<bob@acme.local",
+                "mail_subject",
+                "mail_body",
+            );
+        assert!(
+            matches!(send_mail_fail3, Err(_)),
+            "should not be able to send mails with wrong address"
         );
-    assert!(
-        matches!(send_mail_fail3, Err(_)),
-        "should not be able to send mails with wrong address"
-    );
+    }
 
-    // looking up existing user by uid in ldap
-    let user_found_by_uid = application_configuration
-        .configuration_file
-        .ldap_common_configuration
-        .ldap_search_by_uid(
+    #[cfg(feature = "ldap-common")]
+    {
+        // looking up existing user by uid in ldap
+        let user_found_by_uid = application_configuration
+            .configuration_file
+            .ldap_common_configuration
+            .ldap_search_by_uid(
+                "bob",
+                Some(
+                    &application_configuration
+                        .configuration_file
+                        .ldap_common_configuration
+                        .user_filter,
+                ),
+            )
+            .await;
+        let user_found_by_uid_result =
+            serde_json::from_str(&user_found_by_uid.unwrap().replace(['[', ']'], ""))
+                as Result<LdapSearchResult, _>;
+        assert_eq!(
+            user_found_by_uid_result.unwrap().user_name,
             "bob",
-            Some(
-                &application_configuration
-                    .configuration_file
-                    .ldap_common_configuration
-                    .user_filter,
-            ),
-        )
-        .await;
-    let user_found_by_uid_result =
-        serde_json::from_str(&user_found_by_uid.unwrap().replace(['[', ']'], ""))
-            as Result<LdapSearchResult, _>;
-    assert_eq!(
-        user_found_by_uid_result.unwrap().user_name,
-        "bob",
-        "expected finding user bob in ldap server by uid"
-    );
+            "expected finding user bob in ldap server by uid"
+        );
 
-    // looking up non existing user by uid in ldap
-    let user_not_found_by_uid = application_configuration
-        .configuration_file
-        .ldap_common_configuration
-        .ldap_search_by_uid(
-            "b0b",
-            Some(
-                &application_configuration
-                    .configuration_file
-                    .ldap_common_configuration
-                    .user_filter,
-            ),
-        )
-        .await;
-    let user_not_found_by_uid_result =
-        serde_json::from_str(&user_not_found_by_uid.unwrap().replace(['[', ']'], ""))
-            as Result<LdapSearchResult, _>;
-    assert!(
-        matches!(user_not_found_by_uid_result, Err(_)),
-        "expected not to find user b0b in ldap server by uid"
-    );
+        // looking up non existing user by uid in ldap
+        let user_not_found_by_uid = application_configuration
+            .configuration_file
+            .ldap_common_configuration
+            .ldap_search_by_uid(
+                "b0b",
+                Some(
+                    &application_configuration
+                        .configuration_file
+                        .ldap_common_configuration
+                        .user_filter,
+                ),
+            )
+            .await;
+        let user_not_found_by_uid_result =
+            serde_json::from_str(&user_not_found_by_uid.unwrap().replace(['[', ']'], ""))
+                as Result<LdapSearchResult, _>;
+        assert!(
+            matches!(user_not_found_by_uid_result, Err(_)),
+            "expected not to find user b0b in ldap server by uid"
+        );
 
-    // looking up existing user by mail in ldap
-    let user_found_by_mail = application_configuration
-        .configuration_file
-        .ldap_common_configuration
-        .ldap_search_by_mail(
-            "bob@acme.local",
-            Some(
-                &application_configuration
-                    .configuration_file
-                    .ldap_common_configuration
-                    .mail_filter,
-            ),
-        )
-        .await;
-    let user_found_by_mail_result =
-        serde_json::from_str(&user_found_by_mail.unwrap().replace(['[', ']'], ""))
-            as Result<LdapSearchResult, _>;
-    assert_eq!(
-        user_found_by_mail_result.unwrap().user_name,
-        "bob",
-        "expected finding user bob in ldap server by mail"
-    );
+        // looking up existing user by mail in ldap
+        let user_found_by_mail = application_configuration
+            .configuration_file
+            .ldap_common_configuration
+            .ldap_search_by_mail(
+                "bob@acme.local",
+                Some(
+                    &application_configuration
+                        .configuration_file
+                        .ldap_common_configuration
+                        .mail_filter,
+                ),
+            )
+            .await;
+        let user_found_by_mail_result =
+            serde_json::from_str(&user_found_by_mail.unwrap().replace(['[', ']'], ""))
+                as Result<LdapSearchResult, _>;
+        assert_eq!(
+            user_found_by_mail_result.unwrap().user_name,
+            "bob",
+            "expected finding user bob in ldap server by mail"
+        );
 
-    // looking up non existing user by mail in ldap
-    let user_not_found_by_mail = application_configuration
-        .configuration_file
-        .ldap_common_configuration
-        .ldap_search_by_mail(
-            "b0b@acme.local",
-            Some(
-                &application_configuration
-                    .configuration_file
-                    .ldap_common_configuration
-                    .user_filter,
-            ),
-        )
-        .await;
-    let user_not_found_by_mail_result =
-        serde_json::from_str(&user_not_found_by_mail.unwrap().replace(['[', ']'], ""))
-            as Result<LdapSearchResult, _>;
-    assert!(
-        matches!(user_not_found_by_mail_result, Err(_)),
-        "expected not to find user b0b in ldap server by mail"
-    );
+        // looking up non existing user by mail in ldap
+        let user_not_found_by_mail = application_configuration
+            .configuration_file
+            .ldap_common_configuration
+            .ldap_search_by_mail(
+                "b0b@acme.local",
+                Some(
+                    &application_configuration
+                        .configuration_file
+                        .ldap_common_configuration
+                        .user_filter,
+                ),
+            )
+            .await;
+        let user_not_found_by_mail_result =
+            serde_json::from_str(&user_not_found_by_mail.unwrap().replace(['[', ']'], ""))
+                as Result<LdapSearchResult, _>;
+        assert!(
+            matches!(user_not_found_by_mail_result, Err(_)),
+            "expected not to find user b0b in ldap server by mail"
+        );
+    }
 
     #[cfg(feature = "ldap-auth")]
     {

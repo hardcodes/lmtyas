@@ -17,7 +17,9 @@ lazy_static! {
 #[derive(Default)]
 pub struct ExternalHelperApplications {
     pub setup_done: bool,
+    #[cfg(feature = "ldap-common")]
     glauth: Option<Child>,
+    #[cfg(feature = "mail-noauth-notls")]
     mail_server: Option<Child>,
 }
 
@@ -27,37 +29,44 @@ pub fn setup(setup_lock: &mut MutexGuard<ExternalHelperApplications>) {
     if setup_lock.setup_done {
         return;
     }
-    // starting with test setup
-    //
-    // 1. start ldap server
-    //
-    //    `glauth -c resources/tests/ldap/ldap.conf`
-    let glauth = Command::new("glauth")
-        .args([
-            "-c",
-            Path::new(WORKSPACE_DIR)
-                .join("resources/tests/ldap/ldap.conf")
-                .to_str()
-                .unwrap(),
-        ])
-        .spawn()
-        .expect("cannot start glauth ldap server");
-    setup_lock.glauth = Some(glauth);
-    // 2. start dummy mail server
-    //
-    //    `python3 -m smtpd -n -c DebuggingServer 127.0.0.1:2525`
-    let mail_server = Command::new("python3")
-        .args([
-            "-m",
-            "smtpd",
-            "-n",
-            "-c",
-            "DebuggingServer",
-            "127.0.0.1:2525",
-        ])
-        .spawn()
-        .expect("cannot start dummy mail server");
-    setup_lock.mail_server = Some(mail_server);
+    #[cfg(feature = "ldap-common")]
+    {
+        // starting with test setup
+        //
+        // 1. start ldap server
+        //
+        //    `glauth -c resources/tests/ldap/ldap.conf`
+        let glauth = Command::new("glauth")
+            .args([
+                "-c",
+                Path::new(WORKSPACE_DIR)
+                    .join("resources/tests/ldap/ldap.conf")
+                    .to_str()
+                    .unwrap(),
+            ])
+            .spawn()
+            .expect("cannot start glauth ldap server");
+        setup_lock.glauth = Some(glauth);
+    }
+
+    #[cfg(feature = "mail-noauth-notls")]
+    {
+        // 2. start dummy mail server
+        //
+        //    `python3 -m smtpd -n -c DebuggingServer 127.0.0.1:2525`
+        let mail_server = Command::new("python3")
+            .args([
+                "-m",
+                "smtpd",
+                "-n",
+                "-c",
+                "DebuggingServer",
+                "127.0.0.1:2525",
+            ])
+            .spawn()
+            .expect("cannot start dummy mail server");
+        setup_lock.mail_server = Some(mail_server);
+    }
     // give services some time to start up
     std::thread::sleep(std::time::Duration::from_secs(2));
     // done with setup
