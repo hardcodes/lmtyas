@@ -272,7 +272,11 @@ async fn with_setup() {
     let request = test::TestRequest::get().uri("/monitoring/still_alive").to_request();
     let result = test::call_and_read_body(&test_service, request).await;
     assert_eq!(result, "System not ready!".as_bytes(), "service should not boogie!");
-    
+
+    let request = test::TestRequest::get().uri("/system/is_server_ready").to_request();
+    let result = test::call_and_read_body(&test_service, request).await;
+    assert_eq!(result, "{\"isReady\": false}".as_bytes(), "/system/is_server_ready should fail!");
+
     ///////////////////////////////////////////////////////////////////////////
     // Cleanup.
     ///////////////////////////////////////////////////////////////////////////
