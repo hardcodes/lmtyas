@@ -1,7 +1,7 @@
 mod authenticated_user_test;
 mod common;
 use actix_files::Files;
-use actix_web::{guard, middleware, web, App, HttpResponse, HttpServer};
+use actix_web::{guard, middleware, test, web, App, HttpResponse};
 use common::SETUP_SINGLETON;
 #[cfg(feature = "ldap-auth")]
 use lmtyas::authentication_ldap::LdapCommonConfiguration;
@@ -13,7 +13,6 @@ use lmtyas::authentication_oidc::OidcConfiguration;
 #[cfg(feature = "oidc-auth-ldap")]
 use lmtyas::authentication_oidc::OidcUserDetails;
 use lmtyas::authentication_url;
-use lmtyas::cleanup_timer::build_cleaup_timers;
 use lmtyas::configuration::ApplicationConfiguration;
 use lmtyas::handler_functions::*;
 #[cfg(any(feature = "ldap-auth", feature = "oidc-auth-ldap"))]
@@ -247,18 +246,8 @@ async fn with_setup() {
 
     ///////////////////////////////////////////////////////////////////////////
     // At this point functions were only tested with a loaded configuration.
-    // Now we start the application itself.
+    // Now we start the service itself.
     ///////////////////////////////////////////////////////////////////////////
-    let web_bind_address = application_configuration
-        .configuration_file
-        .web_bind_address
-        .clone();
-    // load ssl keys
-    let ssl_acceptor_builder = application_configuration.get_ssl_acceptor_builder();
-
-    // build cleanup timers and store references to keep them running
-    let _timer_guards = build_cleaup_timers(&application_configuration);
-
     // values for the csp-header
     let content_security_policy = concat!(
         "form-action 'self';",
@@ -269,36 +258,21 @@ async fn with_setup() {
         "style-src 'self';",
     );
 
-    let server = HttpServer::new(move || {
-        lmtyas::app!(
-            application_configuration,
-            content_security_policy,
-            MAX_FORM_BYTES_LEN
-        )
-    })
-    .keep_alive(std::time::Duration::from_secs(45))
-    .bind_openssl(web_bind_address, ssl_acceptor_builder)
-    .unwrap()
-    .run();
+    let test_service = test::init_service(lmtyas::app!(
+        application_configuration.clone(),
+        content_security_policy,
+        MAX_FORM_BYTES_LEN
+    ))
+    .await;
 
     ///////////////////////////////////////////////////////////////////////////
     // Application is running.
     ///////////////////////////////////////////////////////////////////////////
 
-    let client = reqwest::Client::builder()
-        .danger_accept_invalid_certs(true)
-        // .timeout(core::time::Duration::new(5,0))
-        .build()
-        .unwrap();
-    #[cfg(feature = "api-access-token")]
-    {
-        println!("starting request");
-        let token_url = "https://127.0.0.1:8844/api/v1/secret";
-        let response = client.post(token_url).send().await.unwrap();
-        assert!(response.status().is_success());
-    }
-
-    server.await.unwrap();
+    let request = test::TestRequest::get().uri("/monitoring/still_alive").to_request();
+    let result = test::call_and_read_body(&test_service, request).await;
+    assert_eq!(result, "System not ready!".as_bytes(), "service should not boogie!");
+    
     ///////////////////////////////////////////////////////////////////////////
     // Cleanup.
     ///////////////////////////////////////////////////////////////////////////
