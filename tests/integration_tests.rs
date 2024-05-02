@@ -1,6 +1,7 @@
 mod authenticated_user_test;
 mod common;
 use actix_files::Files;
+use actix_http::StatusCode;
 use actix_web::{guard, middleware, test, web, App, HttpResponse};
 use common::SETUP_SINGLETON;
 #[cfg(feature = "ldap-auth")]
@@ -266,7 +267,7 @@ async fn with_setup() {
     .await;
 
     ///////////////////////////////////////////////////////////////////////////
-    // Application is running.
+    // Testing routes that don't need authentication
     ///////////////////////////////////////////////////////////////////////////
 
     let request = test::TestRequest::get().uri("/monitoring/still_alive").to_request();
@@ -276,6 +277,100 @@ async fn with_setup() {
     let request = test::TestRequest::get().uri("/system/is_server_ready").to_request();
     let result = test::call_and_read_body(&test_service, request).await;
     assert_eq!(result, "{\"isReady\": false}".as_bytes(), "/system/is_server_ready should fail!");
+
+    let request = test::TestRequest::get().uri("/system/get/login-hint").to_request();
+    let result = test::call_and_read_body(&test_service, request).await;
+    assert_eq!(result, "A.C.M.E. LDAP account".as_bytes(), "wrong response from /system/get/login-hint!");
+
+    let request = test::TestRequest::get().uri("/system/get/mail-hint").to_request();
+    let result = test::call_and_read_body(&test_service, request).await;
+    assert_eq!(result, "{\"MailHint\": \"hint:firstname.lastname@acme.local\"}".as_bytes(), "wrong response from /system/get/mail-hint!");
+
+    let request = test::TestRequest::get().uri("/system/get/imprint-link").to_request();
+    let result = test::call_and_read_body(&test_service, request).await;
+    assert_eq!(result, "{\"href\":\"https://www.acme.local\",\"target\":\"_blank\"}".as_bytes(), "wrong response from /system/get/imprint-link!");
+
+    let request = test::TestRequest::get().uri("/gfx/favicon.png").to_request();
+    let result = test::call_service(&test_service, request).await;
+    assert_eq!(result.status(), StatusCode::OK, "/gfx/favicon.png should be 200!");
+
+    let request = test::TestRequest::get().uri("/gfx/company-logo.png").to_request();
+    let result = test::call_service(&test_service, request).await;
+    assert_eq!(result.status(), StatusCode::OK, "/gfx/company-logo.png should be 200!");
+
+    let request = test::TestRequest::get().uri("/css/colors.css").to_request();
+    let result = test::call_service(&test_service, request).await;
+    assert_eq!(result.status(), StatusCode::OK, "/css/colors.css should be 200!");
+
+    let request = test::TestRequest::get().uri("/css/lmtyas.css").to_request();
+    let result = test::call_service(&test_service, request).await;
+    assert_eq!(result.status(), StatusCode::OK, "/css/lmtyas.css should be 200!");
+
+    let request = test::TestRequest::get().uri("/index.html").to_request();
+    let result = test::call_service(&test_service, request).await;
+    assert_eq!(result.status(), StatusCode::OK, "/index.html should be 200!");
+
+    let request = test::TestRequest::get().uri("/random.html").to_request();
+    let result = test::call_service(&test_service, request).await;
+    assert_eq!(result.status(), StatusCode::NOT_FOUND, "/random.html should be 404!");
+
+    let request = test::TestRequest::get().uri("/random.html").to_request();
+    let result = test::call_service(&test_service, request).await;
+    assert_eq!(result.status(), StatusCode::NOT_FOUND, "/random.html should be 404!");
+
+    let request = test::TestRequest::get().uri("/../Cargo.toml").to_request();
+    let result = test::call_service(&test_service, request).await;
+    assert_eq!(result.status(), StatusCode::NOT_FOUND, "//../Cargo.toml should be 404!");
+
+    ///////////////////////////////////////////////////////////////////////////
+    // Testing routes that need authentication and should redirect
+    ///////////////////////////////////////////////////////////////////////////
+    
+    let request = test::TestRequest::post().uri("/authenticated/sysop/set_password_for_rsa_rivate_key/12345678901234").to_request();
+    let result = test::call_service(&test_service, request).await;
+    assert_eq!(result.status(), StatusCode::FOUND, "/authenticated/sysop/set_password_for_rsa_rivate_key/ should redirect!");
+
+    let request = test::TestRequest::get().uri("/authenticated/sysop/sysop.html").to_request();
+    let result = test::call_service(&test_service, request).await;
+    assert_eq!(result.status(), StatusCode::FOUND, "/authenticated/sysop/sysop.html should redirect!");
+
+    let request = test::TestRequest::get().uri("/authenticated/js/sysop.js").to_request();
+    let result = test::call_service(&test_service, request).await;
+    assert_eq!(result.status(), StatusCode::FOUND, "/authenticated/js/sysop.js should redirect!");
+
+    let request = test::TestRequest::post().uri("/authenticated/secret/tell").to_request();
+    let result = test::call_service(&test_service, request).await;
+    assert_eq!(result.status(), StatusCode::FOUND, "/authenticated/secret/tell should redirect!");
+
+    let request = test::TestRequest::get().uri("/authenticated/secret/reveal/abcd").to_request();
+    let result = test::call_service(&test_service, request).await;
+    assert_eq!(result.status(), StatusCode::FOUND, "/authenticated/secret/reveal/abcd should redirect!");
+
+    let request = test::TestRequest::get().uri("/authenticated/user/get/details/from").to_request();
+    let result = test::call_service(&test_service, request).await;
+    assert_eq!(result.status(), StatusCode::FOUND, "/authenticated/user/get/details/from should redirect!");
+
+    let request = test::TestRequest::get().uri("/authenticated/receiver/get/validated_email/abdc").to_request();
+    let result = test::call_service(&test_service, request).await;
+    assert_eq!(result.status(), StatusCode::FOUND, "/authenticated/receiver/get/validated_email/ should redirect!");
+
+    let request = test::TestRequest::get().uri("/authenticated/keep_session_alive").to_request();
+    let result = test::call_service(&test_service, request).await;
+    assert_eq!(result.status(), StatusCode::FOUND, "/authenticated/keep_session_alive should redirect!");
+
+    let request = test::TestRequest::post().uri("/api/v1/secret").to_request();
+    let result = test::call_service(&test_service, request).await;
+    assert_eq!(result.status(), StatusCode::SERVICE_UNAVAILABLE, "/api/v1/secret should be unavailable!");
+
+    let request = test::TestRequest::get().uri("/html/tell.html").to_request();
+    let result = test::call_service(&test_service, request).await;
+    assert_eq!(result.status(), StatusCode::FOUND, "/html/tell.html should redirect!");
+
+    let request = test::TestRequest::get().uri("/html/reveal.html").to_request();
+    let result = test::call_service(&test_service, request).await;
+    assert_eq!(result.status(), StatusCode::FOUND, "/html/reveal.html should redirect!");
+
+    // TODO: authentication routes
 
     ///////////////////////////////////////////////////////////////////////////
     // Cleanup.
