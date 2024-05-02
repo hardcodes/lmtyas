@@ -567,13 +567,13 @@ For developing and testing the following components need to run besides the lmty
 
 ## Development - container helper
 
-The containers can also be used with [podman](https://podman.io/), just add an alias to use the same commands:
+The containers are used with [podman](https://podman.io/), just add an alias for `docker` if you prefer that. The command arguments are mostly the same.
 
 ```bash
 alias docker=podman
 ```
 
-See also ` CONTAINER_COMMAND` in [lib.rs](src/lib.rs).
+See also `CONTAINER_COMMAND` in [lib.rs](src/lib.rs) for testing.
 
 
 **Starting the containers**
@@ -581,7 +581,7 @@ See also ` CONTAINER_COMMAND` in [lib.rs](src/lib.rs).
 
 ```bash
 # ldap server
-docker run \
+podman run \
   -d \
   --rm \
   --name lmtyas-glauth \
@@ -589,7 +589,7 @@ docker run \
   -v ./resources/tests/ldap/ldap.conf:/app/config/config.cfg \
   docker.io/glauth/glauth:latest
 # mail server
-docker run \
+podman run \
   -d \
   --rm \
   --name lmtyas-mailhog \
@@ -597,7 +597,7 @@ docker run \
   -p 8025:8025 \
   docker.io/mailhog/mailhog:latest
 # oidc provider server
-docker run \
+podman run \
   -d \
   --rm \
   --name lmtyas-oidc \
@@ -614,9 +614,9 @@ docker run \
 
 
 ```bash
-docker stop lmtyas-glauth
-docker stop lmtyas-mailhog
-docker stop lmtyas-oidc
+podman stop lmtyas-glauth
+podman stop lmtyas-mailhog
+podman stop lmtyas-oidc
 ```
 
 ## Development - by hand
@@ -868,12 +868,12 @@ If test fails the external helper services may still be running.
 **Using containers**
 
 ```bash
-docker stop lmtyas-glauth
-docker stop lmtyas-mailhog
-docker stop lmtyas-oidc
-docker rm lmtyas-glauth
-docker rm lmtyas-mailhog
-docker rm lmtyas-oidc
+podman stop lmtyas-glauth
+podman stop lmtyas-mailhog
+podman stop lmtyas-oidc
+podman rm lmtyas-glauth
+podman rm lmtyas-mailhog
+podman rm lmtyas-oidc
 ```
 
 **testing by hand**
