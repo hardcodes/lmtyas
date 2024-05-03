@@ -399,7 +399,7 @@ async fn with_setup() {
     ///////////////////////////////////////////////////////////////////////////
 
     let request = test::TestRequest::post()
-        .uri("/authenticated/sysop/set_password_for_rsa_rivate_key/12345678901234")
+        .uri("/authenticated/sysop/set_password_for_rsa_rivate_key/MTIzNDU2Nzg5MDEyMzQ=")
         .to_request();
     let result = test::call_service(&test_service, request).await;
     assert_eq!(
@@ -507,6 +507,7 @@ async fn with_setup() {
     ///////////////////////////////////////////////////////////////////////////
     // Testing access token route
     ///////////////////////////////////////////////////////////////////////////
+
     {
         let rsa_keys_read_lock = application_configuration.rsa_keys.read().unwrap();
         if rsa_keys_read_lock.rsa_private_key.is_some() {
@@ -686,6 +687,86 @@ async fn with_setup() {
         result.status(),
         StatusCode::UNAUTHORIZED,
         "/api/v1/secret should not work (bad exp)!"
+    );
+
+    ///////////////////////////////////////////////////////////////////////////
+    // Testing setting of RSA password
+    ///////////////////////////////////////////////////////////////////////////
+
+    // keys have been set in previous steps
+    {
+        let rsa_keys_read_lock = application_configuration.rsa_keys.read().unwrap();
+        if rsa_keys_read_lock.rsa_private_key.is_none() {
+            panic!("rsa private key should have been loaded at this point!");
+        }
+    }
+    {
+        // We replace `RsaKeys` with a new (empty) version
+        let mut rsa_keys_write_lock = application_configuration.rsa_keys.write().unwrap();
+        let _old_keys = std::mem::take(&mut *rsa_keys_write_lock);
+    }
+    {
+        let rsa_keys_read_lock = application_configuration.rsa_keys.read().unwrap();
+        if rsa_keys_read_lock.rsa_private_key.is_some() {
+            panic!("rsa private key should not have been loaded at this point!");
+        }
+    }
+    // Log in walter
+    let uuid_option = application_configuration
+        .shared_authenticated_users
+        .write()
+        .unwrap()
+        .new_cookie_uuid_for("walter", "Walter", "Linz", "walter@acme.local", "127.0.0.1");
+    if uuid_option.is_none() {
+        panic!("uuid for Walter expected!");
+    }
+
+    let cookie = format!(
+        "{}={}",
+        &lmtyas::cookie_functions::COOKIE_NAME,
+        &uuid_option.unwrap().to_string().to_base64_encoded()
+    );
+    // "wrong passw0rd"
+    let request = test::TestRequest::post()
+        .uri("/authenticated/sysop/set_password_for_rsa_rivate_key/d3JvbmcgcGFzc3cwcmQ=")
+        .append_header(("Cookie", cookie.clone()))
+        .peer_addr(IP_ADDRESS.parse().unwrap())
+        .to_request();
+    let result = test::call_service(&test_service, request).await;
+    assert_eq!(
+        result.status(),
+        StatusCode::BAD_REQUEST,
+        "/authenticated/sysop/set_password_for_rsa_rivate_key/ should not work!"
+    );
+    // "12345678901234"
+    let request = test::TestRequest::post()
+        .uri("/authenticated/sysop/set_password_for_rsa_rivate_key/MTIzNDU2Nzg5MDEyMzQ=")
+        .append_header(("Cookie", cookie.clone()))
+        .peer_addr(IP_ADDRESS.parse().unwrap())
+        .to_request();
+    let result = test::call_service(&test_service, request).await;
+    assert_eq!(
+        result.status(),
+        StatusCode::OK,
+        "/authenticated/sysop/set_password_for_rsa_rivate_key/ should work!"
+    );
+    {
+        let rsa_keys_read_lock = application_configuration.rsa_keys.read().unwrap();
+        if rsa_keys_read_lock.rsa_private_key.is_none() {
+            panic!("rsa private key should have been loaded at this point!");
+        }
+    }
+    // keys are loaded, base64 encoded cookie is not enough:
+    let request = test::TestRequest::get()
+        .uri("/authenticated/user/get/details/from")
+        .append_header(("Cookie", cookie))
+        .peer_addr(IP_ADDRESS.parse().unwrap())
+        .to_request();
+    let result = test::call_service(&test_service, request).await;
+    assert_eq!(
+        result.status(),
+        StatusCode::FOUND,
+        "/authenticated/user/get/details/from should redirect!"
     );
 
     // TODO: authentication routes
