@@ -951,6 +951,89 @@ async fn with_setup() {
     ///////////////////////////////////////////////////////////////////////////
     // Tell secret
     ///////////////////////////////////////////////////////////////////////////
+    use rand::{thread_rng, Rng};
+    use rand::distributions::Alphanumeric;
+    // build a random context that we can search for later on.
+    let random_context: String = thread_rng()
+    .sample_iter(&Alphanumeric)
+    .take(16)
+    .map(char::from)
+    .collect();
+
+    let base64_secret = SECRET_PLAINTEXT.to_base64_encoded();
+    let secret = lmtyas::secret_functions::Secret {
+        from_email: "bob@acme.local".to_string(),
+        from_display_name: "Bob Sanders".to_string(),
+        to_email: "alice@acme.local".to_string(),
+        to_display_name: "Alice Henderson".to_string(),
+        context: random_context.clone(),
+        secret: base64_secret.clone(),
+    };
+    let json_secret = serde_json::to_string(&secret).unwrap();
+    let request = test::TestRequest::post()
+        .uri("/authenticated/secret/tell")
+        .append_header(("Cookie", cookie.clone()))
+        .peer_addr(IP_ADDRESS.parse().unwrap())
+        .set_payload(json_secret)
+        .to_request();
+    let result = test::call_service(&test_service, request).await;
+    assert_eq!(
+        result.status(),
+        StatusCode::OK,
+        "authenticated/secret/tell should work!"
+    );
+    let body = test::read_body(result).await;
+    assert_eq!(
+        body.try_into_bytes().unwrap(),
+        "OK".as_bytes(),
+        "authenticated/secret/tell should return OK!"
+    );
+    // wrong receiver email format
+    let secret = lmtyas::secret_functions::Secret {
+        from_email: "bob@acme.local".to_string(),
+        from_display_name: "Bob Sanders".to_string(),
+        to_email: "alice@acme.world.local".to_string(),
+        to_display_name: "Alice Henderson".to_string(),
+        context: random_context.clone(),
+        secret: base64_secret.clone(),
+    };
+    let json_secret = serde_json::to_string(&secret).unwrap();
+    let request = test::TestRequest::post()
+        .uri("/authenticated/secret/tell")
+        .append_header(("Cookie", cookie.clone()))
+        .peer_addr(IP_ADDRESS.parse().unwrap())
+        .set_payload(json_secret)
+        .to_request();
+    let result = test::call_service(&test_service, request).await;
+    assert_eq!(
+        result.status(),
+        StatusCode::BAD_REQUEST,
+        "authenticated/secret/tell should not work!"
+    );
+
+    // nonexistent receiver email
+    let secret = lmtyas::secret_functions::Secret {
+        from_email: "bob@acme.local".to_string(),
+        from_display_name: "Bob Sanders".to_string(),
+        to_email: "jane@acme.local".to_string(),
+        to_display_name: "Jane Doe".to_string(),
+        context: random_context.clone(),
+        secret: base64_secret.clone(),
+    };
+    let json_secret = serde_json::to_string(&secret).unwrap();
+    let request = test::TestRequest::post()
+        .uri("/authenticated/secret/tell")
+        .append_header(("Cookie", cookie.clone()))
+        .peer_addr(IP_ADDRESS.parse().unwrap())
+        .set_payload(json_secret)
+        .to_request();
+    let result = test::call_service(&test_service, request).await;
+    assert_eq!(
+        result.status(),
+        StatusCode::BAD_REQUEST,
+        "authenticated/secret/tell should not work!"
+    );
+
 
     // TODO
 
@@ -977,15 +1060,15 @@ async fn with_setup() {
     ///////////////////////////////////////////////////////////////////////////
     common::teardown(&mut setup_singleton_lock);
     // remove stored secrets
-    for entry in std::fs::read_dir(secrets_directory).unwrap() {
-        match entry {
-            Err(_) => {}
-            Ok(entry) => {
-                let path = entry.path();
-                if path.is_file() {
-                    std::fs::remove_file(path).unwrap();
-                }
-            }
-        }
-    }
+    // for entry in std::fs::read_dir(secrets_directory).unwrap() {
+    //     match entry {
+    //         Err(_) => {}
+    //         Ok(entry) => {
+    //             let path = entry.path();
+    //             if path.is_file() {
+    //                 std::fs::remove_file(path).unwrap();
+    //             }
+    //         }
+    //     }
+    // }
 }
