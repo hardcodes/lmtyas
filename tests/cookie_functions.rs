@@ -10,13 +10,17 @@ use std::path::Path;
 
 const WORKSPACE_DIR: &str = env!("CARGO_MANIFEST_DIR");
 #[cfg(not(feature = "oidc-auth-ldap"))]
-const INVALID_RSA_COOKIE: &str = r"lmtyas=invalid_rsa_cookie; HttpOnly; SameSite=Strict; Secure; Path=/; Domain=/; Max-Age=90";
+const INVALID_RSA_COOKIE: &str =
+    r"lmtyas=invalid_rsa_cookie; HttpOnly; SameSite=Strict; Secure; Path=/; Domain=/; Max-Age=90";
 #[cfg(feature = "oidc-auth-ldap")]
-const INVALID_RSA_COOKIE: &str = r"lmtyas=invalid_rsa_cookie; HttpOnly; SameSite=Lax; Secure; Path=/; Domain=/; Max-Age=90";
+const INVALID_RSA_COOKIE: &str =
+    r"lmtyas=invalid_rsa_cookie; HttpOnly; SameSite=Lax; Secure; Path=/; Domain=/; Max-Age=90";
 #[cfg(not(feature = "oidc-auth-ldap"))]
-const BASE64_COOKIE: &str = r"lmtyas=bXkgY29va2ll; HttpOnly; SameSite=Strict; Secure; Path=/; Domain=/; Max-Age=90";
+const BASE64_COOKIE: &str =
+    r"lmtyas=bXkgY29va2ll; HttpOnly; SameSite=Strict; Secure; Path=/; Domain=/; Max-Age=90";
 #[cfg(feature = "oidc-auth-ldap")]
-const BASE64_COOKIE: &str = r"lmtyas=bXkgY29va2ll; HttpOnly; SameSite=Lax; Secure; Path=/; Domain=/; Max-Age=90";
+const BASE64_COOKIE: &str =
+    r"lmtyas=bXkgY29va2ll; HttpOnly; SameSite=Lax; Secure; Path=/; Domain=/; Max-Age=90";
 
 #[test]
 fn cookie_functions() {
@@ -80,7 +84,8 @@ fn cookie_functions() {
         "(1) cannot decrypt rsa encrypted cookie!"
     );
 
-    let valid_rsa_cookie = build_new_authentication_cookie(COOKIE_VALUE, 90, COOKIE_PATH, &rsa_keys);
+    let valid_rsa_cookie =
+        build_new_authentication_cookie(COOKIE_VALUE, 90, COOKIE_PATH, &rsa_keys);
     let rsa_cookie_as_str = valid_rsa_cookie.to_string();
     println!("rsa_cookie_as_str = {}", &rsa_cookie_as_str);
     let splitted_rsa_cookie_value: Vec<&str> = rsa_cookie_as_str.split(';').collect();

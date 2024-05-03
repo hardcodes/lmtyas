@@ -57,11 +57,18 @@ fn rsa_functions() {
     const HYBRID_ENCRYPTED: &str = "v1.aqkErs/pC4fRO/TULm7ziRqE8ShY0gCQOzx0/u1DHtHOTnO9JUWFLwXUl0kX3Q0nf5kK2icN6nV8GxFxSnIcDLQ3PDnULANtsuD5ZQNAlTu0RWJj1aOqd9QR9aw2mgMR5/qN8qhnU/OnSZt17xRFHFRYa4aZcisFkGzILCRsv5NH7MI/dT6PUELT1HrNI046A3V1mE6MzVBgFiFjmWyp7yp3to2cL7tRyNODAIcjZXeD6CECykd8Js7REHuW5eAQ2wrlMZpG9kaEZTas9GWhYRvBDzXkLF7mEWo0MaEVpe2vojB6osNkYFvPdEK4cHolrgg5Ho7FpvSkbRO1rVJ+DTx7+kisBzIyFIgy8FTjJnncWJx1WeCnXyzMV50eFTYi3GnxuWdGB3oDAV/LgpaGM0xZ7n5pmMce5IDfU+bjQaSL/kLodQUnivuT3T17zhUOzYp7F6KbOTlcFw/KvklsWvhLKsB2o90zpyllH/eBwY1Gq6vdRTUpuj8IsEs5nWvvxvFaAccO2q2bd519YgQ8H5VsUTqdhTAEp26zZh4mADgwucHfGnlIWR0DY5rkuJ3Af9so2nPjrNCpxtQwalpXDr/eIP7yr2pSVgJF2cXmEjQYF+YEQ8IEYclLUR9e3byz4h+b2QTaBXPZD5zihC7/XK3Fzcjdpi5q0oWDq6rpn8Q=.NO0EWqlWFqDNOuMV1Y7u0J/pTgIlPybIvFDT5F1CYrw=";
     const HYBRID_PLAINTEXT: &str = "coffee-is-better-than-java";
     let decrypted = rsa_keys.hybrid_decrypt_str(HYBRID_ENCRYPTED);
-    assert_eq!(HYBRID_PLAINTEXT, decrypted.unwrap(), "hybrid decrypted message does not match plaintext!");
+    assert_eq!(
+        HYBRID_PLAINTEXT,
+        decrypted.unwrap(),
+        "hybrid decrypted message does not match plaintext!"
+    );
 
     let hybrid_encrypted = rsa_keys.hybrid_encrypt_str(PLAINTEXT).unwrap();
     let hybrid_decrypted = rsa_keys.hybrid_decrypt_str(&hybrid_encrypted).unwrap();
-    assert_eq!(PLAINTEXT, hybrid_decrypted, "hybrid decrypted message does not match plaintext!");
+    assert_eq!(
+        PLAINTEXT, hybrid_decrypted,
+        "hybrid decrypted message does not match plaintext!"
+    );
 }
 
 #[test]
