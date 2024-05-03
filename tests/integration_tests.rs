@@ -2,6 +2,7 @@ mod authenticated_user_test;
 mod common;
 use actix_files::Files;
 use actix_http::StatusCode;
+use actix_web::body::MessageBody;
 use actix_web::{guard, middleware, test, web, App, HttpResponse};
 use common::SETUP_SINGLETON;
 #[cfg(feature = "ldap-auth")]
@@ -41,6 +42,14 @@ const WORKSPACE_DIR: &str = env!("CARGO_MANIFEST_DIR");
 /// testing the functions that need external services in one go.
 #[actix_web::test]
 async fn with_setup() {
+    let secrets_directory = Path::new(common::WORKSPACE_DIR).join("ignore/secrets");
+    if !secrets_directory.exists() {
+        panic!(
+            "directory does not exist: {}",
+            secrets_directory.to_string_lossy()
+        );
+    }
+
     let mut setup_singleton_lock = SETUP_SINGLETON.lock().await;
     // set up external helper services, like e.g. ldap and dummy mail server
     common::setup(&mut setup_singleton_lock);
@@ -419,13 +428,13 @@ async fn with_setup() {
     );
 
     let request = test::TestRequest::get()
-        .uri("/authenticated/js/sysop.js")
+        .uri("/authenticated/sysop/js/sysop.js")
         .to_request();
     let result = test::call_service(&test_service, request).await;
     assert_eq!(
         result.status(),
         StatusCode::FOUND,
-        "/authenticated/js/sysop.js should redirect!"
+        "/authenticated/sysop/js/sysop.js should redirect!"
     );
 
     let request = test::TestRequest::post()
@@ -525,11 +534,11 @@ async fn with_setup() {
     let bearer_token_ok = serde_json::to_string(&access_token.clone())
         .unwrap()
         .to_base64_encoded();
-    const PLAINTEXT: &str = r#"PASS!"§$%&/()=?ß\´`+*~'#-_.:,;<>|WORD"#;
+    const SECRET_PLAINTEXT: &str = r#"PASS!"§$%&/()=?ß\´`+*~'#-_.:,;<>|WORD"#;
     const CONTEXT: &str = "TESTING LMTYAS";
     const IP_ADDRESS: &str = "127.0.0.1:9876";
     const IP_ADDRESS_BAD: &str = "1.2.3.4:9876";
-    let base64_secret = PLAINTEXT.to_base64_encoded();
+    let base64_secret = SECRET_PLAINTEXT.to_base64_encoded();
     let secret = lmtyas::secret_functions::Secret {
         from_email: "".to_string(),
         from_display_name: "".to_string(),
@@ -689,6 +698,29 @@ async fn with_setup() {
         "/api/v1/secret should not work (bad exp)!"
     );
 
+    let base64_secret = SECRET_PLAINTEXT.to_base64_encoded();
+    let secret = lmtyas::secret_functions::Secret {
+        from_email: "".to_string(),
+        from_display_name: "".to_string(),
+        to_email: "jane@acme.local".to_string(),
+        to_display_name: "".to_string(),
+        context: CONTEXT.to_string(),
+        secret: base64_secret,
+    };
+    let json_secret = serde_json::to_string(&secret).unwrap();
+    let request = test::TestRequest::post()
+        .uri("/api/v1/secret")
+        .append_header(("Authorization", format!("Bearer {}", &bearer_token_ok)))
+        .set_payload(json_secret)
+        .peer_addr(IP_ADDRESS.parse().unwrap())
+        .to_request();
+    let result = test::call_service(&test_service, request).await;
+    assert_eq!(
+        result.status(),
+        StatusCode::BAD_REQUEST,
+        "/api/v1/secret should not work (bad email)!"
+    );
+
     ///////////////////////////////////////////////////////////////////////////
     // Testing setting of RSA password
     ///////////////////////////////////////////////////////////////////////////
@@ -725,6 +757,29 @@ async fn with_setup() {
         "{}={}",
         &lmtyas::cookie_functions::COOKIE_NAME,
         &uuid_option.unwrap().to_string().to_base64_encoded()
+    );
+    let request = test::TestRequest::get()
+        .uri("/authenticated/sysop/sysop.html")
+        .append_header(("Cookie", cookie.clone()))
+        .peer_addr(IP_ADDRESS.parse().unwrap())
+        .to_request();
+    let result = test::call_service(&test_service, request).await;
+    assert_eq!(
+        result.status(),
+        StatusCode::OK,
+        "/authenticated/sysop/sysop.html should work with base64 cookie!"
+    );
+
+    let request = test::TestRequest::get()
+        .uri("/authenticated/sysop/js/sysop.js")
+        .append_header(("Cookie", cookie.clone()))
+        .peer_addr(IP_ADDRESS.parse().unwrap())
+        .to_request();
+    let result = test::call_service(&test_service, request).await;
+    assert_eq!(
+        result.status(),
+        StatusCode::OK,
+        "/authenticated/sysop/js/sysop.js should work with base64 cookie!"
     );
     // "wrong passw0rd"
     let request = test::TestRequest::post()
@@ -769,10 +824,168 @@ async fn with_setup() {
         "/authenticated/user/get/details/from should redirect!"
     );
 
-    // TODO: authentication routes
+    ///////////////////////////////////////////////////////////////////////////
+    // Log in Bob
+    ///////////////////////////////////////////////////////////////////////////
+    let uuid_option = application_configuration
+        .shared_authenticated_users
+        .write()
+        .unwrap()
+        .new_cookie_uuid_for("bob", "Walter", "Sanders", "bob@acme.local", "127.0.0.1");
+    if uuid_option.is_none() {
+        panic!("uuid for Bob expected!");
+    }
+
+    let encrypted_cookie_value = {
+        let rsa_read_lock = &application_configuration.rsa_keys.read().unwrap();
+        rsa_read_lock.rsa_encrypt_str(&uuid_option.unwrap().to_string())
+    };
+    let cookie = format!(
+        "{}={}",
+        &lmtyas::cookie_functions::COOKIE_NAME,
+        &encrypted_cookie_value.unwrap()
+    );
+    // try again with encrypted cookie
+    let request = test::TestRequest::get()
+        .uri("/authenticated/user/get/details/from")
+        .append_header(("Cookie", cookie.clone()))
+        .peer_addr(IP_ADDRESS.parse().unwrap())
+        .to_request();
+    let result = test::call_service(&test_service, request).await;
+    assert_eq!(
+        result.status(),
+        StatusCode::OK,
+        "/authenticated/user/get/details/from should work now!"
+    );
+    let body = test::read_body(result).await;
+    assert_eq!(
+        body.try_into_bytes().unwrap(),
+        "{\"DisplayName\":\"Walter Sanders\",\"Email\":\"bob@acme.local\"}".as_bytes(),
+        "/authenticated/user/get/details/from should provide data!"
+    );
+
+    ///////////////////////////////////////////////////////////////////////////
+    // Get receiver email (as Bob)
+    ///////////////////////////////////////////////////////////////////////////
+
+    // wrong address format
+    let request = test::TestRequest::get()
+        .uri("/authenticated/receiver/get/validated_email/alice@acme.world.local")
+        .append_header(("Cookie", cookie.clone()))
+        .peer_addr(IP_ADDRESS.parse().unwrap())
+        .to_request();
+    let result = test::call_service(&test_service, request).await;
+    assert_eq!(
+        result.status(),
+        StatusCode::OK,
+        "/authenticated/receiver/get/validated_email/alice@acme.world.local should work!"
+    );
+    let body = test::read_body(result).await;
+    assert_eq!(
+        body.try_into_bytes().unwrap(),
+        lmtyas::UNKOWN_RECEIVER_EMAIL.as_bytes(),
+        "/authenticated/receiver/get/validated_email/alice@acme.world.local should provide unknown email!"
+    );
+
+    // unkown email
+    let request = test::TestRequest::get()
+        .uri("/authenticated/receiver/get/validated_email/jane@acme.local")
+        .append_header(("Cookie", cookie.clone()))
+        .peer_addr(IP_ADDRESS.parse().unwrap())
+        .to_request();
+    let result = test::call_service(&test_service, request).await;
+    assert_eq!(
+        result.status(),
+        StatusCode::OK,
+        "/authenticated/receiver/get/validated_email/jane@acme.local should work!"
+    );
+    let body = test::read_body(result).await;
+    assert_eq!(
+        body.try_into_bytes().unwrap(),
+        lmtyas::UNKOWN_RECEIVER_EMAIL.as_bytes(),
+        "/authenticated/receiver/get/validated_email/jane@acme.local should provide unknown email!"
+    );
+
+    // well kown email
+    let request = test::TestRequest::get()
+        .uri("/authenticated/receiver/get/validated_email/alice@acme.local")
+        .append_header(("Cookie", cookie.clone()))
+        .peer_addr(IP_ADDRESS.parse().unwrap())
+        .to_request();
+    let result = test::call_service(&test_service, request).await;
+    assert_eq!(
+        result.status(),
+        StatusCode::OK,
+        "/authenticated/receiver/get/validated_email/alice@acme.local should work!"
+    );
+    let body = test::read_body(result).await;
+    assert_eq!(
+        body.try_into_bytes().unwrap(),
+        "alice@acme.local".as_bytes(),
+        "/authenticated/receiver/get/validated_email/alice@acme.local should provide same email address!"
+    );
+
+    ///////////////////////////////////////////////////////////////////////////
+    // Keep session alive
+    ///////////////////////////////////////////////////////////////////////////
+
+    let request = test::TestRequest::get()
+        .uri("/authenticated/keep_session_alive")
+        .append_header(("Cookie", cookie.clone()))
+        .peer_addr(IP_ADDRESS.parse().unwrap())
+        .to_request();
+    let result = test::call_service(&test_service, request).await;
+    assert_eq!(
+        result.status(),
+        StatusCode::OK,
+        "/authenticated/keep_session_alive should work!"
+    );
+    let body = test::read_body(result).await;
+    assert_eq!(
+        body.try_into_bytes().unwrap(),
+        "OK".as_bytes(),
+        "/authenticated/keep_session_alive should return OK!"
+    );
+    // TODO: check updated cookie value if possible, try failing with faked cookie.
+
+    ///////////////////////////////////////////////////////////////////////////
+    // Tell secret
+    ///////////////////////////////////////////////////////////////////////////
+
+    // TODO
+
+    ///////////////////////////////////////////////////////////////////////////
+    // Reveal secret
+    ///////////////////////////////////////////////////////////////////////////
+
+    // TODO
+
+    ///////////////////////////////////////////////////////////////////////////
+    // Validate sent mail
+    ///////////////////////////////////////////////////////////////////////////
+
+    // TODO
+
+    ///////////////////////////////////////////////////////////////////////////
+    // Log in
+    ///////////////////////////////////////////////////////////////////////////
+
+    // TODO
 
     ///////////////////////////////////////////////////////////////////////////
     // Cleanup.
     ///////////////////////////////////////////////////////////////////////////
     common::teardown(&mut setup_singleton_lock);
+    // remove stored secrets
+    for entry in std::fs::read_dir(secrets_directory).unwrap() {
+        match entry {
+            Err(_) => {}
+            Ok(entry) => {
+                let path = entry.path();
+                if path.is_file() {
+                    std::fs::remove_file(path).unwrap();
+                }
+            }
+        }
+    }
 }
