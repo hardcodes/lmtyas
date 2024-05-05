@@ -49,6 +49,7 @@ async fn with_setup() {
             secrets_directory.to_string_lossy()
         );
     }
+    remove_stored_secrets(&secrets_directory);
 
     let mut setup_singleton_lock = SETUP_SINGLETON.lock().await;
     // set up external helper services, like e.g. ldap and dummy mail server
@@ -951,14 +952,14 @@ async fn with_setup() {
     ///////////////////////////////////////////////////////////////////////////
     // Tell secret
     ///////////////////////////////////////////////////////////////////////////
-    use rand::{thread_rng, Rng};
     use rand::distributions::Alphanumeric;
+    use rand::{thread_rng, Rng};
     // build a random context that we can search for later on.
     let random_context: String = thread_rng()
-    .sample_iter(&Alphanumeric)
-    .take(16)
-    .map(char::from)
-    .collect();
+        .sample_iter(&Alphanumeric)
+        .take(16)
+        .map(char::from)
+        .collect();
 
     let base64_secret = SECRET_PLAINTEXT.to_base64_encoded();
     let secret = lmtyas::secret_functions::Secret {
@@ -1034,17 +1035,53 @@ async fn with_setup() {
         "authenticated/secret/tell should not work!"
     );
 
+    ///////////////////////////////////////////////////////////////////////////
+    // Validate sent mail
+    ///////////////////////////////////////////////////////////////////////////
 
+    let mail_query_url = format!(
+        "http://127.0.0.1:8025/api/v2/search?kind=containing&query={}&limit=1",
+        &random_context.clone()
+    );
+    let mailhog_anwser_body = reqwest::get(mail_query_url)
+        .await
+        .unwrap()
+        .text()
+        .await
+        .unwrap();
+    let json_root: serde_json::Value = serde_json::from_str(&mailhog_anwser_body).unwrap();
+    let reply_to: Option<&str> = json_root
+        .get("items")
+        .and_then(|value| value.get(0))
+        .and_then(|value| value.get("Content"))
+        .and_then(|value| value.get("Headers"))
+        .and_then(|value| value.get("Reply-To"))
+        .and_then(|value| value.get(0))
+        .and_then(|value| value.as_str());
+    assert_eq!(
+        reply_to.unwrap(),
+        "bob@acme.local",
+        "Reply-To should be bob@acme.local!"
+    );
     // TODO
+    let body: Option<&str> = json_root
+        .get("items")
+        .and_then(|value| value.get(0))
+        .and_then(|value| value.get("Content"))
+        .and_then(|value| value.get("Body"))
+        .and_then(|value| value.as_str());
+    println!("{:?}", body);
+    let url_regex = regex::Regex::new(r"\bhttps://127.0.0.1:8844(?<url>.+)\b").unwrap();
+    assert!(
+        url_regex.is_match(&body.unwrap()),
+        "URl should be in mail body!"
+    );
+    let captures = url_regex.captures(&body.unwrap()).unwrap();
+    let secret_url = captures.name("url").map_or("UNKOWN", |m| m.as_str());
+    assert_ne!(secret_url, "UNKNOWN", "secret url should not be UNKNOWN!");
 
     ///////////////////////////////////////////////////////////////////////////
     // Reveal secret
-    ///////////////////////////////////////////////////////////////////////////
-
-    // TODO
-
-    ///////////////////////////////////////////////////////////////////////////
-    // Validate sent mail
     ///////////////////////////////////////////////////////////////////////////
 
     // TODO
@@ -1058,17 +1095,22 @@ async fn with_setup() {
     ///////////////////////////////////////////////////////////////////////////
     // Cleanup.
     ///////////////////////////////////////////////////////////////////////////
+
+    remove_stored_secrets(&secrets_directory);
     common::teardown(&mut setup_singleton_lock);
+}
+
+fn remove_stored_secrets<P: AsRef<Path>>(secrets_directory: P) {
     // remove stored secrets
-    // for entry in std::fs::read_dir(secrets_directory).unwrap() {
-    //     match entry {
-    //         Err(_) => {}
-    //         Ok(entry) => {
-    //             let path = entry.path();
-    //             if path.is_file() {
-    //                 std::fs::remove_file(path).unwrap();
-    //             }
-    //         }
-    //     }
-    // }
+    for entry in std::fs::read_dir(secrets_directory).unwrap() {
+        match entry {
+            Err(_) => {}
+            Ok(entry) => {
+                let path = entry.path();
+                if path.is_file() {
+                    std::fs::remove_file(path).unwrap();
+                }
+            }
+        }
+    }
 }
