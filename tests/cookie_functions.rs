@@ -67,17 +67,14 @@ fn cookie_functions() {
     let valid_rsa_cookie =
         build_new_encrypted_authentication_cookie(COOKIE_VALUE, 90, COOKIE_PATH, &rsa_keys);
     let rsa_cookie_as_str = valid_rsa_cookie.to_string();
-    println!("rsa_cookie_as_str = {}", &rsa_cookie_as_str);
+
     let splitted_rsa_cookie_value: Vec<&str> = rsa_cookie_as_str.split(';').collect();
-    println!(
-        "splitted_rsa_cookie_value.first().unwrap() = {}",
-        &splitted_rsa_cookie_value.first().unwrap()
-    );
+
     let cookie = splitted_rsa_cookie_value
         .first()
         .unwrap()
         .replace("lmtyas=", "");
-    println!("cookie = {}", &cookie);
+
     let plain_cookie = get_plain_cookie_string(&cookie, &rsa_keys);
     assert_eq!(
         plain_cookie, COOKIE_VALUE,
@@ -87,17 +84,14 @@ fn cookie_functions() {
     let valid_rsa_cookie =
         build_new_authentication_cookie(COOKIE_VALUE, 90, COOKIE_PATH, &rsa_keys);
     let rsa_cookie_as_str = valid_rsa_cookie.to_string();
-    println!("rsa_cookie_as_str = {}", &rsa_cookie_as_str);
+
     let splitted_rsa_cookie_value: Vec<&str> = rsa_cookie_as_str.split(';').collect();
-    println!(
-        "splitted_rsa_cookie_value.first().unwrap() = {}",
-        &splitted_rsa_cookie_value.first().unwrap()
-    );
+
     let cookie = splitted_rsa_cookie_value
         .first()
         .unwrap()
         .replace("lmtyas=", "");
-    println!("cookie = {}", &cookie);
+
     let plain_cookie = get_plain_cookie_string(&cookie, &rsa_keys);
     assert_eq!(
         plain_cookie, COOKIE_VALUE,
