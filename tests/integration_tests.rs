@@ -832,7 +832,7 @@ async fn with_setup() {
         .shared_authenticated_users
         .write()
         .unwrap()
-        .new_cookie_uuid_for("bob", "Walter", "Sanders", "bob@acme.local", "127.0.0.1");
+        .new_cookie_uuid_for("bob", "Bob", "Sanders", "bob@acme.local", "127.0.0.1");
     if uuid_option.is_none() {
         panic!("uuid for Bob expected!");
     }
@@ -861,7 +861,7 @@ async fn with_setup() {
     let body = test::read_body(result).await;
     assert_eq!(
         body.try_into_bytes().unwrap(),
-        "{\"DisplayName\":\"Walter Sanders\",\"Email\":\"bob@acme.local\"}".as_bytes(),
+        "{\"DisplayName\":\"Bob Sanders\",\"Email\":\"bob@acme.local\"}".as_bytes(),
         "/authenticated/user/get/details/from should provide data!"
     );
 
@@ -1063,28 +1063,75 @@ async fn with_setup() {
         "bob@acme.local",
         "Reply-To should be bob@acme.local!"
     );
-    // TODO
+    // TODO: check other values
     let body: Option<&str> = json_root
         .get("items")
         .and_then(|value| value.get(0))
         .and_then(|value| value.get("Content"))
         .and_then(|value| value.get("Body"))
         .and_then(|value| value.as_str());
-    println!("{:?}", body);
-    let url_regex = regex::Regex::new(r"\bhttps://127.0.0.1:8844(?<url>.+)\b").unwrap();
+    let body=body.unwrap().to_string();
+    println!("body = {}", &body);
+    let body = body.replace(r"=\r\n", "");
+    println!("body = {}", &body);
+    let url_regex = regex::Regex::new(r"\bhttps://127.0.0.1:8844/html/reveal.html\?secret_id=(?<url>.+)\b").unwrap();
     assert!(
-        url_regex.is_match(&body.unwrap()),
+        url_regex.is_match(&body),
         "URl should be in mail body!"
     );
-    let captures = url_regex.captures(&body.unwrap()).unwrap();
+    let captures = url_regex.captures(&body).unwrap();
     let secret_url = captures.name("url").map_or("UNKOWN", |m| m.as_str());
     assert_ne!(secret_url, "UNKNOWN", "secret url should not be UNKNOWN!");
+    println!("secret_url = {}", &secret_url);
 
     ///////////////////////////////////////////////////////////////////////////
     // Reveal secret
     ///////////////////////////////////////////////////////////////////////////
 
-    // TODO
+    // Log in Alice
+    let uuid_option = application_configuration
+        .shared_authenticated_users
+        .write()
+        .unwrap()
+        .new_cookie_uuid_for(
+            "alice",
+            "Alice",
+            "Henderson",
+            "alice@acme.local",
+            "127.0.0.1",
+        );
+    if uuid_option.is_none() {
+        panic!("uuid for Alice expected!");
+    }
+
+    let encrypted_cookie_value = {
+        let rsa_read_lock = &application_configuration.rsa_keys.read().unwrap();
+        rsa_read_lock.rsa_encrypt_str(&uuid_option.unwrap().to_string())
+    };
+    let cookie = format!(
+        "{}={}",
+        &lmtyas::cookie_functions::COOKIE_NAME,
+        &encrypted_cookie_value.unwrap()
+    );
+    // get secret
+    let request = test::TestRequest::get()
+        .uri(&format!("/authenticated/secret/reveal/{}", &secret_url))
+        .append_header(("Cookie", cookie.clone()))
+        .peer_addr(IP_ADDRESS.parse().unwrap())
+        .to_request();
+    let result = test::call_service(&test_service, request).await;
+    assert_eq!(
+        result.status(),
+        StatusCode::OK,
+        "/authenticated/secret/reveal/ should work!"
+    );
+    let body_with_secret = test::read_body(result).await;
+    let secret = String::from_utf8(body_with_secret.to_vec()).unwrap();
+    println!("secret = {}", &secret);
+    assert_eq!(
+        secret, "{\"DisplayName\":\"Walter Sanders\",\"Email\":\"bob@acme.local\"}",
+        "/authenticated/secret/reveal/ should provide secret!"
+    );
 
     ///////////////////////////////////////////////////////////////////////////
     // Log in
