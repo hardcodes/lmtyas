@@ -8,7 +8,7 @@ use actix_web::{
 };
 use chrono::DateTime;
 use log::{debug, info, warn};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::fmt;
 use std::future::Future;
 use std::path::Path;
@@ -30,7 +30,7 @@ use uuid::Uuid;
 ///     "jti": "dcQvbWnx2VDJpXDeX+Q6eekheaqveGtVoIN6pQJ9OwpKmrCO4RSe2QYwuOXTr4nqKxgw7ZDrHuqTm2k2IXDr8RKzDiaEaEslTZQ5HR2YMCfJxMNida2lf5NiKBo0lILdFG/beDHMhnofbAblKuwpSV52qlJRqK77qoBI0IzHpNk/Gq9MUUqjfZfqLjuchviD4sV9ZQA0ABIOE5hLPZ2JXgb19V6qIOWIPQadwneKa3sq1ed8xlwZtUGHg+A24fIO/O3rXd6KZ7pTqPY4m5bBMGO7EdicXZeLnBY+4aHbS46c4p8ADfBGXmwSLiusyIyqkEMbAel4vNJ0mnLDlhbkiVFhs7CLxT0wLJhpUYkUw/8Sig3CNMpPU+7mCu9AsqWUMhl8H8jnWGDILbrYosAH5iyjDhm1FxNRDG7MoOSBeDK5ddLUqqNuX+rTxiJanaks8YMrtGM5jCZXGNc89nQSRw3TRGVhR8h2IsAerP77lbrVjgNWtzlYCvhjDk1a5Wf/c8jqzXQkPO2QFIDaR0lPw9Xx1ybxdTrvPylW5gydZRBopAPbOc87KGvzdn61ESKxcha3NjbBZ8J+L4eNlz8/3dm9QgEek6u+6kiXg6njefDEhXWQOVQhHP3zjicaHmoL0f6fSfxxlpc0EVfwmycDhXTYwwWwz9mBWTqBgMGfC/I="
 // }
 /// ```
-#[derive(Deserialize)]
+#[derive(Deserialize, Clone, Serialize)]
 pub struct AccessTokenPayload {
     /// Information for the access token user
     pub iss: String,

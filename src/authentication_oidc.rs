@@ -387,7 +387,7 @@ impl Login for OidcConfiguration {
         };
         /////////////////////////////////////////////////////////////////////////////////////
 
-        if !valid_user_regex.is_match(&email) {
+        if !valid_user_regex.is_match(email) {
             warn!(
                 "OIDC: claim email address {} does not match regex: {}",
                 &email,

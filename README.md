@@ -432,7 +432,7 @@ Execute the following in a Unix shell:
 # This should be done as sparingly as possible.
 IPADDRESSES='"192.168.42.78","192.168.42.79"'
 # Expiration date of the access token
-ENDDATE=$(date -d "Dec 31 2028" +%s)
+ENDDATE=$(date -d "Dec 31 2099" +%s)
 # This e-mail address is entered by the server as the sender of the password
 EMAIL="IT scripting team <do-not-reply@lmtyas.acme.home.arpa>"
 # This is the name of the sender in the email, the {FromDisplayName} field from
@@ -831,10 +831,11 @@ Really easy to set up:
 
 # Testing the code
 
-Tests are at the moment far from complete.
+Tests are almost complete at the moment.
 
 - Functions that need no running service are covered.
-- Starting the service itself and testing it from outside is still missing.
+- Starting the service itself and testing it from outside is covered.
+- Testing the login process from outside is still missing.
 
 
 ## Testing the code - prerequisites
