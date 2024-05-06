@@ -1,6 +1,7 @@
 use crate::base64_trait::Base64VecU8Conversions;
 use crate::configuration::ApplicationConfiguration;
 use crate::header_value_trait::HeaderValueExctractor;
+use crate::ip_address::get_peer_ip_address;
 use actix_web::{
     dev::Payload,
     error::{ErrorForbidden, ErrorServiceUnavailable, ErrorUnauthorized},
@@ -243,16 +244,6 @@ fn validate_access_token(
         }
     }
     Ok(())
-}
-
-const UNKNOWN_PEER_IP: &str = "unknown peer";
-
-#[inline(always)]
-fn get_peer_ip_address(request: &HttpRequest) -> String {
-    match request.peer_addr() {
-        None => UNKNOWN_PEER_IP.to_string(),
-        Some(s) => s.ip().to_string(),
-    }
 }
 
 /// Part of the configuration file for the lmtyas web service.

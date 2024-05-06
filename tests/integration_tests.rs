@@ -1101,11 +1101,7 @@ async fn with_setup() {
         .and_then(|value| value.get("Subject"))
         .and_then(|value| value.get(0))
         .and_then(|value| value.as_str());
-    assert_eq!(
-        subject.unwrap(),
-        wanted_subject,
-        "Subject does not match!"
-    );
+    assert_eq!(subject.unwrap(), wanted_subject, "Subject does not match!");
     let body: Option<&str> = json_root
         .get("items")
         .and_then(|value| value.get(0))

@@ -1,7 +1,5 @@
 extern crate env_logger;
 use crate::authentication_middleware::AuthenticationRedirect;
-use crate::authentication_middleware::PeerIpAddress;
-use crate::authentication_middleware::UNKNOWN_PEER_IP;
 use crate::authentication_url::AUTH_LOGIN_FAIL_PAGE;
 use crate::configuration::ApplicationConfiguration;
 use crate::cookie_functions::{
@@ -9,6 +7,7 @@ use crate::cookie_functions::{
     empty_unix_epoch_cookie,
 };
 use crate::http_traits::CustomHttpResponse;
+use crate::ip_address::get_peer_ip_address;
 pub use crate::login_user_trait::Login;
 #[cfg(feature = "oidc-ldap")]
 use crate::oidc_ldap::OidcUserLdapUserDetails;
@@ -171,7 +170,7 @@ impl Login for OidcConfiguration {
         if Method::GET != request.method() {
             return HttpResponse::Forbidden().finish();
         }
-        let peer_ip = Peer::get_peer_ip_address(&request);
+        let peer_ip = get_peer_ip_address(&request);
         // redirect to login failure page used on errors
         let login_fail_redirect = HttpResponse::build(StatusCode::SEE_OTHER)
             .append_header((http::header::LOCATION, AUTH_LOGIN_FAIL_PAGE))
@@ -525,16 +524,5 @@ impl AuthenticationRedirect for OidcConfiguration {
                 empty_unix_epoch_cookie().to_string(),
             ))
             .finish()
-    }
-}
-
-struct Peer;
-
-impl PeerIpAddress for Peer {
-    fn get_peer_ip_address(request: &HttpRequest) -> String {
-        match request.peer_addr() {
-            None => UNKNOWN_PEER_IP.to_string(),
-            Some(s) => s.ip().to_string(),
-        }
     }
 }

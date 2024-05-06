@@ -21,6 +21,7 @@ pub mod get_userdata_trait;
 pub mod handler_functions;
 pub mod header_value_trait;
 pub mod http_traits;
+pub mod ip_address;
 #[cfg(feature = "ldap-common")]
 pub mod ldap_common;
 pub mod log_functions;

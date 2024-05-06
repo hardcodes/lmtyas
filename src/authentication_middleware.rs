@@ -7,10 +7,11 @@ use crate::authentication_oidc::OidcConfiguration;
 use crate::configuration::ApplicationConfiguration;
 use crate::cookie_functions::{get_plain_cookie_string, COOKIE_NAME};
 use crate::header_value_trait::HeaderValueExctractor;
+use crate::ip_address::UNKNOWN_PEER_IP;
 use crate::{MAX_AUTHREQUEST_AGE_SECONDS, MAX_COOKIE_AGE_SECONDS};
 #[cfg(any(feature = "ldap-auth", feature = "oidc-auth-ldap"))]
 use actix_web::dev::{forward_ready, Service, ServiceRequest, ServiceResponse, Transform};
-use actix_web::{body::EitherBody, http, http::StatusCode, web, Error, HttpRequest, HttpResponse};
+use actix_web::{body::EitherBody, http, http::StatusCode, web, Error, HttpResponse};
 use chrono::Duration;
 use chrono::{DateTime, Utc};
 use futures_util::future::LocalBoxFuture;
@@ -330,13 +331,3 @@ where
 
     forward_ready!(service);
 }
-
-/// This trait must be implemented to get the ip address
-/// of the client peer. The implementation may vary if
-/// the service is running behind a proxy.
-pub(crate) trait PeerIpAddress {
-    /// get the ip address of the peer requesting resources
-    fn get_peer_ip_address(request: &HttpRequest) -> String;
-}
-
-pub const UNKNOWN_PEER_IP: &str = "unknown peer";
