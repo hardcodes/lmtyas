@@ -947,7 +947,31 @@ async fn with_setup() {
         "OK".as_bytes(),
         "/authenticated/keep_session_alive should return OK!"
     );
-    // TODO: check updated cookie value if possible, try failing with faked cookie.
+
+    // setup fake cookie
+    let encrypted_cookie_value = {
+        let rsa_read_lock = &application_configuration.rsa_keys.read().unwrap();
+        // de1bf8ab-a9f3-4af6-9183-56f6d7b17ec7 is a random value generated with uuidgen
+        rsa_read_lock.rsa_encrypt_str("de1bf8ab-a9f3-4af6-9183-56f6d7b17ec7")
+    };
+    let fake_cookie = format!(
+        "{}={}",
+        &lmtyas::cookie_functions::COOKIE_NAME,
+        &encrypted_cookie_value.unwrap()
+    );
+    let request = test::TestRequest::get()
+        .uri("/authenticated/keep_session_alive")
+        .append_header(("Cookie", fake_cookie))
+        .peer_addr(IP_ADDRESS.parse().unwrap())
+        .to_request();
+    let result = test::call_service(&test_service, request).await;
+    assert_eq!(
+        result.status(),
+        StatusCode::FOUND,
+        "/authenticated/keep_session_alive should not work with a fake cookie!"
+    );
+
+    // TODO: check updated cookie value if possible.
 
     ///////////////////////////////////////////////////////////////////////////
     // Tell secret
