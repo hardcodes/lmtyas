@@ -831,10 +831,11 @@ Really easy to set up:
 
 # Testing the code
 
-Tests are at the moment far from complete.
+Tests are almost complete at the moment.
 
 - Functions that need no running service are covered.
-- Starting the service itself and testing it from outside is still missing.
+- Starting the service itself and testing it from outside is covered.
+- Testing the login process from outside is still missing.
 
 
 ## Testing the code - prerequisites

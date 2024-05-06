@@ -1066,7 +1066,46 @@ async fn with_setup() {
         "bob@acme.local",
         "Reply-To should be bob@acme.local!"
     );
-    // TODO: check other values
+    let to: Option<&str> = json_root
+        .get("items")
+        .and_then(|value| value.get(0))
+        .and_then(|value| value.get("Content"))
+        .and_then(|value| value.get("Headers"))
+        .and_then(|value| value.get("To"))
+        .and_then(|value| value.get(0))
+        .and_then(|value| value.as_str());
+    assert_eq!(
+        to.unwrap(),
+        "alice@acme.local",
+        "To should be alice@acme.local!"
+    );
+    let from: Option<&str> = json_root
+        .get("items")
+        .and_then(|value| value.get(0))
+        .and_then(|value| value.get("Content"))
+        .and_then(|value| value.get("Headers"))
+        .and_then(|value| value.get("From"))
+        .and_then(|value| value.get(0))
+        .and_then(|value| value.as_str());
+    assert_eq!(
+        from.unwrap(),
+        "IT-department <do-not-reply@lmtyas.acme.home.arpa>",
+        "From should be IT-department <do-not-reply@lmtyas.acme.home.arpa>!"
+    );
+    let wanted_subject = format!("Your new password for {}", &random_context);
+    let subject: Option<&str> = json_root
+        .get("items")
+        .and_then(|value| value.get(0))
+        .and_then(|value| value.get("Content"))
+        .and_then(|value| value.get("Headers"))
+        .and_then(|value| value.get("Subject"))
+        .and_then(|value| value.get(0))
+        .and_then(|value| value.as_str());
+    assert_eq!(
+        subject.unwrap(),
+        wanted_subject,
+        "Subject does not match!"
+    );
     let body: Option<&str> = json_root
         .get("items")
         .and_then(|value| value.get(0))
