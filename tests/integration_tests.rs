@@ -15,7 +15,7 @@ use lmtyas::authentication_oidc::OidcConfiguration;
 #[cfg(feature = "oidc-auth-ldap")]
 use lmtyas::authentication_oidc::OidcUserDetails;
 use lmtyas::authentication_url;
-use lmtyas::base64_trait::Base64StringConversions;
+use lmtyas::base64_trait::{Base64StringConversions, Base64VecU8Conversions};
 use lmtyas::configuration::ApplicationConfiguration;
 use lmtyas::handler_functions::*;
 #[cfg(any(feature = "ldap-auth", feature = "oidc-auth-ldap"))]
@@ -1043,13 +1043,16 @@ async fn with_setup() {
         "http://127.0.0.1:8025/api/v2/search?kind=containing&query={}&limit=1",
         &random_context.clone()
     );
-    let mailhog_anwser_body = reqwest::get(mail_query_url)
+    let mailhog_answer_body = reqwest::get(mail_query_url)
         .await
         .unwrap()
         .text()
         .await
         .unwrap();
-    let json_root: serde_json::Value = serde_json::from_str(&mailhog_anwser_body).unwrap();
+    // remove quoted printable in the URL part
+    let mailhog_answer_body = mailhog_answer_body.replace(r"=\r\n", "");
+    let mailhog_answer_body = mailhog_answer_body.replace(r"=3D", "=");
+    let json_root: serde_json::Value = serde_json::from_str(&mailhog_answer_body).unwrap();
     let reply_to: Option<&str> = json_root
         .get("items")
         .and_then(|value| value.get(0))
@@ -1070,15 +1073,11 @@ async fn with_setup() {
         .and_then(|value| value.get("Content"))
         .and_then(|value| value.get("Body"))
         .and_then(|value| value.as_str());
-    let body=body.unwrap().to_string();
-    println!("body = {}", &body);
-    let body = body.replace(r"=\r\n", "");
-    println!("body = {}", &body);
-    let url_regex = regex::Regex::new(r"\bhttps://127.0.0.1:8844/html/reveal.html\?secret_id=(?<url>.+)\b").unwrap();
-    assert!(
-        url_regex.is_match(&body),
-        "URl should be in mail body!"
-    );
+    let body = body.unwrap().to_string();
+    let url_regex =
+        regex::Regex::new(r"\bhttps://127.0.0.1:8844/html/reveal.html\?secret_id=(?<url>.+)\b")
+            .unwrap();
+    assert!(url_regex.is_match(&body), "URl should be in mail body!");
     let captures = url_regex.captures(&body).unwrap();
     let secret_url = captures.name("url").map_or("UNKOWN", |m| m.as_str());
     assert_ne!(secret_url, "UNKNOWN", "secret url should not be UNKNOWN!");
@@ -1126,11 +1125,60 @@ async fn with_setup() {
         "/authenticated/secret/reveal/ should work!"
     );
     let body_with_secret = test::read_body(result).await;
-    let secret = String::from_utf8(body_with_secret.to_vec()).unwrap();
-    println!("secret = {}", &secret);
+    let secret_json = String::from_utf8(body_with_secret.to_vec()).unwrap();
+    let secret: lmtyas::secret_functions::Secret = serde_json::from_str(&secret_json).unwrap();
     assert_eq!(
-        secret, "{\"DisplayName\":\"Walter Sanders\",\"Email\":\"bob@acme.local\"}",
-        "/authenticated/secret/reveal/ should provide secret!"
+        secret.from_email, "bob@acme.local",
+        "FromEmail should be bob@acme.local"
+    );
+    assert_eq!(
+        secret.from_display_name, "Bob Sanders",
+        "FromDisplayName should be Bob Sanders"
+    );
+    assert_eq!(
+        secret.to_email, "alice@acme.local",
+        "ToEmail should be alice@acme.local"
+    );
+    assert_eq!(
+        secret.to_display_name, "Alice Henderson",
+        "ToDisplayName should be Alice Henderson"
+    );
+    assert_eq!(secret.context, random_context, "Context does not match!");
+    let plain_u8 = Vec::from_base64_encoded(&secret.secret).unwrap();
+    let decoded_plaintext = String::from_utf8(plain_u8).unwrap();
+    assert_eq!(
+        decoded_plaintext, SECRET_PLAINTEXT,
+        "secret does not match!"
+    );
+
+    // get secret 2nd time
+    let request = test::TestRequest::get()
+        .uri(&format!("/authenticated/secret/reveal/{}", &secret_url))
+        .append_header(("Cookie", cookie.clone()))
+        .peer_addr(IP_ADDRESS.parse().unwrap())
+        .to_request();
+    let result = test::call_service(&test_service, request).await;
+    assert_eq!(
+        result.status(),
+        StatusCode::BAD_REQUEST,
+        "/authenticated/secret/reveal/ should not work!"
+    );
+    let body = test::read_body(result).await;
+    assert_eq!(
+        body.try_into_bytes().unwrap(),
+        "ERROR: Secret cannot be read! Already revealed?".as_bytes(),
+        "/authenticated/secret/reveal/ should return ERROR: Secret cannot be read! Already revealed?!"
+    );
+    let request = test::TestRequest::get()
+        .uri("/authenticated/secret/reveal/aW52YWxpZCBVUkw=")
+        .append_header(("Cookie", cookie.clone()))
+        .peer_addr(IP_ADDRESS.parse().unwrap())
+        .to_request();
+    let result = test::call_service(&test_service, request).await;
+    assert_eq!(
+        result.status(),
+        StatusCode::BAD_REQUEST,
+        "/authenticated/secret/reveal/ should not work!"
     );
 
     ///////////////////////////////////////////////////////////////////////////
