@@ -162,7 +162,7 @@ Restart=always
 User=lmtyas
 Group=lmtyas
 WorkingDirectory=/opt/lmtyas
-ExecStart=/opt/lmtyas/lmtyassvc --config-file \${lmtyasCFGFILE}
+ExecStart=/opt/lmtyas/lmtyas --config-file \${lmtyasCFGFILE}
 # the settings from here on may not work with older versions of systemd!
 NoNewPrivileges=true
 PrivateTmp=yes
@@ -213,7 +213,7 @@ Create a [`/etc/lmtyas/lmtyas-config.json`](#configuration-file), the *[rsa keys
 
 ```bash
 sudo find /etc/lmtyas/ -type f -exec chmod 640 {} \;
-chown lmtyas:lmtyas /etc/lmtyas/lmtyas-config.json
+chown root:lmtyas /etc/lmtyas/lmtyas-config.json
 sudo systemctl start lmtyas.service
 ```
 
