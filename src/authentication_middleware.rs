@@ -7,7 +7,7 @@ use crate::authentication_oidc::OidcConfiguration;
 use crate::configuration::ApplicationConfiguration;
 use crate::cookie_functions::{get_plain_cookie_string, COOKIE_NAME};
 use crate::header_value_trait::HeaderValueExctractor;
-use crate::ip_address::UNKNOWN_PEER_IP;
+use crate::ip_address::IpAdressString;
 use crate::{MAX_AUTHREQUEST_AGE_SECONDS, MAX_COOKIE_AGE_SECONDS};
 #[cfg(any(feature = "ldap-auth", feature = "oidc-auth-ldap"))]
 use actix_web::dev::{forward_ready, Service, ServiceRequest, ServiceResponse, Transform};
@@ -222,11 +222,7 @@ where
             .app_data::<web::Data<ApplicationConfiguration>>()
             .unwrap()
             .clone();
-        let peer_ip = if let Some(s) = request.peer_addr() {
-            s.ip().to_string()
-        } else {
-            UNKNOWN_PEER_IP.to_string()
-        };
+        let peer_ip = request.get_peer_ip_address();
         // At this point we must decide if a user is already authenticated.
         // Yes (cookie) ==> let the user access the requested resources
         for header_value in request.head().headers().get_all(http::header::COOKIE) {

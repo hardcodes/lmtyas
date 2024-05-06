@@ -1,7 +1,7 @@
 use crate::base64_trait::Base64VecU8Conversions;
 use crate::configuration::ApplicationConfiguration;
 use crate::header_value_trait::HeaderValueExctractor;
-use crate::ip_address::get_peer_ip_address;
+use crate::ip_address::IpAdressString;
 use actix_web::{
     dev::Payload,
     error::{ErrorForbidden, ErrorServiceUnavailable, ErrorUnauthorized},
@@ -172,7 +172,7 @@ fn get_access_token_payload(req: &HttpRequest) -> Result<ValidatedAccessTokenPay
             return Err(ErrorForbidden("Invalid access token!"));
         }
 
-        let ip_address = get_peer_ip_address(req);
+        let ip_address = req.get_peer_ip_address();
         if !access_token_file.ip_adresses.contains(&ip_address) {
             warn!(
                 "host at ip address {} is invalid for access token {}",

@@ -7,7 +7,7 @@ use crate::cookie_functions::{
     empty_unix_epoch_cookie,
 };
 use crate::http_traits::CustomHttpResponse;
-use crate::ip_address::get_peer_ip_address;
+use crate::ip_address::IpAdressString;
 pub use crate::login_user_trait::Login;
 #[cfg(feature = "oidc-ldap")]
 use crate::oidc_ldap::OidcUserLdapUserDetails;
@@ -170,7 +170,7 @@ impl Login for OidcConfiguration {
         if Method::GET != request.method() {
             return HttpResponse::Forbidden().finish();
         }
-        let peer_ip = get_peer_ip_address(&request);
+        let peer_ip = &request.get_peer_ip_address();
         // redirect to login failure page used on errors
         let login_fail_redirect = HttpResponse::build(StatusCode::SEE_OTHER)
             .append_header((http::header::LOCATION, AUTH_LOGIN_FAIL_PAGE))
@@ -432,7 +432,7 @@ impl Login for OidcConfiguration {
                 &user_details.first_name,
                 &user_details.last_name,
                 email,
-                &peer_ip,
+                peer_ip,
             )
         {
             info!(

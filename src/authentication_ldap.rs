@@ -4,7 +4,7 @@ use crate::base64_trait::Base64VecU8Conversions;
 use crate::configuration::ApplicationConfiguration;
 use crate::cookie_functions::{build_new_authentication_cookie, empty_unix_epoch_cookie};
 use crate::http_traits::CustomHttpResponse;
-use crate::ip_address::get_peer_ip_address;
+use crate::ip_address::IpAdressString;
 pub use crate::ldap_common::{LdapCommonConfiguration, LdapSearchResult};
 pub use crate::login_user_trait::Login;
 use actix_web::{http, http::Method, http::StatusCode, web, web::Bytes, HttpRequest, HttpResponse};
@@ -90,7 +90,7 @@ impl Login for LdapCommonConfiguration {
     ) -> HttpResponse {
         debug!("bytes = {:?}", &bytes);
         debug!("request = {:?}", &request);
-        let peer_ip = get_peer_ip_address(&request);
+        let peer_ip = &request.get_peer_ip_address();
         debug!("peer_ip = {:?}", &peer_ip);
         // accept POST method only
         if Method::POST != request.method() {
