@@ -218,6 +218,18 @@ function setImprintLink(resulttext) {
   }
 }
 
+function setPrivacyLink(resulttext) {
+  try {
+    var data = JSON.parse(resulttext);
+    const privacy = document.getElementById("Privacy");
+    privacy.setAttribute('href', data.href);
+    privacy.setAttribute('target', data.target);
+  }
+  catch (e) {
+    console.log(e);
+  }
+}
+
 function startLocationReloadTimer(seconds = 5) {
   if (seconds > 0) {
     let locationReloadTimeout = setTimeout(function () { window.location.replace(window.location.pathname); }, (seconds * 1000));
@@ -270,4 +282,6 @@ function initAriaAttributes(form) {
 }
 
 queryWebService("/system/get/imprint-link", setImprintLink, function () { });
+queryWebService("/system/get/privacy-link", setPrivacyLink, function () { });
+
 
