@@ -382,6 +382,22 @@ async fn with_setup() {
         "/css/lmtyas.css should be 200!"
     );
 
+    let request = test::TestRequest::get().uri("/custom/imprint.html").to_request();
+    let result = test::call_service(&test_service, request).await;
+    assert_eq!(
+        result.status(),
+        StatusCode::NOT_FOUND,
+        "/custom/imprint.html should be 302!"
+    );
+
+    let request = test::TestRequest::get().uri("/custom/privacy.html").to_request();
+    let result = test::call_service(&test_service, request).await;
+    assert_eq!(
+        result.status(),
+        StatusCode::NOT_FOUND,
+        "/custom/privacy.html should be 302!"
+    );
+
     let request = test::TestRequest::get().uri("/index.html").to_request();
     let result = test::call_service(&test_service, request).await;
     assert_eq!(

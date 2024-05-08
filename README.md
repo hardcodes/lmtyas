@@ -305,6 +305,16 @@ To customize the colors applied to the css create a folder `local/css` and put a
 To customize the custom style sheet (css) create a folder `local/css` and put a tweaked copy of the file [web-content/static/css/lmtyas.css](./web-content/static/css/lmtyas.css) into it.
 
 
+## Customization - imprint.html
+
+To add a custom `imprint.html` page create a folder `local/html` and put a `imprint.html` file into it. See also the `imprint` values in the [configuration file](#configuration-file) and set them to `/custom/imprint.html` and `_self` if desired.
+
+
+## Customization - privacy.html
+
+To add a custom `privacy.html` page create a folder `local/html` and put a `privacy.html` file into it. See also the `privacy` values in the [configuration file](#configuration-file) and set them to `/custom/privacy.html` and `_self` if desired.
+
+
 # Set RSA password
 
 If the service is (re-)started, a valid administrator (see `admin_accounts` in section *[Configuration file](#configuration-file)*) must set the password of the RSA private key first. The rsa private key is loaded afterwards. Therefore open the URL

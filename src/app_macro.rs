@@ -136,6 +136,10 @@ macro_rules! app (
             .route("/css/colors.css", web::get().to(get_colors_css))
             // serve custom lmtyas.css file if it exists
             .route("/css/lmtyas.css", web::get().to(get_lmtyas_css))
+            // serve custom imprint.html file if it exists
+            .route("/custom/imprint.html", web::get().to(get_imprint_html))
+            // serve custom privacy.html file if it exists
+            .route("/custom/privacy.html", web::get().to(get_privacy_html))
             .service(Files::new("/", "./web-content/static/").index_file("index.html"))
             .service(
                 web::resource("").route(

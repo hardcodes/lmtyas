@@ -28,6 +28,7 @@ use secstr::SecStr;
 use serde::{Deserialize, Serialize};
 use std::fs::read_to_string;
 use std::fs::remove_file;
+use std::io::Error;
 use std::path::Path;
 use zeroize::Zeroize;
 
@@ -164,6 +165,32 @@ pub async fn get_favicon() -> impl Responder {
         _ => path_static,
     };
     NamedFile::open_async(file_path).await
+}
+
+/// Return the custom imprint.html if it exists.
+pub async fn get_imprint_html() -> impl Responder {
+    let path_local = Path::new("local/html/imprint.html");
+    if path_local.exists() {
+        return NamedFile::open_async(path_local).await;
+    }
+    warn!("route access forbidden!");
+    Err(Error::new(
+        std::io::ErrorKind::NotFound,
+        "ERROR: forbidden!",
+    ))
+}
+
+/// Return the custom privacy.html if it exists.
+pub async fn get_privacy_html() -> impl Responder {
+    let path_local = Path::new("local/html/privacy.html");
+    if path_local.exists() {
+        return NamedFile::open_async(path_local).await;
+    }
+    warn!("route access forbidden!");
+    Err(Error::new(
+        std::io::ErrorKind::NotFound,
+        "ERROR: forbidden!",
+    ))
 }
 
 /// Returns true or false as json value so that
