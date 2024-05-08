@@ -72,7 +72,7 @@ See [lmtyas-config.json](resources/config/lmtyas-config.json) for an example con
 | "login_hint"                     | hint for users which account to use for login, e.g. `"A.C.M.E. LDAP account"`                             |
 | "mail_hint"                      | optional hint what mail address format should be used, e.g. `givenname.surname@acme.local`                |
 | "imprint": {                     | ==> object with imprint link data                                                                         |
-| "href"                           | link to an imprint page, e.g. `"https://www.acme.local"`                                                  |
+| "href"                           | link to an imprint page, e.g. `"https://www.acme.local/imprint"`                                          |
 | "target"                         | target window for imprint, one out of `"_self"`, `"_blank"`, `"_parent"`, `"_top"`                        |
 | }                                | <== end of with imprint link data                                                                         |
 | }                                | <== end of root object                                                                                    |

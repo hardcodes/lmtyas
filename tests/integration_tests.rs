@@ -332,7 +332,7 @@ async fn with_setup() {
     let result = test::call_and_read_body(&test_service, request).await;
     assert_eq!(
         result,
-        "{\"href\":\"https://www.acme.local\",\"target\":\"_blank\"}".as_bytes(),
+        "{\"href\":\"https://www.acme.local/imprint\",\"target\":\"_blank\"}".as_bytes(),
         "wrong response from /system/get/imprint-link!"
     );
 

@@ -41,7 +41,11 @@
     "login_hint": "A.C.M.E. LDAP account",
     "mail_hint": "hint:firstname.lastname@acme.local",
     "imprint": {
-        "href": "https://www.acme.local",
+        "href": "https://www.acme.local/imprint",
+        "target": "_blank"
+    },
+    "privacy": {
+        "href": "https://www.acme.local/privacy",
         "target": "_blank"
     }
 }
