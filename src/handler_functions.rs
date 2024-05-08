@@ -78,11 +78,11 @@ pub async fn still_alive(
 pub async fn get_login_hint(
     application_configuration: web::Data<ApplicationConfiguration>,
 ) -> impl Responder {
-    let login_hint = &application_configuration
+    let login_hint = application_configuration
         .configuration_file
         .login_hint
         .clone();
-    HttpResponse::ok_text_response(login_hint.to_string())
+    HttpResponse::ok_text_response(login_hint)
 }
 
 /// Returns a hint about valid mail addresses.
