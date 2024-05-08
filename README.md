@@ -74,7 +74,11 @@ See [lmtyas-config.json](resources/config/lmtyas-config.json) for an example con
 | "imprint": {                     | ==> object with imprint link data                                                                         |
 | "href"                           | link to an imprint page, e.g. `"https://www.acme.local/imprint"`                                          |
 | "target"                         | target window for imprint, one out of `"_self"`, `"_blank"`, `"_parent"`, `"_top"`                        |
-| }                                | <== end of with imprint link data                                                                         |
+| },                               | <== end of with imprint link data                                                                         |
+| "privacy": {                     | ==> object with privacy statement link data                                                               |
+| "href"                           | link to a privacy page, e.g. `"https://www.acme.local/privacy"`                                           |
+| "target"                         | target window for privacy statement, one out of `"_self"`, `"_blank"`, `"_parent"`, `"_top"`              |
+| }                                | <== end of with privacy link data                                                                         |
 | }                                | <== end of root object                                                                                    |
 
 - **NOTE  1**

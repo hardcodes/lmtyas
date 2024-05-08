@@ -110,6 +110,18 @@ pub async fn get_imprint_link(
     )
 }
 
+/// Returns a href and target to the privacy statement page.
+pub async fn get_privacy_link(
+    application_configuration: web::Data<ApplicationConfiguration>,
+) -> impl Responder {
+    const SERDE_SERIALIZE_PRIVACY_ERROR: &str = "ERROR: failed to serialize privacy link";
+    let privacy_link = &application_configuration.configuration_file.privacy.clone();
+    HttpResponse::ok_json_response(
+        serde_json::to_string(&privacy_link)
+            .unwrap_or_else(|_| -> String { SERDE_SERIALIZE_PRIVACY_ERROR.to_string() }),
+    )
+}
+
 /// Return the custom colors.css file if it exists.
 pub async fn get_colors_css() -> impl Responder {
     let path_local = Path::new("local/css/colors.css");

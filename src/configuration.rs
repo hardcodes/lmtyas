@@ -67,6 +67,7 @@ pub struct ConfigurationFile {
     pub login_hint: String,
     pub mail_hint: Option<String>,
     pub imprint: Imprint,
+    pub privacy: Privacy,
     #[cfg(feature = "api-access-token")]
     pub access_token_configuration: AccessTokenConfiguration,
 }
@@ -293,6 +294,13 @@ pub enum Target {
 /// Link information for the imprint page
 #[derive(Clone, Deserialize, Serialize, Debug)]
 pub struct Imprint {
+    pub href: String,
+    pub target: Target,
+}
+
+/// Link information for the privacy statement page
+#[derive(Clone, Deserialize, Serialize, Debug)]
+pub struct Privacy {
     pub href: String,
     pub target: Target,
 }

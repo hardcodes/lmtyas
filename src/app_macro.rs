@@ -42,7 +42,8 @@ macro_rules! app (
                     .route("/is_server_ready", web::get().to(is_server_ready))
                     .route("/get/login-hint", web::get().to(get_login_hint))
                     .route("/get/mail-hint", web::get().to(get_mail_hint))
-                    .route("/get/imprint-link", web::get().to(get_imprint_link)),
+                    .route("/get/imprint-link", web::get().to(get_imprint_link))
+                    .route("/get/privacy-link", web::get().to(get_privacy_link)),
             )
             .service(web::resource("/").route(web::get().to(redirect_to_index)))
             // routes for authenticated administrators only

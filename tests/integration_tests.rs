@@ -337,6 +337,16 @@ async fn with_setup() {
     );
 
     let request = test::TestRequest::get()
+        .uri("/system/get/privacy-link")
+        .to_request();
+    let result = test::call_and_read_body(&test_service, request).await;
+    assert_eq!(
+        result,
+        "{\"href\":\"https://www.acme.local/privacy\",\"target\":\"_blank\"}".as_bytes(),
+        "wrong response from /system/get/privacy-link!"
+    );
+
+    let request = test::TestRequest::get()
         .uri("/gfx/favicon.png")
         .to_request();
     let result = test::call_service(&test_service, request).await;
