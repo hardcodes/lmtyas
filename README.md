@@ -143,6 +143,7 @@ sudo mkdir -p /opt/lmtyas/output/secrets
 sudo mkdir -p /opt/lmtyas/web-content
 sudo mkdir -p /opt/lmtyas/local/css
 sudo mkdir -p /opt/lmtyas/local/gfx
+sudo mkdir -p /opt/lmtyas/local/html
 sudo mkdir -p /opt/lmtyas/local/js
 # copy binary
 sudo cp target/release/lmtyas /opt/lmtyas/
