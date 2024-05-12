@@ -252,7 +252,7 @@ Also see [Cargo.toml](./Cargo.toml), section `[features]`.
 - **authentication-oidc**: holds the oidc implementation.
 - **oidc-ldap**: query user details from an external ldap server.
 - **mail-noauth-notls**: send mails to user via mail server that does not need authentication and uses no encrypted transport.
-- **get-userdata-ldap**: query userdata (frist and last name by email address of secret receiver) from a ldap server.
+- **get-userdata-ldap**: query userdata (first and last name by email address of secret receiver) from a ldap server.
 - **no-userdata-backend**: use this, when there is no backend (like e.g., a ldap server) to query userdata.
 - **api-access-token**: useful for scripted sending of secrets authenicated with an access token, see section [Security - API Token](#security---api-token).
 
