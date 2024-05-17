@@ -184,7 +184,7 @@ fn get_access_token_payload(req: &HttpRequest) -> Result<ValidatedAccessTokenPay
         let ip_address = req.get_peer_ip_address();
         if !access_token_file.ip_adresses.contains(&ip_address) {
             warn!(
-                "host at ip address {} is invalid for access token {}",
+                "host ip address {} is invalid for access token {}",
                 &ip_address, &bearer_token
             );
             return Err(ErrorForbidden("Invalid access token!"));
