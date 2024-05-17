@@ -2,6 +2,7 @@ use crate::base64_trait::Base64VecU8Conversions;
 use crate::configuration::ApplicationConfiguration;
 use crate::header_value_trait::HeaderValueExctractor;
 use crate::ip_address::IpAdressString;
+use crate::MAX_BEARER_TOKEN_LEN;
 use actix_web::{
     dev::Payload,
     error::{ErrorForbidden, ErrorServiceUnavailable, ErrorUnauthorized},
@@ -109,6 +110,14 @@ fn get_access_token_payload(req: &HttpRequest) -> Result<ValidatedAccessTokenPay
             }
         };
         debug!("b64_bearer_token = {}", &b64_bearer_token);
+        if b64_bearer_token.len() > MAX_BEARER_TOKEN_LEN {
+            warn!(
+                "bearer token length {} > max {}",
+                &b64_bearer_token.len(),
+                MAX_BEARER_TOKEN_LEN
+            );
+            return Err(ErrorUnauthorized("Access token too big!"));
+        }
         let bearer_token_json_utf8 = match Vec::from_base64_urlsafe_encoded(&b64_bearer_token) {
             Err(e) => {
                 warn!("Cannot decode bearer token from base64: {}", &e);

@@ -57,6 +57,9 @@ pub const MAX_FORM_INPUT_LEN: usize = 11_000;
 pub const MAX_AUTHREQUEST_AGE_SECONDS: i64 = 300;
 // fallback value if the value in the config file is out of bounds.
 pub const MAX_COOKIE_AGE_SECONDS: i64 = 120;
+// The access token should fit in here.
+#[cfg(feature = "api-access-token")]
+pub const MAX_BEARER_TOKEN_LEN: usize = 1_408;
 
 #[cfg(feature = "ldap-auth")]
 pub mod authentication_url {

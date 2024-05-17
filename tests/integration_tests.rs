@@ -26,7 +26,10 @@ use lmtyas::login_user_trait::Login;
 pub use lmtyas::mail_noauth_notls::SendEMail;
 #[cfg(feature = "oidc-auth-ldap")]
 use lmtyas::oidc_ldap::OidcUserLdapUserDetails;
+use lmtyas::MAX_BEARER_TOKEN_LEN;
 use lmtyas::MAX_FORM_BYTES_LEN;
+use rand::distributions::Alphanumeric;
+use rand::{thread_rng, Rng};
 use secstr::SecStr;
 use std::fs::File;
 use std::io::BufReader;
@@ -382,7 +385,9 @@ async fn with_setup() {
         "/css/lmtyas.css should be 200!"
     );
 
-    let request = test::TestRequest::get().uri("/custom/imprint.html").to_request();
+    let request = test::TestRequest::get()
+        .uri("/custom/imprint.html")
+        .to_request();
     let result = test::call_service(&test_service, request).await;
     assert_eq!(
         result.status(),
@@ -390,7 +395,9 @@ async fn with_setup() {
         "/custom/imprint.html should be 302!"
     );
 
-    let request = test::TestRequest::get().uri("/custom/privacy.html").to_request();
+    let request = test::TestRequest::get()
+        .uri("/custom/privacy.html")
+        .to_request();
     let result = test::call_service(&test_service, request).await;
     assert_eq!(
         result.status(),
@@ -612,6 +619,31 @@ async fn with_setup() {
         result.status(),
         StatusCode::OK,
         "/api/v1/secret should work now!"
+    );
+
+    // not base64 encoded but enough for size checking
+    let oversized_bearer_token: String = thread_rng()
+        .sample_iter(&Alphanumeric)
+        .take(MAX_BEARER_TOKEN_LEN + 1)
+        .map(char::from)
+        .collect();
+    let request = test::TestRequest::post()
+        .uri("/api/v1/secret")
+        .append_header(("Authorization", format!("Bearer {}", &oversized_bearer_token)))
+        .set_payload(json_secret.clone())
+        .peer_addr(IP_ADDRESS.parse().unwrap())
+        .to_request();
+    let result = test::call_service(&test_service, request).await;
+    assert_eq!(
+        result.status(),
+        StatusCode::UNAUTHORIZED,
+        "/api/v1/secret should not work (bearer token size)!"
+    );
+    let body = test::read_body(result).await;
+    assert_eq!(
+        body.try_into_bytes().unwrap(),
+        "Access token too big!".as_bytes(),
+        "/api/v1/secret should not work (bearer token size)!"
     );
 
     let request = test::TestRequest::post()
@@ -1002,8 +1034,6 @@ async fn with_setup() {
     ///////////////////////////////////////////////////////////////////////////
     // Tell secret
     ///////////////////////////////////////////////////////////////////////////
-    use rand::distributions::Alphanumeric;
-    use rand::{thread_rng, Rng};
     // build a random context that we can search for later on.
     let random_context: String = thread_rng()
         .sample_iter(&Alphanumeric)
