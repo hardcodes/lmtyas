@@ -20,8 +20,8 @@ pub trait GetUserData {
     /// This function is called to validate the entered receiver email address
     /// before the form is transmitted to the server.
     ///
-    /// If there is no way to validate the email address, simply
-    /// return `mail` as result string.
+    /// If there is no backend or way to validate the email address, simply
+    /// return `Ok(mail.to_string())` as result.
     async fn validate_email_address(
         mail: &str,
         application_configuration: &web::Data<ApplicationConfiguration>,
