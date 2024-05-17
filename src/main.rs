@@ -28,7 +28,7 @@ async fn main() -> std::io::Result<()> {
     #[cfg(debug_assertions)]
     std::env::set_var("RUST_LOG", "debug, actix_web=trace");
     #[cfg(not(debug_assertions))]
-    std::env::set_var("RUST_LOG", "info, actix_web=trace");
+    std::env::set_var("RUST_LOG", "info, actix_web=info");
     env_logger::builder()
         .format(|buf, record| writeln!(buf, "{}: {}", record.level(), record.args()))
         .init();
