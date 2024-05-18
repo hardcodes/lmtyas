@@ -162,12 +162,11 @@ impl Secret {
     /// {Context}         -> `&self.context`
     /// {UrlPayload}      -> `url_payload`
     ///
-    /// # Agruments
+    /// # Arguments
     ///  
     /// - `url_payload`:      url payload that contains the rsa encrypted uuid (=file name)
     ///                       of the secret, the iv and key for the aes encrypted
-    ///                       secret itself,
-    ///                       (will replace {UrlPayload} in the mail template.
+    ///                       secret itself: will replace {UrlPayload} in the mail template.
     ///
     /// # Returns
     ///
@@ -184,7 +183,7 @@ impl Secret {
     ///
     /// {Context}         -> `&self.context`
     ///
-    /// # Agruments
+    /// # Arguments
     ///  
     /// - `subject`:       subject with placeholder
     ///
