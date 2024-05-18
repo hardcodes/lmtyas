@@ -86,7 +86,7 @@ impl Secret {
         Ok(())
     }
 
-    /// reads secret data to disk
+    /// reads secret data from disk
     ///
     /// # Arguments
     ///
