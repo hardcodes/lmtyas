@@ -629,7 +629,10 @@ async fn with_setup() {
         .collect();
     let request = test::TestRequest::post()
         .uri("/api/v1/secret")
-        .append_header(("Authorization", format!("Bearer {}", &oversized_bearer_token)))
+        .append_header((
+            "Authorization",
+            format!("Bearer {}", &oversized_bearer_token),
+        ))
         .set_payload(json_secret.clone())
         .peer_addr(IP_ADDRESS.parse().unwrap())
         .to_request();
