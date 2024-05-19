@@ -478,8 +478,8 @@ impl Login for OidcConfiguration {
 }
 
 impl AuthenticationRedirect for OidcConfiguration {
-    /// This function will be called when an unauthenticated users
-    /// requests a path that needs authentication.
+    /// This function will be called when an unauthenticated user
+    /// requests a route that needs authentication.
     fn get_authentication_redirect_response(
         _request_path_with_query: &str,
         request_uuid: &Uuid,
