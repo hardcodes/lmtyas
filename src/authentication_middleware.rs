@@ -45,7 +45,7 @@ pub trait AuthenticationRedirect {
     ) -> HttpResponse;
 }
 
-/// Holds the information about a resoure request
+/// Holds the information about a resource request
 #[derive(Clone, Debug)]
 pub struct AuthenticationState {
     /// will be set to true when a (possible) login request/response has arrived
