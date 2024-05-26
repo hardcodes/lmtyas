@@ -434,7 +434,7 @@ async fn parse_and_validate_secret_form_data(
     parsed_form_data.to_display_name = display_name;
     // whatever the user sends us, we will use the data we already know.
     parsed_form_data.from_display_name = user.display_name();
-    parsed_form_data.from_email = user.mail.clone();
+    parsed_form_data.from_email.clone_from(&user.mail);
     Ok(parsed_form_data)
 }
 
@@ -455,7 +455,9 @@ async fn encrypt_store_send_secret(
         }
     };
     // store aes encrypted secret instead of plaintext secret
-    parsed_form_data.secret = aes_encryption_result.encrypted_data.clone();
+    parsed_form_data
+        .secret
+        .clone_from(&aes_encryption_result.encrypted_data);
     // rsa encrypt all data
     let encrypted_form_data =
         match parsed_form_data.to_encrypted(&application_configuration.rsa_keys.read().unwrap()) {
