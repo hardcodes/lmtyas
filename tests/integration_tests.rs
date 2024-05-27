@@ -945,7 +945,7 @@ async fn with_setup() {
     let body = test::read_body(result).await;
     assert_eq!(
         body.try_into_bytes().unwrap(),
-        lmtyas::UNKOWN_RECEIVER_EMAIL.as_bytes(),
+        lmtyas::UNKNOWN_RECEIVER_EMAIL.as_bytes(),
         "/authenticated/receiver/get/validated_email/alice@acme.world.local should provide unknown email!"
     );
 
@@ -964,7 +964,7 @@ async fn with_setup() {
     let body = test::read_body(result).await;
     assert_eq!(
         body.try_into_bytes().unwrap(),
-        lmtyas::UNKOWN_RECEIVER_EMAIL.as_bytes(),
+        lmtyas::UNKNOWN_RECEIVER_EMAIL.as_bytes(),
         "/authenticated/receiver/get/validated_email/jane@acme.local should provide unknown email!"
     );
 

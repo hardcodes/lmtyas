@@ -16,7 +16,7 @@ use crate::http_traits::CustomHttpResponse;
 #[cfg(feature = "mail-noauth-notls")]
 pub use crate::mail_noauth_notls::SendEMail;
 use crate::secret_functions::Secret;
-use crate::UNKOWN_RECEIVER_EMAIL;
+use crate::UNKNOWN_RECEIVER_EMAIL;
 use crate::{MAX_FORM_BYTES_LEN, MAX_FORM_INPUT_LEN};
 use actix_files::NamedFile;
 use actix_web::web::Bytes;
@@ -718,7 +718,7 @@ pub async fn get_validated_receiver_email(
             "received invalid email format from user {}",
             &user.user_name
         );
-        return HttpResponse::ok_text_response(UNKOWN_RECEIVER_EMAIL.to_string());
+        return HttpResponse::ok_text_response(UNKNOWN_RECEIVER_EMAIL.to_string());
     }
 
     let receiver_email = match <UserDataImpl as GetUserData>::validate_email_address(
@@ -730,7 +730,7 @@ pub async fn get_validated_receiver_email(
         Ok(receiver_email) => receiver_email,
         Err(e) => {
             info!("cannot find mail address {}, error: {}", &email, &e);
-            return HttpResponse::ok_text_response(UNKOWN_RECEIVER_EMAIL.to_string());
+            return HttpResponse::ok_text_response(UNKNOWN_RECEIVER_EMAIL.to_string());
         }
     };
     HttpResponse::ok_text_response(receiver_email.to_ascii_lowercase())

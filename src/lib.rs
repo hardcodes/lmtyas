@@ -40,7 +40,7 @@ pub const PROGRAM_NAME: &str = env!("CARGO_PKG_NAME");
 pub const PROGRAM_VERSION: &str = env!("CARGO_PKG_VERSION");
 pub const PROGRAM_AUTHORS: &str = env!("CARGO_PKG_AUTHORS");
 pub const PROGRAM_DESCRIPTION: &str = env!("CARGO_PKG_DESCRIPTION");
-pub const UNKOWN_RECEIVER_EMAIL: &str = "UNKOWN RECEIVER EMAIL";
+pub const UNKNOWN_RECEIVER_EMAIL: &str = "UNKOWN RECEIVER EMAIL";
 #[cfg(debug_assertions)]
 pub const BUILD_TYPE: &str = "DEBUG build";
 #[cfg(not(debug_assertions))]
