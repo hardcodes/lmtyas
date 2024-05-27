@@ -81,7 +81,7 @@ function accessWebService(url, okcallback, errorcallback, method = "GET", formda
   xhttp.onreadystatechange = function () {
     if (this.readyState == 4 && (this.status == 200 || (this.status >= 400 && this.status < 500))) {
       stopProgressSpinner();
-      if (this.status > 400 && this.status < 500 || this.responseText.includes("ERROR:")) {
+      if (this.status >= 400 && this.status < 500 || this.responseText.includes("ERROR:")) {
         showErrorMessageWithTimer(this.responseText, seconds);
         if (typeof errorcallback == "function") {
           errorcallback();

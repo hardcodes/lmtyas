@@ -137,12 +137,12 @@ pub fn update_authenticated_user_cookie_lifetime(req: &HttpRequest) -> HttpRespo
                 }
             } else {
                 warn!("Can not parse uuid from cookie! cookie_value = {}", &cookie);
-                return HttpResponse::ok_text_response(
+                return HttpResponse::err_text_response(
                     "ERROR: authorization cookie can not be parsed! Who are you?",
                 );
             }
         }
     }
     warn!("No cookie with name {} found!", COOKIE_NAME);
-    HttpResponse::ok_text_response("ERROR: no matching cookie found! Authorization expired?")
+    HttpResponse::err_text_response("ERROR: no matching cookie found! Authorization expired?")
 }
