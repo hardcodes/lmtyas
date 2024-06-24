@@ -95,7 +95,10 @@ impl RsaKeys {
     /// # Arguments
     ///
     /// - `plaintext_data`: a String slice with data to encrypt
-    pub fn rsa_public_key_encrypt_str(&self, plaintext_data: &str) -> Result<String, Box<dyn Error>> {
+    pub fn rsa_public_key_encrypt_str(
+        &self,
+        plaintext_data: &str,
+    ) -> Result<String, Box<dyn Error>> {
         if self.rsa_public_key.is_none() {
             let box_err: Box<dyn Error> = "RSA public key is not set!".to_string().into();
             return Err(box_err);
@@ -104,7 +107,7 @@ impl RsaKeys {
         let mut buf: Vec<u8> = vec![0; public_key.size() as usize];
         match public_key.public_encrypt(plaintext_data.as_bytes(), &mut buf, Padding::PKCS1) {
             Err(e) => {
-                info!("Could not rsa encrypt given value: {}", &e);
+                info!("Could not rsa encrypt (public key) given value: {}", &e);
                 let box_err: Box<dyn Error> =
                     "Could not rsa encrypt given value".to_string().into();
                 Err(box_err)
@@ -112,6 +115,52 @@ impl RsaKeys {
             Ok(_) => {
                 let base64_encrypted = buf.to_base64_encoded();
                 Ok(base64_encrypted)
+            }
+        }
+    }
+
+    /// Decrypt a base64 encoded String slice with stored RSA public key
+    /// and return it as plaintext String.
+    ///
+    /// # Arguments
+    ///
+    /// - `encrypted_data`: a String slice with data to decrypt
+    pub fn rsa_public_key_decrypt_str(
+        &self,
+        encrypted_data: &str,
+    ) -> Result<String, Box<dyn Error>> {
+        if self.rsa_public_key.is_none() {
+            return Err("RSA public key is not set!".into());
+        }
+        let raw_data = match Vec::from_base64_encoded(encrypted_data) {
+            Ok(b) => b,
+            Err(e) => {
+                warn!(
+                    "decrypt_str() => could not base64 decode given value: {}",
+                    &e
+                );
+                let box_err: Box<dyn Error> =
+                    "Could not base64 decode given value".to_string().into();
+                return Err(box_err);
+            }
+        };
+
+        let public_key = self.rsa_public_key.as_ref().unwrap();
+        let mut buf: Vec<u8> = vec![0; public_key.size() as usize];
+        match public_key.public_decrypt(&raw_data, &mut buf, Padding::PKCS1) {
+            Err(e) => {
+                info!("Could not rsa decrypt (public key) given value: {}", &e);
+                Err("Could not rsa decrypt given value".into())
+            }
+            Ok(_) => {
+                let decrypted_data = match String::from_utf8(buf) {
+                    Ok(s) => s,
+                    Err(e) => {
+                        info!("Could not convert decrypted data to utf8: {}", &e);
+                        return Err("Could not convert decrypted data to utf8".into());
+                    }
+                };
+                Ok(decrypted_data.trim_matches(char::from(0)).to_string())
             }
         }
     }
@@ -221,7 +270,10 @@ impl RsaKeys {
     /// # Arguments
     ///
     /// - `encrypted_data`: a String slice with data to decrypt
-    pub fn rsa_private_key_decrypt_str(&self, encrypted_data: &str) -> Result<String, Box<dyn Error>> {
+    pub fn rsa_private_key_decrypt_str(
+        &self,
+        encrypted_data: &str,
+    ) -> Result<String, Box<dyn Error>> {
         if self.rsa_private_key.is_none() {
             return Err("RSA private key is not set!".into());
         }
@@ -243,7 +295,7 @@ impl RsaKeys {
         match private_key.private_decrypt(&raw_data, &mut buf, Padding::PKCS1) {
             Err(e) => {
                 info!("Could not rsa decrypt given value: {}", &e);
-                Err("Could not rsa decrypt given value".into())
+                Err("Could not rsa decrypt (private key) given value".into())
             }
             Ok(_) => {
                 let decrypted_data = match String::from_utf8(buf) {
@@ -254,6 +306,36 @@ impl RsaKeys {
                     }
                 };
                 Ok(decrypted_data.trim_matches(char::from(0)).to_string())
+            }
+        }
+    }
+
+    /// Encrypt a String slice with stored RSA private key
+    /// and return it as base64 encoded String.
+    ///
+    /// # Arguments
+    ///
+    /// - `plaintext_data`: a String slice with data to encrypt
+    pub fn rsa_private_key_encrypt_str(
+        &self,
+        plaintext_data: &str,
+    ) -> Result<String, Box<dyn Error>> {
+        if self.rsa_private_key.is_none() {
+            let box_err: Box<dyn Error> = "RSA private key is not set!".to_string().into();
+            return Err(box_err);
+        }
+        let private_key = self.rsa_private_key.as_ref().unwrap();
+        let mut buf: Vec<u8> = vec![0; private_key.size() as usize];
+        match private_key.private_encrypt(plaintext_data.as_bytes(), &mut buf, Padding::PKCS1) {
+            Err(e) => {
+                info!("Could not rsa encrypt (private key) given value: {}", &e);
+                let box_err: Box<dyn Error> =
+                    "Could not rsa encrypt given value".to_string().into();
+                Err(box_err)
+            }
+            Ok(_) => {
+                let base64_encrypted = buf.to_base64_encoded();
+                Ok(base64_encrypted)
             }
         }
     }
