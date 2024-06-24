@@ -13,7 +13,7 @@ fn rsa_functions() {
     let base64_regex = Regex::new(BASE64_REGEX).unwrap();
     const PLAINTEXT: &str = "plaintext";
     // base64 encoded "Not encrypted"
-    const NOT_ENCRYPTED: &str = "Tm90IGVuY3lycHRlZA==";
+    const NOT_ENCRYPTED: &str = "Tm90IGVuY3J5cHRlZA==";
 
     let secure_rsa_passphrase = SecStr::from(RSA_PASSPHRASE);
     let mut rsa_keys = RsaKeys::new();
