@@ -26,7 +26,7 @@ pub fn build_new_encrypted_authentication_cookie(
     domain: &str,
     rsa: &RsaKeys,
 ) -> Cookie<'static> {
-    let encrypted_cookie_value = match rsa.rsa_encrypt_str(cookie_value) {
+    let encrypted_cookie_value = match rsa.rsa_public_key_encrypt_str(cookie_value) {
         Err(_) => String::from("invalid_rsa_cookie"),
         Ok(value) => value,
     };
@@ -163,7 +163,7 @@ pub fn get_plain_cookie_string(transmitted_cookie: &str, rsa: &RsaKeys) -> Strin
     // key otherwise its simply base64 encoded.
     match rsa.rsa_private_key {
         Some(_) => rsa
-            .rsa_decrypt_str(transmitted_cookie)
+            .rsa_private_key_decrypt_str(transmitted_cookie)
             .unwrap_or_else(|_| -> String { "invalid_rsa_cookie_value".to_string() }),
         None => String::from_utf8(
             Vec::from_base64_encoded(transmitted_cookie)

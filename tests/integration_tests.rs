@@ -900,7 +900,7 @@ async fn with_setup() {
 
     let encrypted_cookie_value = {
         let rsa_read_lock = &application_configuration.rsa_keys.read().unwrap();
-        rsa_read_lock.rsa_encrypt_str(&uuid_option.unwrap().to_string())
+        rsa_read_lock.rsa_public_key_encrypt_str(&uuid_option.unwrap().to_string())
     };
     let cookie = format!(
         "{}={}",
@@ -1013,7 +1013,7 @@ async fn with_setup() {
     let encrypted_cookie_value = {
         let rsa_read_lock = &application_configuration.rsa_keys.read().unwrap();
         // de1bf8ab-a9f3-4af6-9183-56f6d7b17ec7 is a random value generated with uuidgen
-        rsa_read_lock.rsa_encrypt_str("de1bf8ab-a9f3-4af6-9183-56f6d7b17ec7")
+        rsa_read_lock.rsa_public_key_encrypt_str("de1bf8ab-a9f3-4af6-9183-56f6d7b17ec7")
     };
     let fake_cookie = format!(
         "{}={}",
@@ -1223,7 +1223,7 @@ async fn with_setup() {
 
     let encrypted_cookie_value = {
         let rsa_read_lock = &application_configuration.rsa_keys.read().unwrap();
-        rsa_read_lock.rsa_encrypt_str(&uuid_option.unwrap().to_string())
+        rsa_read_lock.rsa_public_key_encrypt_str(&uuid_option.unwrap().to_string())
     };
     let cookie = format!(
         "{}={}",

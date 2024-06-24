@@ -95,7 +95,7 @@ impl RsaKeys {
     /// # Arguments
     ///
     /// - `plaintext_data`: a String slice with data to encrypt
-    pub fn rsa_encrypt_str(&self, plaintext_data: &str) -> Result<String, Box<dyn Error>> {
+    pub fn rsa_public_key_encrypt_str(&self, plaintext_data: &str) -> Result<String, Box<dyn Error>> {
         if self.rsa_public_key.is_none() {
             let box_err: Box<dyn Error> = "RSA public key is not set!".to_string().into();
             return Err(box_err);
@@ -221,7 +221,7 @@ impl RsaKeys {
     /// # Arguments
     ///
     /// - `encrypted_data`: a String slice with data to decrypt
-    pub fn rsa_decrypt_str(&self, encrypted_data: &str) -> Result<String, Box<dyn Error>> {
+    pub fn rsa_private_key_decrypt_str(&self, encrypted_data: &str) -> Result<String, Box<dyn Error>> {
         if self.rsa_private_key.is_none() {
             return Err("RSA private key is not set!".into());
         }
@@ -269,7 +269,7 @@ impl RsaKeys {
     #[inline]
     pub fn decrypt_str(&self, encrypted_data: &str) -> Result<String, Box<dyn Error>> {
         if encrypted_data.find('.').is_none() {
-            self.rsa_decrypt_str(encrypted_data)
+            self.rsa_private_key_decrypt_str(encrypted_data)
         } else {
             self.hybrid_decrypt_str(encrypted_data)
         }

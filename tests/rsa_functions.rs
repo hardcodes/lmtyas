@@ -23,8 +23,8 @@ fn rsa_functions() {
         panic!("cannot load rsa keys! {}", &e);
     };
 
-    let rsa_encrytpted = rsa_keys.rsa_encrypt_str(PLAINTEXT);
-    let rsa_encrytpted2 = rsa_keys.rsa_encrypt_str(PLAINTEXT);
+    let rsa_encrytpted = rsa_keys.rsa_public_key_encrypt_str(PLAINTEXT);
+    let rsa_encrytpted2 = rsa_keys.rsa_public_key_encrypt_str(PLAINTEXT);
     let rsa_encrypted_unwrapped = match rsa_encrytpted {
         Ok(r) => r,
         Err(e) => {
@@ -43,7 +43,7 @@ fn rsa_functions() {
         "rsa encrypted data is not converted correctly to base64: {}",
         &rsa_encrypted_unwrapped
     );
-    let decrypted = rsa_keys.rsa_decrypt_str(&rsa_encrypted_unwrapped);
+    let decrypted = rsa_keys.rsa_private_key_decrypt_str(&rsa_encrypted_unwrapped);
     assert_eq!(
         PLAINTEXT,
         decrypted.unwrap(),
