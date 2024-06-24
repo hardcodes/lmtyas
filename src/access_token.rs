@@ -145,15 +145,19 @@ fn get_access_token_payload(req: &HttpRequest) -> Result<ValidatedAccessTokenPay
         let sub = bearer_token.sub.to_string();
 
         let rsa_read_lock = application_configuration.rsa_keys.read().unwrap();
-        if let Ok(decrypted_jti) = rsa_read_lock.rsa_private_key_decrypt_str(&bearer_token.jti) {
-            debug!("decrypted_jti = {}", &decrypted_jti);
-            if decrypted_jti != sub {
-                warn!(
-                    "decrypted token value {} does not match sub value {}",
-                    &decrypted_jti, &sub
-                );
+        let decrypted_jti = match rsa_read_lock.rsa_private_key_decrypt_str(&bearer_token.jti) {
+            Ok(decrypted_jti) => decrypted_jti,
+            Err(e) => {
+                warn!("could not decrypt jti from access token: {}", e);
                 return Err(ErrorForbidden("Invalid access token!"));
             }
+        };
+        if decrypted_jti != sub {
+            warn!(
+                "decrypted token value {} does not match sub value {}",
+                &decrypted_jti, &sub
+            );
+            return Err(ErrorForbidden("Invalid access token!"));
         }
 
         // Only try to read the access token file after validation that the `jti` value matches
