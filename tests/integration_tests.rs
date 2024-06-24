@@ -728,6 +728,24 @@ async fn with_setup() {
         "/api/v1/secret should not work (bad jti)!"
     );
 
+    // decodes to "Not enrypted""
+    const BAD_JTI2: &str = "Tm90IGVuY3J5cHRlZA==";
+    let mut bearer_token_bad = access_token.clone();
+    bearer_token_bad.jti = BAD_JTI2.to_string();
+    let bearer_token_bad_b64 = serde_json::to_string(&bearer_token_bad).unwrap();
+    let request = test::TestRequest::post()
+        .uri("/api/v1/secret")
+        .append_header(("Authorization", format!("Bearer {}", &bearer_token_bad_b64)))
+        .set_payload(json_secret.clone())
+        .peer_addr(IP_ADDRESS.parse().unwrap())
+        .to_request();
+    let result = test::call_service(&test_service, request).await;
+    assert_eq!(
+        result.status(),
+        StatusCode::UNAUTHORIZED,
+        "/api/v1/secret should not work (bad jti)!"
+    );
+
     let mut bearer_token_bad = access_token.clone();
     bearer_token_bad.nbf = 1672527600; // Jan 01 2023
     let bearer_token_bad_b64 = serde_json::to_string(&bearer_token_bad).unwrap();
