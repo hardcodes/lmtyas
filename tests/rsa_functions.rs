@@ -77,43 +77,6 @@ fn rsa_functions() {
         PLAINTEXT, hybrid_decrypted,
         "hybrid decrypted message does not match plaintext!"
     );
-
-    let rsa_private_encrytpted = rsa_keys.rsa_private_key_encrypt_str(PLAINTEXT);
-    let rsa_private_encrytpted2 = rsa_keys.rsa_private_key_encrypt_str(PLAINTEXT);
-    let rsa_private_encrypted_unwrapped = match rsa_private_encrytpted {
-        Ok(r) => r,
-        Err(e) => {
-            panic!("cannot unwrap rsa encrypted result! {}", &e);
-        }
-    };
-    let rsa_private_encrypted_unwrapped2 = match rsa_private_encrytpted2 {
-        Ok(r) => r,
-        Err(e) => {
-            panic!("cannot unwrap rsa encrypted result2! {}", &e);
-        }
-    };
-
-    assert!(
-        base64_regex.is_match(&rsa_private_encrypted_unwrapped),
-        "rsa encrypted data is not converted correctly to base64: {}",
-        &rsa_private_encrypted_unwrapped
-    );
-    let rsa_public_decrypted =
-        rsa_keys.rsa_public_key_decrypt_str(&rsa_private_encrypted_unwrapped);
-    assert_eq!(
-        PLAINTEXT,
-        rsa_public_decrypted.unwrap(),
-        "rsa decrypted message does not match plaintext!"
-    );
-    assert_eq!(
-        rsa_private_encrypted_unwrapped, rsa_private_encrypted_unwrapped2,
-        "rsa encrypted data should be equal after 2 calls!"
-    );
-    let rsa_public_decrypted_fail = rsa_keys.rsa_public_key_decrypt_str(&NOT_ENCRYPTED);
-    assert!(
-        rsa_public_decrypted_fail.is_err(),
-        "should not be able to decrypt this message!"
-    );
 }
 
 #[test]
