@@ -133,7 +133,7 @@ impl RsaKeys {
         &self,
         signed_data: &str,
         signature_b64: &str,
-    ) -> Result<bool, Box<dyn Error>> {
+    ) -> Result<(), Box<dyn Error>> {
         if self.rsa_public_key.is_none() {
             let box_err: Box<dyn Error> = "RSA public key is not set!".to_string().into();
             return Err(box_err);
@@ -175,15 +175,20 @@ impl RsaKeys {
             .into();
             return Err(box_err);
         }
-        match verifier.verify(&signature_bytes) {
-            Ok(validation_result) => Ok(validation_result),
+        let validation_result = match verifier.verify(&signature_bytes) {
+            Ok(validation_result) => validation_result,
             Err(e) => {
                 let box_err: Box<dyn Error> = format!("Could not verify signature: {}", &e)
                     .to_string()
                     .into();
-                Err(box_err)
+                return Err(box_err);
             }
+        };
+        if validation_result {
+            return Ok(());
         }
+        let box_err: Box<dyn Error> = "invalid signature".to_string().into();
+        Err(box_err)
     }
 
     /// Encrypt a String slice with stored RSA public key. The encryption is

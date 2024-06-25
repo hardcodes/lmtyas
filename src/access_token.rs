@@ -145,23 +145,15 @@ fn get_access_token_payload(req: &HttpRequest) -> Result<ValidatedAccessTokenPay
         let sub = bearer_token.sub.to_string();
 
         let rsa_read_lock = application_configuration.rsa_keys.read().unwrap();
-        let jti_signature_verification_result =
-            match rsa_read_lock.rsa_public_key_validate_sha512_signature(&sub, &bearer_token.jti) {
-                Ok(result) => result,
-                Err(e) => {
-                    warn!(
-                        "could not verify signature (jti value) from access token: {}",
-                        e
-                    );
-                    return Err(ErrorForbidden("Invalid access token!"));
-                }
-            };
-        // false = signature validation failed
-        if !jti_signature_verification_result {
-            warn!("signature validation (jti value) from access token failed");
+        if let Err(e) =
+            rsa_read_lock.rsa_public_key_validate_sha512_signature(&sub, &bearer_token.jti)
+        {
+            warn!(
+                "could not verify signature (jti value) from access token: {}",
+                e
+            );
             return Err(ErrorForbidden("Invalid access token!"));
-        }
-
+        };
         // Only try to read the access token file after validation that the `jti` value AKA signature
         // was successfully verified. So that changing the UUID (a.k.a. `sub` value) in the presented
         // access token cannot be used to sniff out possible files.

@@ -95,7 +95,8 @@ fn rsa_functions() {
         .rsa_public_key_validate_sha512_signature(VALID_SIGNED_DATA, VALID_SIGNATURE)
         .unwrap();
     assert_eq!(
-        ok_signature_validation_result, true,
+        ok_signature_validation_result,
+        (),
         "could not verify signature!"
     );
     const INVALID_B64_SIGNATURE: &str = "yada<>[]§$%&";
@@ -108,11 +109,11 @@ fn rsa_functions() {
     );
     // some random uuid
     const INVALID_SIGNED_DATA: &str = "ceb0684f-1baa-4b87-a7c8-648404862d6d";
-    let err_signature_validation_result = rsa_keys
-        .rsa_public_key_validate_sha512_signature(INVALID_SIGNED_DATA, VALID_SIGNATURE)
-        .unwrap();
+    let err_signature_validation_result =
+        rsa_keys.rsa_public_key_validate_sha512_signature(INVALID_SIGNED_DATA, VALID_SIGNATURE);
     assert_eq!(
-        err_signature_validation_result, false,
+        err_signature_validation_result.unwrap_err().to_string(),
+        "invalid signature",
         "signature verification should fail!"
     );
 }
