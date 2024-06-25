@@ -15,7 +15,7 @@ use zeroize::Zeroize;
 
 // min bit size of the modulus (modulus * 8 = rsa key bits)
 const MIN_RSA_MODULUS_SIZE: u32 = 256;
-/// Holds the RSA private and public for
+/// Holds the RSA private and public key for
 /// encryption and decryption
 pub struct RsaKeys {
     // Option<> to construct empty values
