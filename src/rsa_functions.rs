@@ -1,8 +1,11 @@
 use crate::base64_trait::{Base64StringConversions, Base64VecU8Conversions};
 use crate::unsecure_string::SecureStringToUnsecureString;
 use log::{debug, info, warn};
+use openssl::hash::MessageDigest;
+use openssl::pkey::PKey;
 use openssl::rand::rand_bytes;
 use openssl::rsa::{Padding, Rsa};
+use openssl::sign::Verifier;
 use openssl::symm::{decrypt, encrypt, Cipher};
 use secstr::SecStr;
 use serde::Deserialize;
@@ -115,6 +118,70 @@ impl RsaKeys {
             Ok(_) => {
                 let base64_encrypted = buf.to_base64_encoded();
                 Ok(base64_encrypted)
+            }
+        }
+    }
+
+    /// Validate a signature that was created using the corresponding
+    /// rsa private key.
+    ///
+    /// # Arguments
+    ///
+    /// - `signed_data`: a String slice with data that was signed
+    /// - `signature_b64`:  a String slice with the base64 encoded signature
+    pub fn rsa_public_key_validate_sha512_signature(
+        &self,
+        signed_data: &str,
+        signature_b64: &str,
+    ) -> Result<bool, Box<dyn Error>> {
+        if self.rsa_public_key.is_none() {
+            let box_err: Box<dyn Error> = "RSA public key is not set!".to_string().into();
+            return Err(box_err);
+        }
+        let signature_bytes = match Vec::from_base64_encoded(signature_b64) {
+            Ok(bytes) => bytes,
+            Err(e) => {
+                let box_err: Box<dyn Error> = format!("Could not base64 decode signature: {}", &e)
+                    .to_string()
+                    .into();
+                return Err(box_err);
+            }
+        };
+        let public_key = self.rsa_public_key.as_ref().unwrap();
+        let pkey = match PKey::from_rsa(public_key.clone()) {
+            Ok(pkey) => pkey,
+            Err(e) => {
+                let box_err: Box<dyn Error> =
+                    format!("Could not build pkey: {}", &e).to_string().into();
+                return Err(box_err);
+            }
+        };
+        let mut verifier = match Verifier::new(MessageDigest::sha512(), &pkey) {
+            Ok(verifier) => verifier,
+            Err(e) => {
+                let box_err: Box<dyn Error> = format!("Could not build verifier: {}", &e)
+                    .to_string()
+                    .into();
+                return Err(box_err);
+            }
+        };
+        let update_result = verifier.update(signed_data.as_bytes());
+        if update_result.is_err() {
+            let box_err: Box<dyn Error> = format!(
+                "Could not add signed data to verifier: {}",
+                &update_result.unwrap_err()
+            )
+            .to_string()
+            .into();
+            return Err(box_err);
+        }
+        match verifier.verify(&signature_bytes) {
+            Ok(validation_result) => Ok(validation_result),
+            Err(e) => {
+                let box_err: Box<dyn Error> = format!("Could not verify signature: {}", &e)
+                    .to_string()
+                    .into();
+                return Err(box_err);
             }
         }
     }

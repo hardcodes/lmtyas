@@ -77,6 +77,29 @@ fn rsa_functions() {
         PLAINTEXT, hybrid_decrypted,
         "hybrid decrypted message does not match plaintext!"
     );
+
+    // see resources/tests/access_token_files/5ca81a4c-9c04-4c94-a2e7-c8349288445b
+    const VALID_SIGNED_DATA: &str = "5ca81a4c-9c04-4c94-a2e7-c8349288445b";
+    // signature was created in bash:
+    // ```bash
+    // UUID="5ca81a4c-9c04-4c94-a2e7-c8349288445b"
+    // SIG=$(mktemp)
+    // echo -n "${UUID}"|openssl dgst -sha512 -sign resources/tests/rsa/lmtyas_rsa_private.key > "${SIG}"
+    // # Enter pass phrase for resources/tests/rsa/lmtyas_rsa_private.key: 12345678901234
+    // cat "${SIG}"|base64 -w 0 # we would encode it for transport
+    // # wtHWCqUULzycA1q5YgW/W6l3qqFgWhcDhX5EQ+2GfTm9NQdTt8YfBTZjxtstM4/gG0YTfmlKajvkhz95Vo4pHbXPSgWAI0uu3rWIfZf47ApBMt76JvSI75KPC73StTBeRNaXCrXd3yCUsMgqQou/gEnendZgc4c6FU8aQqQQJVkjDZ0Rfswjz0kAPDcn1uiiLo0m6FGglIKQhPFwm6W8bAzbXzKZyXXTUx+l+ew4r/v+fZM4rM3LS4hm4DbY9Q4SD5SHalXAARrxvAcsMINycAQDMt6BZkdUd9gk3tbHiAaS7Bfpp11mIdEiyOhUkRSWA/201mD+qOEVe0g8QPbuYhnlf2t4ZiBlA4JM7M6Wtgjtss5c7fGp7M0jY0xhkMeqxfnKbPlbLDH3nvRTzzs2w/pXBSgceEqheKhEQsVvhj4hVsk9fk0O/DNa4veA5zZSNEm5GoMK6me3wLxABKoHpEZ9Bbp7m7jH4TkX6mpIYi1t/bL0HKsq2Fn0aPj88VkbURkJoer/r24T9YyTEJGamMt+f8nLI68iQ+u9DSRKKvM5zG5JtapYhK/mnB6d7w0h0w7eLqZZLo1X8cUcDxR80OL64Kxg0CndhwbcRabj5/YSZNBKodsc2DDwLujF9PQ9IBVF98K0fYHwMb6VAJY9PDoLPt0LAFiFd2aSA5i6Ja4=
+    // rm -f "${SIG}"
+    // ```
+    const VALID_SIGNATURE: &str = "wtHWCqUULzycA1q5YgW/W6l3qqFgWhcDhX5EQ+2GfTm9NQdTt8YfBTZjxtstM4/gG0YTfmlKajvkhz95Vo4pHbXPSgWAI0uu3rWIfZf47ApBMt76JvSI75KPC73StTBeRNaXCrXd3yCUsMgqQou/gEnendZgc4c6FU8aQqQQJVkjDZ0Rfswjz0kAPDcn1uiiLo0m6FGglIKQhPFwm6W8bAzbXzKZyXXTUx+l+ew4r/v+fZM4rM3LS4hm4DbY9Q4SD5SHalXAARrxvAcsMINycAQDMt6BZkdUd9gk3tbHiAaS7Bfpp11mIdEiyOhUkRSWA/201mD+qOEVe0g8QPbuYhnlf2t4ZiBlA4JM7M6Wtgjtss5c7fGp7M0jY0xhkMeqxfnKbPlbLDH3nvRTzzs2w/pXBSgceEqheKhEQsVvhj4hVsk9fk0O/DNa4veA5zZSNEm5GoMK6me3wLxABKoHpEZ9Bbp7m7jH4TkX6mpIYi1t/bL0HKsq2Fn0aPj88VkbURkJoer/r24T9YyTEJGamMt+f8nLI68iQ+u9DSRKKvM5zG5JtapYhK/mnB6d7w0h0w7eLqZZLo1X8cUcDxR80OL64Kxg0CndhwbcRabj5/YSZNBKodsc2DDwLujF9PQ9IBVF98K0fYHwMb6VAJY9PDoLPt0LAFiFd2aSA5i6Ja4=";
+    let ok_signature_validation_result = rsa_keys.rsa_public_key_validate_sha512_signature(VALID_SIGNED_DATA, VALID_SIGNATURE).unwrap();
+    assert_eq!(ok_signature_validation_result, true, "could not verify signature!");
+    const INVALID_B64_SIGNATURE: &str = "yada<>[]§$%&";
+    let err_signature_validation_result = rsa_keys.rsa_public_key_validate_sha512_signature(VALID_SIGNED_DATA, INVALID_B64_SIGNATURE);
+    assert_eq!(err_signature_validation_result.unwrap_err().to_string(), "Could not base64 decode signature: Invalid byte 38, offset 12.", "signature verification should fail!");
+    // some random uuid
+    const INVALID_SIGNED_DATA: &str = "ceb0684f-1baa-4b87-a7c8-648404862d6d";
+    let err_signature_validation_result = rsa_keys.rsa_public_key_validate_sha512_signature(INVALID_SIGNED_DATA, VALID_SIGNATURE).unwrap();
+    assert_eq!(err_signature_validation_result, false, "signature verification should fail!");
 }
 
 #[test]
