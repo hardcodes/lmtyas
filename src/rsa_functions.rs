@@ -181,7 +181,7 @@ impl RsaKeys {
                 let box_err: Box<dyn Error> = format!("Could not verify signature: {}", &e)
                     .to_string()
                     .into();
-                return Err(box_err);
+                Err(box_err)
             }
         }
     }
