@@ -122,8 +122,8 @@ impl RsaKeys {
         }
     }
 
-    /// Validate a signature that was created using the corresponding
-    /// rsa private key.
+    /// Validate a signature that was created using the
+    /// corresponding rsa private key.
     ///
     /// # Arguments
     ///

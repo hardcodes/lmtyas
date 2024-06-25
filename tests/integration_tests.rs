@@ -664,10 +664,10 @@ async fn with_setup() {
 
     let mut bearer_token_bad = access_token.clone();
     bearer_token_bad.aud = "yada".to_string();
-    let bearer_token_bad_b64 = serde_json::to_string(&bearer_token_bad).unwrap();
+    let bearer_token_bad = serde_json::to_string(&bearer_token_bad).unwrap();
     let request = test::TestRequest::post()
         .uri("/api/v1/secret")
-        .append_header(("Authorization", format!("Bearer {}", &bearer_token_bad_b64)))
+        .append_header(("Authorization", format!("Bearer {}", &bearer_token_bad)))
         .set_payload(json_secret.clone())
         .peer_addr(IP_ADDRESS.parse().unwrap())
         .to_request();
@@ -696,10 +696,10 @@ async fn with_setup() {
 
     let mut bearer_token_bad = access_token.clone();
     bearer_token_bad.jti = "yada".to_string();
-    let bearer_token_bad_b64 = serde_json::to_string(&bearer_token_bad).unwrap();
+    let bearer_token_bad = serde_json::to_string(&bearer_token_bad).unwrap();
     let request = test::TestRequest::post()
         .uri("/api/v1/secret")
-        .append_header(("Authorization", format!("Bearer {}", &bearer_token_bad_b64)))
+        .append_header(("Authorization", format!("Bearer {}", &bearer_token_bad)))
         .set_payload(json_secret.clone())
         .peer_addr(IP_ADDRESS.parse().unwrap())
         .to_request();
@@ -714,10 +714,10 @@ async fn with_setup() {
     const BAD_JTI: &str = "uTDqmTHf2rACPA7ty+wtxLYBJLcVmruDdwfXsmKfoawYrm0j55fD1SX9KTzw2XBquf0wrhjExAI0P5AERtMx4jIAcazbWzY7XvMD6QfRfjonx9km7TDa8d1WrjcpDR2lqZxCkoPUE09UfuynaCc8gCfnoPJQEa9TI3oRzFvtmzvoVFlBucjJxVBwcvlY0aYhwLtxRxX2KDKT3cbkxfASR7FXLVY8SlCfD5UomiIvXF6Z7L+nQnZNNSML0/SlIREzfgRaqoHeBN94mwRyaNP8of0CtzA55zOvNgyV7pXZbGbPvBT4QiN/eHfwIsI9hObZx0SRPWIU97ipSgINBlSB9BE3JBiQFGkY8OonugVhbQ12nNlNNgW14IiLZ3pWpi1YfJr0pvKJL3YznAdN6eOesFd8WnMBlxgtASAuXqhg2qZqfLnNM36jC4wzbq7UXU5i3Vk9PF9QItt2QhZTfS4jdRWLdJxbvMkhszRBLObIR0vRugZY5N8Nh7kSndTZcGgVtkjemrqxSFjRr/4WCAjT5Qry8/4DCs1RRzy8b4MKvF9SNbGM+aFfxOSO+si7rhywwzNRWwMVW0oTCEeBTwNfe2paC16/CwBxMHH3g5/FnHSP5Awl6taPiihCDB6G9g/3B/Py6md4++QtSIs4E+2j6k41QlRezTBPzWBe/IlpWD8=";
     let mut bearer_token_bad = access_token.clone();
     bearer_token_bad.jti = BAD_JTI.to_string();
-    let bearer_token_bad_b64 = serde_json::to_string(&bearer_token_bad).unwrap();
+    let bearer_token_bad = serde_json::to_string(&bearer_token_bad).unwrap();
     let request = test::TestRequest::post()
         .uri("/api/v1/secret")
-        .append_header(("Authorization", format!("Bearer {}", &bearer_token_bad_b64)))
+        .append_header(("Authorization", format!("Bearer {}", &bearer_token_bad)))
         .set_payload(json_secret.clone())
         .peer_addr(IP_ADDRESS.parse().unwrap())
         .to_request();
@@ -748,10 +748,10 @@ async fn with_setup() {
 
     let mut bearer_token_bad = access_token.clone();
     bearer_token_bad.nbf = 1672527600; // Jan 01 2023
-    let bearer_token_bad_b64 = serde_json::to_string(&bearer_token_bad).unwrap();
+    let bearer_token_bad = serde_json::to_string(&bearer_token_bad).unwrap();
     let request = test::TestRequest::post()
         .uri("/api/v1/secret")
-        .append_header(("Authorization", format!("Bearer {}", &bearer_token_bad_b64)))
+        .append_header(("Authorization", format!("Bearer {}", &bearer_token_bad)))
         .set_payload(json_secret.clone())
         .peer_addr(IP_ADDRESS.parse().unwrap())
         .to_request();
@@ -764,10 +764,10 @@ async fn with_setup() {
 
     let mut bearer_token_bad = access_token.clone();
     bearer_token_bad.exp = 4070818800; // Dec 31 2098
-    let bearer_token_bad_b64 = serde_json::to_string(&bearer_token_bad).unwrap();
+    let bearer_token_bad = serde_json::to_string(&bearer_token_bad).unwrap();
     let request = test::TestRequest::post()
         .uri("/api/v1/secret")
-        .append_header(("Authorization", format!("Bearer {}", &bearer_token_bad_b64)))
+        .append_header(("Authorization", format!("Bearer {}", &bearer_token_bad)))
         .set_payload(json_secret.clone())
         .peer_addr(IP_ADDRESS.parse().unwrap())
         .to_request();

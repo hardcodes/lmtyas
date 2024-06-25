@@ -438,78 +438,83 @@ Email Address []:rainer.zufall@lmtyas.home.arpa
 
 ## Security - API Token
 
-**Server side**
+If compiled with the [feature](#compile-and-install---features) *api-access-token* (default), secrets can be sent using any scripting language. An access token is used for authentication in this case.
 
-Execute the following in a Unix shell:
+Two files need to be created for each access token to work:
 
-```bash
-# List of IP addresses from which passwords are to be sent via script.
-# This should be done as sparingly as possible.
-IPADDRESSES='"192.168.42.78","192.168.42.79"'
-# Expiration date of the access token
-ENDDATE=$(date -d "Dec 31 2099" +%s)
-# This e-mail address is entered by the server as the sender of the password
-EMAIL="IT scripting team <do-not-reply@lmtyas.acme.home.arpa>"
-# This is the name of the sender in the email, the {FromDisplayName} field from
-# from the template is replaced here. It should make sense in context of the
-# salutation used in the template.
-DISPLAYNAME="our scriptig team"
+1. **Server side**
 
-# Do not change anything here!
-NOW=$(date +%s)
-UUID=$(uuidgen)
-```
+    The counterpart for the access token is stored on the server and created by executing the following steps in a Unix shell:
 
-In a subsequent step, create the file for the server:
+    ```bash
+    # List of IP addresses from which passwords are to be sent via script.
+    # This should be done as sparingly as possible.
+    IPADDRESSES='"192.168.42.78","192.168.42.79"'
+    # Expiration date of the access token
+    ENDDATE=$(date -d "Dec 31 2099" +%s)
+    # This e-mail address is entered by the server as the sender of the password
+    EMAIL="IT scripting team <do-not-reply@lmtyas.acme.home.arpa>"
+    # This is the name of the sender in the email, the {FromDisplayName} field from
+    # from the template is replaced here. It should make sense in context of the
+    # salutation used in the template.
+    DISPLAYNAME="our scriptig team"
 
-```bash
-cat << __EOF__ > "${UUID}"
-{
-    "ip_adresses": [${IPADDRESSES}],
-    "nbf": ${NOW},
-    "exp": ${ENDDATE},
-    "from_email": "${EMAIL}",
-    "from_display_name": "${DISPLAYNAME}",
-    "iss": "https://127.0.0.1:8844",
-    "aud": "https://127.0.0.1:8844/api/v1/secret"
-}
-__EOF__
-```
+    # Do not change anything here!
+    NOW=$(date +%s)
+    UUID=$(uuidgen)
+    ```
 
-The file generated in this way must be copied to the server to the configured `api_access_files`. Change the owner of the file to to service user, e.g. `lmtyas` and the permissions to `440` (read only).
+    In a subsequent step, create the file for the server:
 
-**NOTE**: `iss` and `aud` are optional and will only be validated if present in the access token file on the server side.
+    ```bash
+    cat << __EOF__ > "${UUID}"
+    {
+        "ip_adresses": [${IPADDRESSES}],
+        "nbf": ${NOW},
+        "exp": ${ENDDATE},
+        "from_email": "${EMAIL}",
+        "from_display_name": "${DISPLAYNAME}",
+        "iss": "https://127.0.0.1:8844",
+        "aud": "https://127.0.0.1:8844/api/v1/secret"
+    }
+    __EOF__
+    ```
 
+    The file generated in this way must be copied to the server to the configured [`api_access_files` directory](#configuration-file). Change the owner of the file to to service user, e.g. `lmtyas` and the permissions to `440` (read only).
 
-**Access token**
+    **NOTE**: `iss` and `aud` are optional and will only be validated if present in the access token file on the server side.
+2. **Access token**
 
-The same values must be used for `NOW` and `ENDDATE` as well as `UUID` that are used in the server file!
+    The same values must be used for `NOW`, `ENDDATE` and as `UUID` like in the server file!
 
-```bash
-# The UUID is encrypted here with the server's RSA public key and encoded in Base64.
-JTI=$(echo -n "${UUID}"|openssl pkeyutl -encrypt -inkey <public rsa key file> -pubin|base64 --wrap 0)
-```
+    ```bash
+    # The UUID is used as input data for RSA signature creation with the RSA private key and encoded in Base64 afterwards.
+    SIG=$(mktemp)
+    echo -n "${UUID}"|openssl dgst -sha512 -sign resources/tests/rsa/lmtyas_rsa_private.key > "${SIG}"
+    JTI=$(cat "${SIG}"|base64 -w 0)
+    [ -f "${SIG}" ] && rm -f "${SIG}
+    ```
 
-Now "generate" the access token:
+    Now "generate" the access token:
 
-```bash
-cat << __EOF__
-{
-    "iss": "https://127.0.0.1:8844",
-    "sub": "${UUID}",
-    "aud": "https://127.0.0.1:8844/api/v1/secret",
-    "nbf": ${NOW},
-    "exp": ${ENDDATE},
-    "jti": "${JTI}"
-}
-__EOF__
-```
+    ```bash
+    cat << __EOF__
+    {
+        "iss": "https://127.0.0.1:8844",
+        "sub": "${UUID}",
+        "aud": "https://127.0.0.1:8844/api/v1/secret",
+        "nbf": ${NOW},
+        "exp": ${ENDDATE},
+        "jti": "${JTI}"
+    }
+    __EOF__
+    ```
 
-The values for `iss` and `aud` do technically not really matter, they are just meant for the user of the access token. so that they know, what the token is used for.
+    The values for `iss` and `aud` do technically not really matter, they are just meant for the user of the access token. so that they know, what the token is used for.
 
-**NOTE**: `iss` and `aud` will be validated if present in the access token file on the server side!
+    **NOTE**: `iss` and `aud` will be validated if present in the access token file on the server side!
 
-You can use this web service to send them the token in a secure way ;-)
+    You can use this web service to send the access token in a secure way ;-)
 
 **Token usage**
 
