@@ -4,7 +4,6 @@ use crate::authentication_middleware::cleanup_authentication_state_hashmap;
 use crate::authentication_oidc::cleanup_oidc_authentication_data_hashmap;
 use crate::configuration::ApplicationConfiguration;
 use crate::TIMER_VEC_CAPACITY;
-use log::info;
 use timer::{Guard, Timer};
 
 const TIMER_INTERVAL_SECONDS: i64 = 5;
@@ -103,6 +102,5 @@ pub fn build_cleaup_timers(application_configuration: &ApplicationConfiguration)
     timer_guards.push(build_cleanup_oidc_authentication_state_hashmap_timer(
         application_configuration,
     ));
-    info!("started {} cleanup timers", TIMER_VEC_CAPACITY);
     TimerGuard(timer_guards)
 }
