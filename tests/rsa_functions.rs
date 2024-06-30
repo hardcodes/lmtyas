@@ -19,17 +19,21 @@ fn rsa_functions() {
     let mut rsa_keys = RsaKeys::new();
     if let Err(e) = rsa_keys.read_from_files(
         Path::new(WORKSPACE_DIR).join("resources/tests/rsa/lmtyas_rsa_private.key"),
-        Path::new(WORKSPACE_DIR).join("resources/tests/rsa/lmtyas_rsa_public.key"),
         &secure_rsa_passphrase,
     ) {
         panic!("cannot load rsa keys! {}", &e);
     };
 
     // Make sure that the derived public key matches the one we created using openssl cli.
-    let rsa_public_key_file = std::fs::read_to_string("resources/tests/rsa/lmtyas_rsa_public.key").unwrap();
+    let rsa_public_key_file =
+        std::fs::read_to_string("resources/tests/rsa/lmtyas_rsa_public.key").unwrap();
     let rsa_private_key = rsa_keys.rsa_private_key.clone().unwrap();
     let rsa_public_key = rsa_private_key.public_key_to_pem().unwrap();
-    assert_eq!(rsa_public_key, rsa_public_key_file.as_bytes(), "public keys should be equal!");
+    assert_eq!(
+        rsa_public_key,
+        rsa_public_key_file.as_bytes(),
+        "public keys should be equal!"
+    );
 
     let rsa_public_encrytpted = rsa_keys.rsa_public_key_encrypt_str(PLAINTEXT);
     let rsa_public_encrytpted2 = rsa_keys.rsa_public_key_encrypt_str(PLAINTEXT);
@@ -136,7 +140,6 @@ fn rsa_functions_hybrid() {
     let mut rsa_keys = RsaKeys::new();
     if let Err(e) = rsa_keys.read_from_files(
         Path::new(WORKSPACE_DIR).join("resources/tests/rsa/lmtyas_rsa_private.key"),
-        Path::new(WORKSPACE_DIR).join("resources/tests/rsa/lmtyas_rsa_public.key"),
         &secure_rsa_passphrase,
     ) {
         panic!("cannot load rsa keys! {}", &e);

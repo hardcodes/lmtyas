@@ -35,7 +35,6 @@ See [lmtyas-config.json](resources/config/lmtyas-config.json) for an example con
 | "ssl_private_key_file"           | path/filename of the SSL private key, e.g. `"resources/tests/ssl/lmtyas/lmtyas-selfsigned.key"`           |
 | "ssl_certificate_chain_file"     | path/filename of the SSL certificate chain, e.g. `"resources/tests/ssl/lmtyas-selfsigned-cert.pem"`       |
 | "rsa_private_key_file"           | path/filename of the RSA private key file, e.g. `"resources/tests/rsa/lmtyas_rsa_private.key"`            |
-| "rsa_public_key_file"            | path/filename of the RSA public key file, e.g. `"resources/tests/rsa/lmtyas_rsa_public.key"`              |
 | "secret_directory"               | path to store the secret files, e.g. `"output/secrets"`                                                   |
 | "email_configuration" : {        | ==> object with email configuration details                                                               |
 |     "mail_server_address"        | name or ip address of mail server, e.g.`"127.0.0.1"`                                                      |
@@ -405,6 +404,8 @@ The keys can be created with the `openssl` command:
     Verifying - Enter pass phrase for lmtyas_encrypt_key:
     ```
 - **RSA public key**
+
+  The RSA public key is derived from the RSA private key internally. If you want to create it manually, enter
 
     ```bash
     openssl rsa -in lmtyas_rsa_private.key -pubout > lmtyas_rsa_public.key

@@ -53,7 +53,6 @@ pub struct ConfigurationFile {
     pub ssl_private_key_file: String,
     pub ssl_certificate_chain_file: String,
     pub rsa_private_key_file: String,
-    pub rsa_public_key_file: String,
     pub secret_directory: String,
     pub email_configuration: SendEMailConfiguration,
     pub admin_accounts: Vec<String>,
@@ -100,12 +99,6 @@ impl ConfigurationFile {
             panic!(
                 "rsa private key file {} does not exist!",
                 &parsed_config.rsa_private_key_file
-            );
-        }
-        if !Path::new(&parsed_config.rsa_public_key_file).exists() {
-            panic!(
-                "rsa public key file {} does not exist!",
-                &parsed_config.rsa_public_key_file
             );
         }
         #[cfg(feature = "ldap-auth")]
@@ -239,7 +232,6 @@ impl ApplicationConfiguration {
             let mut rsa_write_lock = self.rsa_keys.write().unwrap();
             rsa_write_lock.read_from_files(
                 &self.configuration_file.rsa_private_key_file,
-                &self.configuration_file.rsa_public_key_file,
                 rsa_private_key_password,
             )
         } else {

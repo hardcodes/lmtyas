@@ -601,7 +601,6 @@ async fn with_setup() {
         let mut rsa_keys_write_lock = application_configuration.rsa_keys.write().unwrap();
         if let Err(e) = rsa_keys_write_lock.read_from_files(
             Path::new(WORKSPACE_DIR).join("resources/tests/rsa/lmtyas_rsa_private.key"),
-            Path::new(WORKSPACE_DIR).join("resources/tests/rsa/lmtyas_rsa_public.key"),
             &secure_rsa_passphrase,
         ) {
             panic!("cannot load rsa keys! {}", &e);

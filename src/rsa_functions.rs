@@ -59,7 +59,6 @@ impl RsaKeys {
     pub fn read_from_files<P: AsRef<Path>>(
         &mut self,
         rsa_private_key_path: P,
-        rsa_public_key_path: P,
         secure_passphrase: &SecStr,
     ) -> Result<(), Box<dyn Error>> {
         let rsa_private_key_file = std::fs::read_to_string(rsa_private_key_path)?;
@@ -78,8 +77,8 @@ impl RsaKeys {
             }
         };
         unsecure_passphrase.zeroize();
-        let rsa_public_key_file = std::fs::read_to_string(rsa_public_key_path)?;
-        let rsa_public_key = Rsa::public_key_from_pem(rsa_public_key_file.as_bytes())?;
+        let rsa_public_key_pem = rsa_private_key.public_key_to_pem()?;
+        let rsa_public_key = Rsa::public_key_from_pem(&rsa_public_key_pem)?;
         debug!("rsa_public_key.size() = {}", &rsa_public_key.size());
         if rsa_public_key.size() < MIN_RSA_MODULUS_SIZE {
             warn!("modulus is < {} bytes", MIN_RSA_MODULUS_SIZE);
