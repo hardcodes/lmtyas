@@ -44,13 +44,13 @@ impl RsaKeys {
             rsa_public_key: None,
         }
     }
-    /// Loads RSA private and public key from the given paths.
-    /// To load the RSA privte key, the passphrase is needed.
+    /// Loads RSA private key from the given path. To load the
+    /// RSA privte key, the passphrase is needed.
+    /// The RSA public key is derived from the RSA private key.
     ///
     /// # Arguments
     ///
     /// - rsa_private_key_path: Path
-    /// - rsa_public_key_path:  Path
     /// - secure_passphrase:    SecStr
     ///
     /// # Returns
