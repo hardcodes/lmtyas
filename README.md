@@ -402,6 +402,11 @@ The keys can be created with the `openssl` command:
     # (...)
     Enter pass phrase for lmtyas_encrypt_key:
     Verifying - Enter pass phrase for lmtyas_encrypt_key:
+
+    openssl genrsa -out lmtyas_rsa_private_small_modulus.key -aes256 1024
+    # (...)
+    Enter pass phrase for lmtyas_encrypt_key:
+    Verifying - Enter pass phrase for lmtyas_encrypt_key:
     ```
 - **RSA public key**
 

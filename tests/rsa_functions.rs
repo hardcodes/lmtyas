@@ -15,6 +15,25 @@ fn rsa_functions() {
     // base64 encoded "Not encrypted"
     const NOT_ENCRYPTED: &str = "Tm90IGVuY3J5cHRlZA==";
 
+    // try loading a RSA private key with modulus < 256 (2048 bits)
+    let secure_rsa_passphrase = SecStr::from(RSA_PASSPHRASE);
+    let mut rsa_keys = RsaKeys::new();
+    let rsa_load_result = rsa_keys.read_from_files(
+        Path::new(WORKSPACE_DIR).join("resources/tests/rsa/lmtyas_rsa_private_small_modulus.key"),
+        &secure_rsa_passphrase,
+    );
+    assert_eq!(rsa_load_result.unwrap_err().to_string(), "RSA key size too small", "loading private with too small modulus should have failed!");
+
+    // try loading a RSA private key with wrong password
+    let secure_wrong_rsa_passphrase = SecStr::from(PLAINTEXT);
+    let mut rsa_keys = RsaKeys::new();
+    let rsa_load_result = rsa_keys.read_from_files(
+        Path::new(WORKSPACE_DIR).join("resources/tests/rsa/lmtyas_rsa_private.key"),
+        &secure_wrong_rsa_passphrase,
+    );
+    assert_eq!(rsa_load_result.unwrap_err().to_string(), "Cannot load rsa keys!", "loading private with wrong password should fail!");
+
+    // this time loading the RSA private key should work
     let secure_rsa_passphrase = SecStr::from(RSA_PASSPHRASE);
     let mut rsa_keys = RsaKeys::new();
     if let Err(e) = rsa_keys.read_from_files(
