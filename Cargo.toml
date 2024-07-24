@@ -1,7 +1,7 @@
 [package]
 name = "lmtyas"
 description = "let-me-tell-you-a-secret, a web service that allows an authenticated user to send secrets like passwords to other authenticated users in a secure way."
-version = "2.7.4"
+version = "2.7.5"
 edition = "2021"
 authors = ["Sven Putze <github@hardcodes.de>", "Matthias Bläsing"]
 readme = "README.md"
@@ -15,10 +15,10 @@ actix-http = "3"
 actix-web = { version = "4", features=["openssl"] }
 actix-web-httpauth = "0.8"
 async-trait = "0.1.57"
-base64 = "0.21.0"
-chrono = "0.4.0"
+base64 = "0.21.7"
+chrono = "0.4.32"
 clap = "4"
-env_logger = "0.10"
+env_logger = "0.11"
 futures-util = "0.3"
 ldap3 = "0.11"
 lettre = "0.11"
