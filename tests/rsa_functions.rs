@@ -133,7 +133,7 @@ fn rsa_functions() {
         rsa_keys.rsa_public_key_validate_sha512_signature(VALID_SIGNED_DATA, INVALID_B64_SIGNATURE);
     assert_eq!(
         err_signature_validation_result.unwrap_err().to_string(),
-        "Could not base64 decode signature: Invalid byte 38, offset 12.",
+        "Could not base64 decode signature: Invalid symbol 38, offset 12.",
         "signature verification should fail!"
     );
     // some random uuid
