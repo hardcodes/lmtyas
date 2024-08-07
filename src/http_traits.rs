@@ -21,20 +21,6 @@ pub trait CustomHttpResponse {
     /// A shortcut for returning a HttpResponse like
     ///
     /// ```
-    /// use actix_web::HttpResponse;
-    /// fn cumbersome_example() -> HttpResponse{
-    ///   return HttpResponse::Ok()
-    ///   .content_type("application/text")
-    ///   .append_header(("Access-Control-Allow-Origin", "*"))
-    ///   .body("OK: this is fine!");
-    /// }
-    /// ```
-    fn ok_text_response_with_empty_unix_epoch_cookie<B>(body: B) -> actix_web::HttpResponse
-    where
-        B: MessageBody + 'static;
-    /// A shortcut for returning a HttpResponse like
-    ///
-    /// ```
     /// use actix_web::{cookie::Cookie, cookie::time::OffsetDateTime, http, HttpResponse};
     /// use lmtyas::cookie_functions::{COOKIE_NAME, COOKIE_PATH, empty_unix_epoch_cookie};
     /// fn cumbersome_example() -> HttpResponse{
@@ -57,6 +43,20 @@ pub trait CustomHttpResponse {
     ///         empty_unix_epoch_cookie.to_string(),
     ///         ))
     ///         .body("OK: this is fine!")
+    /// }
+    /// ```
+    fn ok_text_response_with_empty_unix_epoch_cookie<B>(body: B) -> actix_web::HttpResponse
+    where
+        B: MessageBody + 'static;
+    /// A shortcut for returning a HttpResponse like
+    ///
+    /// ```
+    /// use actix_web::HttpResponse;
+    /// fn cumbersome_example() -> HttpResponse{
+    ///   return HttpResponse::Ok()
+    ///   .content_type("application/text")
+    ///   .append_header(("Access-Control-Allow-Origin", "*"))
+    ///   .body("OK: this is fine!");
     /// }
     /// ```
     fn ok_text_response<B>(body: B) -> actix_web::HttpResponse
