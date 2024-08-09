@@ -90,7 +90,7 @@ fn build_cleanup_oidc_authentication_state_hashmap_timer(
 
 /// Build a vector of timer guards and timers to
 /// hold on the references until the program ends.
-pub fn build_cleaup_timers(application_configuration: &ApplicationConfiguration) -> TimerGuard {
+pub fn build_cleanup_timers(application_configuration: &ApplicationConfiguration) -> TimerGuard {
     let mut timer_guards: Vec<(Guard, Timer)> = Vec::with_capacity(TIMER_VEC_CAPACITY);
     timer_guards.push(build_cleanup_authentication_state_hashmap_timer(
         application_configuration,

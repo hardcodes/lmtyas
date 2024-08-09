@@ -6,7 +6,7 @@ use lmtyas::authentication_middleware::CheckAuthentication;
 #[cfg(feature = "oidc-auth-ldap")]
 use lmtyas::authentication_oidc::OidcConfiguration;
 use lmtyas::authentication_url;
-use lmtyas::cleanup_timer::build_cleaup_timers;
+use lmtyas::cleanup_timer::build_cleanup_timers;
 use lmtyas::cli_parser::{parse_cli_parameters, ARG_CONFIG_FILE};
 use lmtyas::configuration::ApplicationConfiguration;
 use lmtyas::handler_functions::*;
@@ -51,7 +51,7 @@ async fn main() -> std::io::Result<()> {
     let ssl_acceptor_builder = application_configuration.get_ssl_acceptor_builder();
 
     // build cleanup timers and store references to keep them running
-    let timer_guards = build_cleaup_timers(&application_configuration);
+    let timer_guards = build_cleanup_timers(&application_configuration);
     info!("started {} cleanup timers", timer_guards.len());
 
     // values for the csp-header
