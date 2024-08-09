@@ -76,6 +76,7 @@ pub mod authentication_url {
     pub const AUTH_LOGIN_FAIL_PAGE: &str = "/authentication/login-fail.html";
 }
 
+// capacity of the vector that stores the cleanup timers.
 #[cfg(feature = "oidc-auth-ldap")]
 pub const TIMER_VEC_CAPACITY: usize = 3;
 #[cfg(not(feature = "oidc-auth-ldap"))]
