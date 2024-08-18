@@ -519,8 +519,9 @@ Two files need to be created for each access token to work:
 
     The values for `iss` and `aud` do technically not really matter, they are just meant for the user of the access token. so that they know, what the token is used for.
 
-    **NOTE**: `iss` and `aud` will be validated if present in the access token file on the server side!
-
+    - **NOTE1**: `iss` and `aud` will be validated if present in the access token file on the server side!
+    - **NOTE2**: Change `127.0.0.1:8844` to a valid DNS name/ip address/port combination that makes sense in your environment and matches the server data.
+    
     You can use this web service to send the access token in a secure way ;-)
 
 **Token usage**
