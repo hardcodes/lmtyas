@@ -746,7 +746,7 @@ pub async fn get_sysop_js(_admin: AuthenticatedAdministrator) -> impl Responder 
     NamedFile::open_async("web-content/admin-html/js/sysop.js").await
 }
 
-/// Renew cookie lifetime for the authenticated user by settings the
+/// Renew cookie lifetime for the authenticated user by setting the
 /// current timestamp.
 ///
 /// # Arguments
