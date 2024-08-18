@@ -620,6 +620,63 @@ async fn with_setup() {
         "/api/v1/secret should work now!"
     );
 
+    // try with no Authorization Bearer token header at all
+    let request = test::TestRequest::post()
+        .uri("/api/v1/secret")
+        .set_payload(json_secret.clone())
+        .peer_addr(IP_ADDRESS.parse().unwrap())
+        .to_request();
+    let result = test::call_service(&test_service, request).await;
+    assert_eq!(
+        result.status(),
+        StatusCode::FORBIDDEN,
+        "/api/v1/secret should not work (no Authorization Bearer token header)!"
+    );
+    let body = test::read_body(result).await;
+    assert_eq!(
+        body.try_into_bytes().unwrap(),
+        "No access token found!".as_bytes(),
+        "/api/v1/secret should not work (no Authorization Bearer token header)!"
+    );
+    // try with empty Authorization Bearer token header
+    let request = test::TestRequest::post()
+        .uri("/api/v1/secret")
+        .append_header(("Authorization", ""))
+        .set_payload(json_secret.clone())
+        .peer_addr(IP_ADDRESS.parse().unwrap())
+        .to_request();
+    let result = test::call_service(&test_service, request).await;
+    assert_eq!(
+        result.status(),
+        StatusCode::UNAUTHORIZED,
+        "/api/v1/secret should not work (empty Authorization Bearer token header)!"
+    );
+    let body = test::read_body(result).await;
+    assert_eq!(
+        body.try_into_bytes().unwrap(),
+        "No access token found!".as_bytes(),
+        "/api/v1/secret should not work (empty Authorization Bearer token header)!"
+    );
+    // try with phantasy Authorization Bearer token header
+    let request = test::TestRequest::post()
+        .uri("/api/v1/secret")
+        .append_header(("Authorization", "blablabla"))
+        .set_payload(json_secret.clone())
+        .peer_addr(IP_ADDRESS.parse().unwrap())
+        .to_request();
+    let result = test::call_service(&test_service, request).await;
+    assert_eq!(
+        result.status(),
+        StatusCode::UNAUTHORIZED,
+        "/api/v1/secret should not work (phantasy Authorization Bearer token header)!"
+    );
+    let body = test::read_body(result).await;
+    assert_eq!(
+        body.try_into_bytes().unwrap(),
+        "No access token found!".as_bytes(),
+        "/api/v1/secret should not work (phantasy Authorization Bearer token header)!"
+    );
+
     // not base64 encoded but enough for size checking
     let oversized_bearer_token: String = thread_rng()
         .sample_iter(&Alphanumeric)
