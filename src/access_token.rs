@@ -76,14 +76,14 @@ fn get_access_token_payload(req: &HttpRequest) -> Result<ValidatedAccessTokenPay
     let app_data: Option<&web::Data<ApplicationConfiguration>> = req.app_data();
     if app_data.is_none() {
         // Should not happen!
-        warn!("get_access_token_payload(): app_data is empty(none)!");
+        warn!("get_access_token_payload(): app_data is empty (none)!");
         return Err(ErrorServiceUnavailable(
             "No app_data, configuration missing!",
         ));
     }
     // we checked already, so unwrap() is ok.
     let application_configuration = app_data.unwrap();
-    // Don't accept access tokens when the RSA private is unavailable.
+    // Don't accept access tokens when the RSA private key is unavailable.
     if application_configuration
         .rsa_keys
         .read()
@@ -105,7 +105,7 @@ fn get_access_token_payload(req: &HttpRequest) -> Result<ValidatedAccessTokenPay
         let b64_bearer_token = match header_value.get_bearer_token_value() {
             Some(b64_bearer_token) => b64_bearer_token,
             None => {
-                warn!("Unkown bearer token value!");
+                warn!("No bearer token value found in request!");
                 return Err(ErrorUnauthorized("No access token found!"));
             }
         };
