@@ -488,7 +488,8 @@ Two files need to be created for each access token to work:
 
     The file generated in this way must be copied to the server to the configured [`api_access_files` directory](#configuration-file). Change the owner of the file to to service user, e.g. `lmtyas` and the permissions to `440` (read only).
 
-    **NOTE**: `iss` and `aud` are optional and will only be validated if present in the access token file on the server side.
+    - **NOTE1**: `iss` and `aud` are optional and will only be validated if present in the access token file on the server side.
+    - **NOTE2**: Change `127.0.0.1:8844` to a valid DNS name/ip address/port combination that makes sense in your environment.
 2. **Access token**
 
     The same values must be used for `NOW`, `ENDDATE` and as `UUID` like in the server file!
