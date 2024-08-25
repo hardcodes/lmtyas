@@ -214,7 +214,7 @@ where
     type Future = LocalBoxFuture<'static, Result<Self::Response, Self::Error>>;
 
     /// 2. The middleware's call method gets called with a normal
-    /// request and is the main implementation of the middleware.
+    ///    request and is the main implementation of the middleware.
     fn call(&self, request: ServiceRequest) -> Self::Future {
         debug!("CheckAuthenticationMiddleware, request {:?}", &request);
 
