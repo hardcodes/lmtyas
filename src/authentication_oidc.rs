@@ -509,12 +509,12 @@ impl AuthenticationRedirect for OidcConfiguration {
             "get_authentication_redirect_response() => {}",
             &redirect_url
         );
+        // use the same uuid as in the AuthenticationState, so we can find it later on
+        let uuid = request_uuid.to_owned();
         let mut shared_oidc_verfication_data_write_lock = application_configuration
             .shared_oidc_verification_data
             .write()
             .unwrap();
-        // use the same uuid as in the AuthenticationState, so we can find it later on
-        let uuid = request_uuid.to_owned();
         shared_oidc_verfication_data_write_lock.insert(uuid, verification_data);
         drop(shared_oidc_verfication_data_write_lock);
         HttpResponse::build(StatusCode::FOUND)
