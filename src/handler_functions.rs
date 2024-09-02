@@ -212,17 +212,8 @@ pub async fn is_server_ready(
     }
 }
 
-/// Stores the password for the rsa private key in a
-/// secure string during runtime of the server.
-///
-/// # Arguments
-///
-/// - `path`: tail of the url = password
-/// - `application_configuration`: application configuration
-///
-/// # Returns
-///
-/// - `HttpResponse`
+/// Loads the RSA private key and unlocks it
+/// with the provided password.
 pub async fn set_password_for_rsa_rivate_key(
     admin: AuthenticatedAdministrator,
     base64_encoded_password: web::Path<String>,
