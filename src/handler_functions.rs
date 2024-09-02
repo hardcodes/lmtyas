@@ -21,7 +21,6 @@ use crate::{MAX_FORM_BYTES_LEN, MAX_FORM_INPUT_LEN};
 use actix_files::NamedFile;
 use actix_web::web::Bytes;
 use actix_web::{http::header, http::StatusCode, web, HttpRequest, HttpResponse, Responder};
-use chrono::Utc;
 use log::{debug, info, warn};
 use percent_encoding::{percent_decode_str, utf8_percent_encode, AsciiSet, CONTROLS};
 use secstr::SecStr;
@@ -780,15 +779,14 @@ pub async fn api_store_secret(
     // meta data, like ip address, name and email of the sender.
     // We construct an artificial `AuthenticatedUser` to send the email
     // with the link to the secret.
-    let script_user = AuthenticatedUser {
-        user_name: validated_access_token_payload.sub,
-        first_name: validated_access_token_payload.from_display_name,
-        last_name: "".to_string(),
-        mail: validated_access_token_payload.from_email,
-        time_stamp: Utc::now(),
-        access_scope: AccessScope::ScriptUser,
-        peer_ip: validated_access_token_payload.ip_address,
-    };
+    let script_user = AuthenticatedUser::new(
+        validated_access_token_payload.sub,
+        validated_access_token_payload.from_display_name,
+        "".to_string(),
+        validated_access_token_payload.from_email,
+        AccessScope::ScriptUser,
+        validated_access_token_payload.ip_address,
+    );
     let mut parsed_form_data =
         match parse_and_validate_secret_form_data(&bytes, &application_configuration, &script_user)
             .await

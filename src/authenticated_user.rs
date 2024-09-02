@@ -53,7 +53,7 @@ impl fmt::Display for AuthenticatedUser {
 
 impl AuthenticatedUser {
     /// Creates a new instance with the given user data and current time stamp.
-    fn new<S>(
+    pub fn new<S>(
         user_name: S,
         first_name: S,
         last_name: S,
