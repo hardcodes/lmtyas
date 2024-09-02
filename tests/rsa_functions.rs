@@ -85,7 +85,7 @@ fn rsa_functions() {
         rsa_public_encrypted_unwrapped, rsa_public_encrypted_unwrapped2,
         "rsa encrypted data should not be equal after 2 calls!"
     );
-    let rsa_private_decrypted_fail = rsa_keys.rsa_private_key_decrypt_str(&NOT_ENCRYPTED);
+    let rsa_private_decrypted_fail = rsa_keys.rsa_private_key_decrypt_str(NOT_ENCRYPTED);
     assert!(
         rsa_private_decrypted_fail.is_err(),
         "should not be able to decrypt this message!"
@@ -121,11 +121,9 @@ fn rsa_functions() {
     // ```
     const VALID_SIGNATURE: &str = "wtHWCqUULzycA1q5YgW/W6l3qqFgWhcDhX5EQ+2GfTm9NQdTt8YfBTZjxtstM4/gG0YTfmlKajvkhz95Vo4pHbXPSgWAI0uu3rWIfZf47ApBMt76JvSI75KPC73StTBeRNaXCrXd3yCUsMgqQou/gEnendZgc4c6FU8aQqQQJVkjDZ0Rfswjz0kAPDcn1uiiLo0m6FGglIKQhPFwm6W8bAzbXzKZyXXTUx+l+ew4r/v+fZM4rM3LS4hm4DbY9Q4SD5SHalXAARrxvAcsMINycAQDMt6BZkdUd9gk3tbHiAaS7Bfpp11mIdEiyOhUkRSWA/201mD+qOEVe0g8QPbuYhnlf2t4ZiBlA4JM7M6Wtgjtss5c7fGp7M0jY0xhkMeqxfnKbPlbLDH3nvRTzzs2w/pXBSgceEqheKhEQsVvhj4hVsk9fk0O/DNa4veA5zZSNEm5GoMK6me3wLxABKoHpEZ9Bbp7m7jH4TkX6mpIYi1t/bL0HKsq2Fn0aPj88VkbURkJoer/r24T9YyTEJGamMt+f8nLI68iQ+u9DSRKKvM5zG5JtapYhK/mnB6d7w0h0w7eLqZZLo1X8cUcDxR80OL64Kxg0CndhwbcRabj5/YSZNBKodsc2DDwLujF9PQ9IBVF98K0fYHwMb6VAJY9PDoLPt0LAFiFd2aSA5i6Ja4=";
     let ok_signature_validation_result = rsa_keys
-        .rsa_public_key_validate_sha512_signature(VALID_SIGNED_DATA, VALID_SIGNATURE)
-        .unwrap();
-    assert_eq!(
-        ok_signature_validation_result,
-        (),
+        .rsa_public_key_validate_sha512_signature(VALID_SIGNED_DATA, VALID_SIGNATURE);
+    assert!(
+        ok_signature_validation_result.is_ok(),
         "could not verify signature!"
     );
     const INVALID_B64_SIGNATURE: &str = "yada<>[]§$%&";

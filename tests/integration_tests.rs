@@ -89,7 +89,7 @@ async fn with_setup() {
                 "mail_body",
             );
         assert!(
-            matches!(send_mail_ok, Ok(_)),
+            send_mail_ok.is_ok(),
             "server should be running, why can I not send mails?"
         );
 
@@ -104,7 +104,7 @@ async fn with_setup() {
                 "mail_body",
             );
         assert!(
-            matches!(send_mail_fail2, Err(_)),
+            send_mail_fail2.is_err(),
             "should not be able to send mails with wrong address"
         );
 
@@ -119,7 +119,7 @@ async fn with_setup() {
                 "mail_body",
             );
         assert!(
-            matches!(send_mail_fail3, Err(_)),
+            send_mail_fail3.is_err(),
             "should not be able to send mails with wrong address"
         );
     } // end of mail testing
@@ -167,7 +167,7 @@ async fn with_setup() {
             serde_json::from_str(&user_not_found_by_uid.unwrap().replace(['[', ']'], ""))
                 as Result<LdapSearchResult, _>;
         assert!(
-            matches!(user_not_found_by_uid_result, Err(_)),
+            user_not_found_by_uid_result.is_err(),
             "expected not to find user b0b in ldap server by uid"
         );
 
@@ -212,7 +212,7 @@ async fn with_setup() {
             serde_json::from_str(&user_not_found_by_mail.unwrap().replace(['[', ']'], ""))
                 as Result<LdapSearchResult, _>;
         assert!(
-            matches!(user_not_found_by_mail_result, Err(_)),
+            user_not_found_by_mail_result.is_err(),
             "expected not to find user b0b in ldap server by mail"
         );
     } // end of common ldap testing
