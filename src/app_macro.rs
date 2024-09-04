@@ -109,7 +109,7 @@ macro_rules! app (
                         // the `AuthConfiguration` type is defined by a selected
                         // feature that implements the `Login` trait. This trait
                         // can process posted form data or other means of login
-                        // data, e.g. saml2 oder oidc resonses.
+                        // data, e.g. saml2 or oidc resonses.
                         //
                         // Exclude POST in `Login` trait implementation if needed!
                         web::post().to(<AuthConfiguration as Login>::login_user),
