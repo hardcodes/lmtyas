@@ -1,7 +1,7 @@
 use lmtyas::base64_trait::{Base64StringConversions, Base64VecU8Conversions};
 
-const PLAINTEXT: &str = r#"PASS!"§$%&/()=?ß\´`+*~'#-_.:,;<>|WORD"#;
-const B64: &str = r#"UEFTUyEiwqckJSYvKCk9P8OfXMK0YCsqficjLV8uOiw7PD58V09SRA=="#;
+const PLAINTEXT: &str = r#"PASS^°§$%&/()=?ß\´`+*~'#"-_.:,;<>{}[]öäüÜÄÖáàãÁÀâåæÂÅéèêëÉÈÊËçœŒ|WORD"#;
+const B64: &str = r#"UEFTU17CsMKnJCUmLygpPT/Dn1zCtGArKn4nIyItXy46LDs8Pnt9W13DtsOkw7zDnMOEw5bDocOgw6PDgcOAw6LDpcOmw4LDhcOpw6jDqsOrw4nDiMOKw4vDp8WTxZJ8V09SRA=="#;
 const PLAINTEXT_URLSAFE: &str = r#"subjects?_d=1"#;
 const B64_URLSAFE: &str = r#"c3ViamVjdHM_X2Q9MQ=="#;
 const NO_BASE64: &str = "this is not base64 encoded";
