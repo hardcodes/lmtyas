@@ -692,16 +692,16 @@ pub async fn get_authenticated_user_details(user: AuthenticatedUser) -> HttpResp
 
 /// Validate email address of the receiver before sending the form.
 /// An invalid email address will prevent sending the form.
-/// Return `mail` as result string if the mail could be validated,
-/// else return `crate::UNKOWN_RECEIVER_EMAIL` as result string to
-/// the frontend.
+/// Returns lower case `receiver_email` as result string if the mail
+/// could be validated, else return `crate::UNKOWN_RECEIVER_EMAIL`
+/// as result string to the frontend.
 pub async fn get_validated_receiver_email(
-    path: web::Path<String>,
+    email_path: web::Path<String>,
     user: AuthenticatedUser,
     application_configuration: web::Data<ApplicationConfiguration>,
 ) -> HttpResponse {
     debug!("get_validated_receiver_email()");
-    let email = path.into_inner();
+    let email = email_path.into_inner();
     // Check if that looks like an email address before we query some external data source.
     if !application_configuration.email_regex.is_match(&email) {
         info!(
@@ -738,15 +738,6 @@ pub async fn get_sysop_js(_admin: AuthenticatedAdministrator) -> impl Responder 
 
 /// Renew cookie lifetime for the authenticated user by setting the
 /// current timestamp.
-///
-/// # Arguments
-///
-/// - `req`: `HttpRequest` containing the header with the cookies for authentication
-/// - _user`: `AuthenticatedUser` = make sure a user is logged in
-///
-/// # Returns
-///
-/// - `HttpResponse`
 pub async fn keep_session_alive(req: HttpRequest, _user: AuthenticatedUser) -> HttpResponse {
     update_authenticated_user_cookie_lifetime(&req)
 }
@@ -776,7 +767,7 @@ pub async fn api_store_secret(
 
     // At this point the `AccessTokenPayload` has been validated
     // and is presented as `ValidatedAccessTokenPayload` with extra
-    // meta data, like ip address, name and email of the sender.
+    // meta data, e.g. like ip address, name and email of the sender.
     // We construct an artificial `AuthenticatedUser` to send the email
     // with the link to the secret.
     let script_user = AuthenticatedUser::new(
