@@ -22,7 +22,11 @@ fn rsa_functions() {
         Path::new(WORKSPACE_DIR).join("resources/tests/rsa/lmtyas_rsa_private_small_modulus.key"),
         &secure_rsa_passphrase,
     );
-    assert_eq!(rsa_load_result.unwrap_err().to_string(), "RSA key size too small", "loading private with too small modulus should have failed!");
+    assert_eq!(
+        rsa_load_result.unwrap_err().to_string(),
+        "RSA key size too small",
+        "loading private with too small modulus should have failed!"
+    );
 
     // try loading a RSA private key with wrong password
     let secure_wrong_rsa_passphrase = SecStr::from(PLAINTEXT);
@@ -31,7 +35,11 @@ fn rsa_functions() {
         Path::new(WORKSPACE_DIR).join("resources/tests/rsa/lmtyas_rsa_private.key"),
         &secure_wrong_rsa_passphrase,
     );
-    assert_eq!(rsa_load_result.unwrap_err().to_string(), "Cannot load rsa keys!", "loading private with wrong password should fail!");
+    assert_eq!(
+        rsa_load_result.unwrap_err().to_string(),
+        "Cannot load rsa keys!",
+        "loading private with wrong password should fail!"
+    );
 
     // this time loading the RSA private key should work
     let secure_rsa_passphrase = SecStr::from(RSA_PASSPHRASE);
@@ -120,8 +128,8 @@ fn rsa_functions() {
     // rm -f "${SIG}"
     // ```
     const VALID_SIGNATURE: &str = "wtHWCqUULzycA1q5YgW/W6l3qqFgWhcDhX5EQ+2GfTm9NQdTt8YfBTZjxtstM4/gG0YTfmlKajvkhz95Vo4pHbXPSgWAI0uu3rWIfZf47ApBMt76JvSI75KPC73StTBeRNaXCrXd3yCUsMgqQou/gEnendZgc4c6FU8aQqQQJVkjDZ0Rfswjz0kAPDcn1uiiLo0m6FGglIKQhPFwm6W8bAzbXzKZyXXTUx+l+ew4r/v+fZM4rM3LS4hm4DbY9Q4SD5SHalXAARrxvAcsMINycAQDMt6BZkdUd9gk3tbHiAaS7Bfpp11mIdEiyOhUkRSWA/201mD+qOEVe0g8QPbuYhnlf2t4ZiBlA4JM7M6Wtgjtss5c7fGp7M0jY0xhkMeqxfnKbPlbLDH3nvRTzzs2w/pXBSgceEqheKhEQsVvhj4hVsk9fk0O/DNa4veA5zZSNEm5GoMK6me3wLxABKoHpEZ9Bbp7m7jH4TkX6mpIYi1t/bL0HKsq2Fn0aPj88VkbURkJoer/r24T9YyTEJGamMt+f8nLI68iQ+u9DSRKKvM5zG5JtapYhK/mnB6d7w0h0w7eLqZZLo1X8cUcDxR80OL64Kxg0CndhwbcRabj5/YSZNBKodsc2DDwLujF9PQ9IBVF98K0fYHwMb6VAJY9PDoLPt0LAFiFd2aSA5i6Ja4=";
-    let ok_signature_validation_result = rsa_keys
-        .rsa_public_key_validate_sha512_signature(VALID_SIGNED_DATA, VALID_SIGNATURE);
+    let ok_signature_validation_result =
+        rsa_keys.rsa_public_key_validate_sha512_signature(VALID_SIGNED_DATA, VALID_SIGNATURE);
     assert!(
         ok_signature_validation_result.is_ok(),
         "could not verify signature!"
