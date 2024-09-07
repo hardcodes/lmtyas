@@ -1,17 +1,16 @@
 use log::{debug, info, warn};
 extern crate env_logger;
+use crate::authentication_functions::get_cookie_uuid_from_http_request;
 #[cfg(feature = "ldap-auth")]
 pub use crate::authentication_ldap::LdapCommonConfiguration;
 #[cfg(feature = "oidc-auth-ldap")]
 use crate::authentication_oidc::OidcConfiguration;
 use crate::configuration::ApplicationConfiguration;
-use crate::cookie_functions::{get_plain_cookie_string, COOKIE_NAME};
-use crate::header_value_trait::HeaderValueExctractor;
 use crate::ip_address::IpAdressString;
 use crate::{MAX_AUTHREQUEST_AGE_SECONDS, MAX_COOKIE_AGE_SECONDS};
 #[cfg(any(feature = "ldap-auth", feature = "oidc-auth-ldap"))]
 use actix_web::dev::{forward_ready, Service, ServiceRequest, ServiceResponse, Transform};
-use actix_web::{body::EitherBody, http, http::StatusCode, web, Error, HttpResponse};
+use actix_web::{body::EitherBody, http::StatusCode, web, Error, HttpResponse};
 use chrono::Duration;
 use chrono::{DateTime, Utc};
 use futures_util::future::LocalBoxFuture;
@@ -215,85 +214,90 @@ where
 
     /// 2. The middleware's call method gets called with a normal
     ///    request and is the main implementation of the middleware.
-    fn call(&self, request: ServiceRequest) -> Self::Future {
-        debug!("CheckAuthenticationMiddleware, request {:?}", &request);
+    fn call(&self, service_request: ServiceRequest) -> Self::Future {
+        debug!(
+            "CheckAuthenticationMiddleware, request {:?}",
+            &service_request
+        );
 
-        let application_configuration = request
+        let application_configuration = service_request
             .app_data::<web::Data<ApplicationConfiguration>>()
             .unwrap()
             .clone();
-        let peer_ip = request.get_peer_ip_address();
+        let peer_ip = service_request.get_peer_ip_address();
         // At this point we must decide if a user is already authenticated.
+
+        ////////////////////////////////////////////////////////////////////////////////////////////
         // Yes (cookie) ==> let the user access the requested resources
-        for header_value in request.head().headers().get_all(http::header::COOKIE) {
-            debug!("header_value = {:?}", &header_value);
-            debug!("looking for cookie {}", &COOKIE_NAME);
-            if let Some(cookie) = header_value.get_value_for_cookie_with_name(COOKIE_NAME) {
-                debug!("possible authorization cookie = {}", &cookie);
-                let max_cookie_age_seconds = application_configuration
-                    .configuration_file
-                    .max_cookie_age_seconds;
-                let rsa_read_lock = application_configuration.rsa_keys.read().unwrap();
-                // when the rsa key pair already has been loaded,
-                // the cookie value is encrypted with the rsa public
-                // key otherwise its simply base64 encoded.
-                let plain_cookie = get_plain_cookie_string(&cookie, &rsa_read_lock);
-                if let Ok(parsed_cookie_uuid) = Uuid::parse_str(&plain_cookie) {
-                    if let Some(authenticated_user) = application_configuration
-                        .shared_authenticated_users
-                        .read()
-                        .unwrap()
-                        .authenticated_users_hashmap
-                        .get(&parsed_cookie_uuid)
-                    {
-                        let invalid_cookie_age = Utc::now()
-                            - Duration::try_seconds(max_cookie_age_seconds).unwrap_or_else(|| {
-                                Duration::try_seconds(MAX_COOKIE_AGE_SECONDS).unwrap()
-                            });
-                        // UUID inside cookie as referenced a `AuthenticatedUser`.
-                        if peer_ip.ne(&authenticated_user.peer_ip) {
-                            warn!(
-                                "Cookie stolen? peer_address = {:?}, authenticated_user = {}",
-                                &peer_ip, &authenticated_user
-                            );
-                        // check cookie age
-                        } else if authenticated_user.time_stamp < invalid_cookie_age {
-                            // A browser could hold a cookie that is older than 60 seconds and still valid, e.g. when
-                            // an authenticated user is redirected to the index page. Since the authenticated_user.time_stamp
-                            // is updated every 60 seconds on pages behind routes that require authentication, it should not be
-                            // possible that we see cookies that are older than `max_cookie_age_seconds`.
-                            // A behaving browser would have deleted that cookie at this point.
-                            // Requests with outdated cookies smell fishy!
-                            warn!(
+        ////////////////////////////////////////////////////////////////////////////////////////////
+        if let Some(parsed_cookie_uuid) = get_cookie_uuid_from_http_request(
+            service_request.request(),
+            &application_configuration,
+        ) {
+            if let Some(authenticated_user) = application_configuration
+                .shared_authenticated_users
+                .read()
+                .unwrap()
+                .authenticated_users_hashmap
+                .get(&parsed_cookie_uuid)
+            {
+                let invalid_cookie_age = Utc::now()
+                    - Duration::try_seconds(
+                        application_configuration
+                            .configuration_file
+                            .max_cookie_age_seconds,
+                    )
+                    .unwrap_or_else(|| Duration::try_seconds(MAX_COOKIE_AGE_SECONDS).unwrap());
+                // UUID inside cookie as referenced a `AuthenticatedUser`.
+                if peer_ip.ne(&authenticated_user.peer_ip) {
+                    warn!(
+                        "Cookie stolen? peer_address = {:?}, authenticated_user = {}",
+                        &peer_ip, &authenticated_user
+                    );
+                // check cookie age
+                } else if authenticated_user.time_stamp < invalid_cookie_age {
+                    // A browser could hold a cookie that is older than 60 seconds and still valid, e.g. when
+                    // an authenticated user is redirected to the index page. Since the `authenticated_user.time_stamp`
+                    // is updated every 60 seconds on pages behind routes that require authentication, it should not be
+                    // possible that we see cookies that are older than `max_cookie_age_seconds`.
+                    // A behaving browser would have deleted that cookie at this point.
+                    // Requests with outdated cookies smell fishy!
+                    warn!(
                                 "Cookie older than {} seconds! peer_address = {:?}, authenticated_user = {}",
-                                max_cookie_age_seconds, &peer_ip, &authenticated_user
+                                &application_configuration
+                    .configuration_file
+                    .max_cookie_age_seconds, &peer_ip, &authenticated_user
                             );
-                        } else {
-                            info!("user is already authenticated: {}", &authenticated_user);
+                } else {
+                    info!("user is already authenticated: {}", &authenticated_user);
 
-                            let service_request_future = self.service.call(request);
+                    let service_request_future = self.service.call(service_request);
 
-                            return Box::pin(async move {
-                                service_request_future
-                                    .await
-                                    .map(ServiceResponse::map_into_left_body)
-                            });
-                        }
-                    };
-                    // Some browers show up with expired cookies. Those will fall through
-                    // since there is no `AuthenticatedUser` stored for the decrypted UUID
-                    // left. So it will be handled as if no cookie was present.
+                    return Box::pin(async move {
+                        service_request_future
+                            .await
+                            .map(ServiceResponse::map_into_left_body)
+                    });
                 }
-            }
+            };
+            // Some browers show up with expired cookies. Those will fall through
+            // since there is no `AuthenticatedUser` stored for the decrypted UUID
+            // left. So it will be handled as if no cookie was present.
         }
 
+        ////////////////////////////////////////////////////////////////////////////////////////////
         // No  ==>       redirect to the URI provided by the AuthenticationRedirect trait
         //               implementation.
-        // We use request_uuid as RelayState.
+        //               We use request_uuid as RelayState.
+        ////////////////////////////////////////////////////////////////////////////////////////////
         debug!("no cookie found, user is not authenticated!");
-        let request_path_with_query = match &request.query_string().len() {
-            0 => request.path().to_owned(),
-            _ => format!("{}?{}", &request.path(), &request.query_string()),
+        let request_path_with_query = match &service_request.query_string().len() {
+            0 => service_request.path().to_owned(),
+            _ => format!(
+                "{}?{}",
+                &service_request.path(),
+                &service_request.query_string()
+            ),
         };
         debug!("storing request before redirecting...");
         if let Some(request_uuid) = &application_configuration
@@ -314,7 +318,7 @@ where
                     );
             // redirect browser to the given URI
             return Box::pin(async {
-                Ok(request
+                Ok(service_request
                     .into_response(redirect_service_response)
                     .map_into_right_body())
             });
@@ -322,7 +326,11 @@ where
         // no UUID was generated = too many requests
         debug!("no uuid, returning server busy");
         let busy_response = HttpResponse::build(StatusCode::TOO_MANY_REQUESTS).finish();
-        Box::pin(async { Ok(request.into_response(busy_response).map_into_right_body()) })
+        Box::pin(async {
+            Ok(service_request
+                .into_response(busy_response)
+                .map_into_right_body())
+        })
     }
 
     forward_ready!(service);
