@@ -103,13 +103,13 @@ macro_rules! app (
             .service(
                 web::scope("authentication")
                     .route(
-                        // the `const AUTH_ROUTE` selects the route
+                        // The const `AUTH_ROUTE` selects the route
                         // where the authentication is processed.
                         authentication_url::AUTH_ROUTE,
-                        // the `AuthConfiguration` type is defined by a selected
+                        // The `AuthConfiguration` type is defined by a selected
                         // feature that implements the `Login` trait. This trait
                         // can process posted form data or other means of login
-                        // data, e.g. saml2 or oidc resonses.
+                        // data, e.g. saml2 or oidc responses.
                         //
                         // Exclude POST in `Login` trait implementation if needed!
                         web::post().to(<AuthConfiguration as Login>::login_user),
@@ -120,7 +120,7 @@ macro_rules! app (
                         // Exclude GET in `Login` trait implementation if needed!
                         web::get().to(<AuthConfiguration as Login>::login_user),
                     )
-                    // the `const AUTH_PATH` and `const AUTH_INDEX_PAGE`
+                    // The const `AUTH_PATH` and const `AUTH_INDEX_PAGE`
                     // are defined by a selected authentication feature that
                     // points to a possible login or index page.
                     .service(
