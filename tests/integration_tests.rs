@@ -431,7 +431,7 @@ async fn with_setup() {
     assert_eq!(
         result.response().headers().get(header::LOCATION),
         Some(&header::HeaderValue::from_static(
-            "https://127.0.0.1:8844/index.html"
+            "/index.html"
         )),
         "Location header should point to index.html!"
     );

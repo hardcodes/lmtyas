@@ -41,17 +41,10 @@ type UserDataImpl = GetUserDataLdapBackend;
 const FRAGMENT: &AsciiSet = &CONTROLS.add(b'/').add(b'=');
 
 /// Redirect browser to our index page.
-pub async fn redirect_to_index(
-    application_configuration: web::Data<ApplicationConfiguration>,
-) -> HttpResponse {
-    // url of our index page
-    let index_url = format!(
-        "https://{}/index.html",
-        &application_configuration.configuration_file.fqdn
-    );
-    debug!("redirecting to index_url = {}", &index_url);
+pub async fn redirect_to_index() -> HttpResponse {
+    debug!("redirecting to /index.html");
     let response = HttpResponse::build(StatusCode::SEE_OTHER)
-        .append_header((header::LOCATION, index_url))
+        .append_header((header::LOCATION, "/index.html".to_string()))
         .append_header(("Access-Control-Allow-Origin", "*"))
         .finish();
     response
