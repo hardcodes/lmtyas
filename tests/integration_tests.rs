@@ -3,7 +3,7 @@ mod common;
 use actix_files::Files;
 use actix_http::StatusCode;
 use actix_web::body::MessageBody;
-use actix_web::{guard, middleware, test, web, App, HttpResponse};
+use actix_web::{guard, http::header, middleware, test, web, App, HttpResponse};
 use common::SETUP_SINGLETON;
 #[cfg(feature = "ldap-auth")]
 use lmtyas::authentication_ldap::LdapCommonConfiguration;
@@ -405,12 +405,35 @@ async fn with_setup() {
         "/custom/privacy.html should be 302!"
     );
 
+    let index_file = Path::new(common::WORKSPACE_DIR).join("web-content/static/index.html");
+    if !index_file.exists() {
+        panic!("file does not exist: {}", index_file.to_string_lossy());
+    }
+    let index_file_content = std::fs::read_to_string(index_file).unwrap();
     let request = test::TestRequest::get().uri("/index.html").to_request();
     let result = test::call_service(&test_service, request).await;
+
     assert_eq!(
         result.status(),
         StatusCode::OK,
         "/index.html should be 200!"
+    );
+    let body = test::read_body(result).await;
+    assert_eq!(
+        body.try_into_bytes().unwrap(),
+        index_file_content.as_bytes(),
+        "should return body of index.html!"
+    );
+
+    let request = test::TestRequest::get().uri("/").to_request();
+    let result = test::call_service(&test_service, request).await;
+    assert_eq!(result.status(), StatusCode::SEE_OTHER, "/ should be 303!");
+    assert_eq!(
+        result.response().headers().get(header::LOCATION),
+        Some(&header::HeaderValue::from_static(
+            "https://127.0.0.1:8844/index.html"
+        )),
+        "Location header should point to index.html!"
     );
 
     let request = test::TestRequest::get().uri("/random.html").to_request();
