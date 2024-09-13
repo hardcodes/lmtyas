@@ -230,10 +230,9 @@ where
         ////////////////////////////////////////////////////////////////////////////////////////////
         // Yes (cookie) ==> let the user access the requested resources
         ////////////////////////////////////////////////////////////////////////////////////////////
-        if let Some(parsed_cookie_uuid) = get_cookie_uuid_from_http_request(
-            service_request.request(),
-            &application_configuration,
-        ) {
+        if let Some(parsed_cookie_uuid) =
+            get_cookie_uuid_from_http_request(service_request.request(), &application_configuration)
+        {
             if let Some(authenticated_user) = application_configuration
                 .shared_authenticated_users
                 .read()
