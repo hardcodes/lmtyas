@@ -11,7 +11,7 @@ use crate::ldap_common::LdapCommonConfiguration;
 #[cfg(any(feature = "ldap-auth", feature = "authentication-oidc"))]
 use crate::login_user_trait::Login;
 use crate::mail_configuration::SendEMailConfiguration;
-use crate::rsa_functions::{RsaKeys, RsaPrivateKeyPassword};
+use crate::rsa_functions::RsaKeys;
 use crate::secret_functions::SharedSecretData;
 #[cfg(feature = "authentication-oidc")]
 use log::info;
@@ -116,8 +116,6 @@ impl ConfigurationFile {
 #[derive(Clone)]
 pub struct ApplicationConfiguration {
     pub configuration_file: ConfigurationFile,
-    /// password for rsa private key
-    pub rsa_password: Arc<RwLock<RsaPrivateKeyPassword>>,
     // RSA keys
     pub rsa_keys: Arc<RwLock<RsaKeys>>,
     // SharedSecret (context for creating uuids)
@@ -184,9 +182,6 @@ impl ApplicationConfiguration {
         .expect("Cannot load oidc provider metadata");
         ApplicationConfiguration {
             configuration_file: config_file.clone(),
-            rsa_password: Arc::new(RwLock::new(RsaPrivateKeyPassword {
-                rsa_private_key_password: None,
-            })),
             rsa_keys: Arc::new(RwLock::new(RsaKeys::new())),
             shared_secret: Arc::new(RwLock::new(SharedSecretData::new())),
             shared_authenticated_users: Arc::new(RwLock::new(
@@ -223,28 +218,13 @@ impl ApplicationConfiguration {
 
     /// Reads the RSA key files which are referenced in the configuration file
     ///
-    /// If the files are not to be found or cannot be read, the function will
+    /// If the files are not to be found or cannot be unlocked, the function will
     /// return a boxed error.
-    pub fn load_rsa_keys(&self) -> Result<(), Box<dyn Error>> {
-        if let Some(rsa_private_key_password) =
-            &self.rsa_password.read().unwrap().rsa_private_key_password
-        {
-            let mut rsa_write_lock = self.rsa_keys.write().unwrap();
-            rsa_write_lock.read_from_files(
-                &self.configuration_file.rsa_private_key_file,
-                rsa_private_key_password,
-            )
-        } else {
-            const RSA_PASSWORD_NOT_SET: &str = "Password not set, inform system administrator";
-            let boxed_error = Box::<dyn Error + Send + Sync>::from(RSA_PASSWORD_NOT_SET);
-            Err(boxed_error)
-        }
-    }
-
-    /// Clears the passsword for the RSA key files which are referenced in the configuration file
-    pub fn clear_rsa_password(&self) -> Result<(), Box<dyn Error>> {
-        self.rsa_password.write().unwrap().rsa_private_key_password = None;
-        Ok(())
+    pub fn load_rsa_keys(&self, rsa_private_key_password: &str) -> Result<(), Box<dyn Error>> {
+        self.rsa_keys.write().unwrap().read_from_files(
+            &self.configuration_file.rsa_private_key_file,
+            rsa_private_key_password,
+        )
     }
 
     /// Build the `SslAcceptorBuilder` for HTTPS connections

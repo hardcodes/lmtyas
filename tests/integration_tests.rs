@@ -30,7 +30,6 @@ use lmtyas::MAX_BEARER_TOKEN_LEN;
 use lmtyas::MAX_FORM_BYTES_LEN;
 use rand::distributions::Alphanumeric;
 use rand::{thread_rng, Rng};
-use secstr::SecStr;
 use std::fs::File;
 use std::io::BufReader;
 use std::path::Path;
@@ -430,9 +429,7 @@ async fn with_setup() {
     assert_eq!(result.status(), StatusCode::SEE_OTHER, "/ should be 303!");
     assert_eq!(
         result.response().headers().get(header::LOCATION),
-        Some(&header::HeaderValue::from_static(
-            "/index.html"
-        )),
+        Some(&header::HeaderValue::from_static("/index.html")),
         "Location header should point to index.html!"
     );
 
@@ -619,12 +616,11 @@ async fn with_setup() {
     );
 
     const RSA_PASSPHRASE: &str = "12345678901234";
-    let secure_rsa_passphrase = SecStr::from(RSA_PASSPHRASE);
     {
         let mut rsa_keys_write_lock = application_configuration.rsa_keys.write().unwrap();
         if let Err(e) = rsa_keys_write_lock.read_from_files(
             Path::new(WORKSPACE_DIR).join("resources/tests/rsa/lmtyas_rsa_private.key"),
-            &secure_rsa_passphrase,
+            RSA_PASSPHRASE,
         ) {
             panic!("cannot load rsa keys! {}", &e);
         };

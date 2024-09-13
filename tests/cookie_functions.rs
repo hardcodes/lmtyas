@@ -5,7 +5,6 @@ use lmtyas::cookie_functions::{
     COOKIE_PATH,
 };
 use lmtyas::rsa_functions::RsaKeys;
-use secstr::SecStr;
 use std::path::Path;
 
 const WORKSPACE_DIR: &str = env!("CARGO_MANIFEST_DIR");
@@ -49,10 +48,9 @@ fn cookie_functions() {
         "cannot build base64 encoded cookie!"
     );
 
-    let secure_rsa_passphrase = SecStr::from(RSA_PASSPHRASE);
     if let Err(e) = rsa_keys.read_from_files(
         Path::new(WORKSPACE_DIR).join("resources/tests/rsa/lmtyas_rsa_private.key"),
-        &secure_rsa_passphrase,
+        RSA_PASSPHRASE,
     ) {
         panic!("cannot load rsa keys! {}", &e);
     };

@@ -23,7 +23,6 @@ use actix_web::web::Bytes;
 use actix_web::{http::header, http::StatusCode, web, HttpRequest, HttpResponse, Responder};
 use log::{debug, info, warn};
 use percent_encoding::{percent_decode_str, utf8_percent_encode, AsciiSet, CONTROLS};
-use secstr::SecStr;
 use serde::{Deserialize, Serialize};
 use std::fs::read_to_string;
 use std::fs::remove_file;
@@ -208,7 +207,7 @@ pub async fn is_server_ready(
 /// with the provided password.
 pub async fn set_password_for_rsa_rivate_key(
     admin: AuthenticatedAdministrator,
-    base64_encoded_password: web::Path<String>,
+    mut base64_encoded_password: web::Path<String>,
     application_configuration: web::Data<ApplicationConfiguration>,
 ) -> HttpResponse {
     if base64_encoded_password.len() > MAX_FORM_BYTES_LEN {
@@ -228,11 +227,12 @@ pub async fn set_password_for_rsa_rivate_key(
     let base64_decoded_password = match Vec::from_base64_encoded(base64_encoded_password.as_str()) {
         Ok(v) => v,
         Err(e) => {
+            base64_encoded_password.zeroize();
             warn!("Cannot decode base64 rsa password: {}, {}", &e, &admin);
             return HttpResponse::err_text_response("ERROR: password was not set");
         }
     };
-
+    base64_encoded_password.zeroize();
     let mut decoded_password = match String::from_utf8(base64_decoded_password) {
         Ok(password) => password.trim_matches(char::from(0)).to_string(),
         Err(e) => {
@@ -240,37 +240,18 @@ pub async fn set_password_for_rsa_rivate_key(
             return HttpResponse::err_text_response("ERROR: password was not set");
         }
     };
-    debug!("new rsa password = {}", &decoded_password);
-    if decoded_password.len() > MAX_FORM_INPUT_LEN {
-        warn!("password > {} chars {}", MAX_FORM_INPUT_LEN, &admin);
-        return HttpResponse::err_text_response(format!(
-            "ERROR: password > {} chars",
-            MAX_FORM_INPUT_LEN
-        ));
-    }
-    if let Ok(mut rsa_password_write_lock) = application_configuration.rsa_password.write() {
-        rsa_password_write_lock.rsa_private_key_password = Some(SecStr::from(decoded_password));
-    } else {
-        decoded_password.zeroize();
-        warn!("can not acquire a lock on system data! {}", &admin);
-        return HttpResponse::err_text_response("ERROR: can not acquire a lock on system data!");
-    }
-    // the lock must be removed at this point because
-    // application_configuration.load_rsa_keys()
-    // will quire a lock on itself. If we don't remove the
-    // lock here, we will never return...
     info!("password has been set, loading rsa keys... {}", &admin);
-    match application_configuration.load_rsa_keys() {
+    match application_configuration.load_rsa_keys(&decoded_password) {
         Err(e) => {
             // loading the rsa keys did not work, throw the password away
-            let _result = application_configuration.clear_rsa_password();
+            decoded_password.zeroize();
             warn!("error loading rsa private key: {:?}, {}", e, admin);
             HttpResponse::err_text_response("ERROR: could not load rsa private key!")
         }
         Ok(_) => {
             info!("rsa keys have been loaded successfully {}", &admin);
             // Clear the password now, since the rsa keys have been loaded.
-            let _result = application_configuration.clear_rsa_password();
+            decoded_password.zeroize();
             // Delete cookie after rsa password has been set because it
             // is not enrypted yet.
             HttpResponse::ok_text_response_with_empty_unix_epoch_cookie("OK")

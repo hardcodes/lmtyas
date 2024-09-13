@@ -1,5 +1,4 @@
 use crate::base64_trait::{Base64StringConversions, Base64VecU8Conversions};
-use crate::unsecure_string::SecureStringToUnsecureString;
 use log::{debug, info, warn};
 use openssl::hash::MessageDigest;
 use openssl::pkey::PKey;
@@ -7,11 +6,8 @@ use openssl::rand::rand_bytes;
 use openssl::rsa::{Padding, Rsa};
 use openssl::sign::Verifier;
 use openssl::symm::{decrypt, encrypt, Cipher};
-use secstr::SecStr;
-use serde::Deserialize;
 use std::error::Error;
 use std::path::Path;
-use zeroize::Zeroize;
 
 // min bit size of the modulus (modulus * 8 = rsa key bits)
 const MIN_RSA_MODULUS_SIZE: u32 = 256;
@@ -56,27 +52,25 @@ impl RsaKeys {
     /// # Returns
     ///
     /// - Result<RsaKeys, Box<dyn Error>>
+    #[inline(always)]
     pub fn read_from_files<P: AsRef<Path>>(
         &mut self,
         rsa_private_key_path: P,
-        secure_passphrase: &SecStr,
+        rsa_private_key_password: &str,
     ) -> Result<(), Box<dyn Error>> {
         let rsa_private_key_file = std::fs::read_to_string(rsa_private_key_path)?;
-        let mut unsecure_passphrase = secure_passphrase.to_unsecure_string();
         let rsa_private_key = match Rsa::private_key_from_pem_passphrase(
             rsa_private_key_file.as_bytes(),
-            unsecure_passphrase.as_bytes(),
+            rsa_private_key_password.as_bytes(),
         ) {
             Ok(p) => p,
             Err(e) => {
-                unsecure_passphrase.zeroize();
                 warn!("cannot load rsa private key: {}", e);
                 const RSA_CANNOT_LOAD_KEY: &str = "Cannot load rsa keys!";
                 let boxed_error = Box::<dyn Error + Send + Sync>::from(RSA_CANNOT_LOAD_KEY);
                 return Err(boxed_error);
             }
         };
-        unsecure_passphrase.zeroize();
         let rsa_public_key_pem = rsa_private_key.public_key_to_pem()?;
         let rsa_public_key = Rsa::public_key_from_pem(&rsa_public_key_pem)?;
         debug!("rsa_public_key.size() = {}", &rsa_public_key.size());
@@ -351,11 +345,4 @@ impl RsaKeys {
             self.hybrid_decrypt_str(encrypted_data)
         }
     }
-}
-
-/// Holds the password for the RSA private key
-/// that encrypts secrets and links.
-#[derive(Clone, Deserialize, Debug)]
-pub struct RsaPrivateKeyPassword {
-    pub rsa_private_key_password: Option<SecStr>,
 }
