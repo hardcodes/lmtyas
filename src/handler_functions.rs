@@ -317,6 +317,9 @@ fn get_base64_encoded_secret_len(parsed_secret: &str) -> usize {
 
 /// Parses and validates secret form data, so that it can be used from
 /// multpile functions.
+/// This function is async because we call
+/// `<UserDataImpl as GetUserData>::get_receiver_display_name`
+/// which queries an external server.
 async fn parse_and_validate_secret_form_data(
     bytes: &Bytes,
     application_configuration: &web::Data<ApplicationConfiguration>,
