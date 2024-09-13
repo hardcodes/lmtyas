@@ -726,7 +726,7 @@ pub async fn keep_session_alive(req: HttpRequest, _user: AuthenticatedUser) -> H
 pub async fn not_found_404() -> HttpResponse {
     let file_path = Path::new("web-content/static/404.html");
     let file_content =
-        read_to_string(file_path).unwrap_or_else(|_| -> String { "404 not found".to_string() });
+        read_to_string(file_path).unwrap_or_else(|_| -> String { "404 not found".into() });
     HttpResponse::build(StatusCode::NOT_FOUND)
         .content_type("text/html; charset=UTF-8")
         .body(file_content)
