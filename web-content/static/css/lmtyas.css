@@ -374,3 +374,8 @@ button:enabled{
     margin: auto;
     width: 55%;
 }
+
+.lmtyas-emphasize {
+    font-weight: bold;
+    display:inline-block;
+}
