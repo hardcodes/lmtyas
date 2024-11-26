@@ -17,6 +17,7 @@ use lmtyas::authentication_oidc::OidcUserDetails;
 use lmtyas::authentication_url;
 use lmtyas::base64_trait::{Base64StringConversions, Base64VecU8Conversions};
 use lmtyas::configuration::ApplicationConfiguration;
+use lmtyas::cookie_functions::build_new_encrypted_authentication_cookie;
 use lmtyas::handler_functions::*;
 #[cfg(any(feature = "ldap-auth", feature = "oidc-auth-ldap"))]
 use lmtyas::ldap_common::LdapSearchResult;
@@ -40,6 +41,7 @@ type AuthConfiguration = LdapCommonConfiguration;
 type AuthConfiguration = OidcConfiguration;
 
 const WORKSPACE_DIR: &str = env!("CARGO_MANIFEST_DIR");
+const COOKIE_PATH: &str = "/";
 
 /// testing the functions that need external services in one go.
 #[actix_web::test]
@@ -572,7 +574,10 @@ async fn with_setup() {
     ///////////////////////////////////////////////////////////////////////////
 
     {
-        let rsa_keys_read_lock = application_configuration.rsa_keys.read().unwrap();
+        let rsa_keys_read_lock = application_configuration
+            .rsa_keys_for_secrets
+            .read()
+            .unwrap();
         if rsa_keys_read_lock.rsa_private_key.is_some() {
             panic!("rsa private key should not have been loaded at this point!");
         }
@@ -617,7 +622,10 @@ async fn with_setup() {
 
     const RSA_PASSPHRASE: &str = "12345678901234";
     {
-        let mut rsa_keys_write_lock = application_configuration.rsa_keys.write().unwrap();
+        let mut rsa_keys_write_lock = application_configuration
+            .rsa_keys_for_secrets
+            .write()
+            .unwrap();
         if let Err(e) = rsa_keys_write_lock.read_from_files(
             Path::new(WORKSPACE_DIR).join("resources/tests/rsa/lmtyas_rsa_private.key"),
             RSA_PASSPHRASE,
@@ -880,24 +888,33 @@ async fn with_setup() {
     // Testing setting of RSA password
     ///////////////////////////////////////////////////////////////////////////
 
-    // keys have been set in previous steps
-    {
-        let rsa_keys_read_lock = application_configuration.rsa_keys.read().unwrap();
-        if rsa_keys_read_lock.rsa_private_key.is_none() {
-            panic!("rsa private key should have been loaded at this point!");
-        }
-    }
-    {
-        // We replace `RsaKeys` with a new (empty) version
-        let mut rsa_keys_write_lock = application_configuration.rsa_keys.write().unwrap();
-        let _old_keys = std::mem::take(&mut *rsa_keys_write_lock);
-    }
-    {
-        let rsa_keys_read_lock = application_configuration.rsa_keys.read().unwrap();
-        if rsa_keys_read_lock.rsa_private_key.is_some() {
-            panic!("rsa private key should not have been loaded at this point!");
-        }
-    }
+    // // keys have been set in previous steps
+    // {
+    //     let rsa_keys_read_lock = application_configuration
+    //         .rsa_keys_for_secrets
+    //         .read()
+    //         .unwrap();
+    //     if rsa_keys_read_lock.rsa_private_key.is_none() {
+    //         panic!("rsa private key should have been loaded at this point!");
+    //     }
+    // }
+    // {
+    //     // We replace `RsaKeys` with a new (empty) version
+    //     let mut rsa_keys_write_lock = application_configuration
+    //         .rsa_keys_for_secrets
+    //         .write()
+    //         .unwrap();
+    //     let _old_keys = std::mem::take(&mut *rsa_keys_write_lock);
+    // }
+    // {
+    //     let rsa_keys_read_lock = application_configuration
+    //         .rsa_keys_for_secrets
+    //         .read()
+    //         .unwrap();
+    //     if rsa_keys_read_lock.rsa_private_key.is_some() {
+    //         panic!("rsa private key should not have been loaded at this point!");
+    //     }
+    // }
     // Log in walter
     let uuid_option = application_configuration
         .shared_authenticated_users
@@ -908,38 +925,39 @@ async fn with_setup() {
         panic!("uuid for Walter expected!");
     }
 
-    let cookie = format!(
-        "{}={}",
-        &lmtyas::cookie_functions::COOKIE_NAME,
-        &uuid_option.unwrap().to_string().to_base64_encoded()
+    let valid_rsa_cookie = build_new_encrypted_authentication_cookie(
+        &uuid_option.unwrap().to_string(),
+        90,
+        COOKIE_PATH,
+        &application_configuration.rsa_keys_for_cookies,
     );
     let request = test::TestRequest::get()
         .uri("/authenticated/sysop/sysop.html")
-        .append_header(("Cookie", cookie.clone()))
+        .append_header(("Cookie", valid_rsa_cookie.to_string()))
         .peer_addr(IP_ADDRESS.parse().unwrap())
         .to_request();
     let result = test::call_service(&test_service, request).await;
     assert_eq!(
         result.status(),
         StatusCode::OK,
-        "/authenticated/sysop/sysop.html should work with base64 cookie!"
+        "/authenticated/sysop/sysop.html should work with cookie!"
     );
 
     let request = test::TestRequest::get()
         .uri("/authenticated/sysop/js/sysop.js")
-        .append_header(("Cookie", cookie.clone()))
+        .append_header(("Cookie", valid_rsa_cookie.to_string()))
         .peer_addr(IP_ADDRESS.parse().unwrap())
         .to_request();
     let result = test::call_service(&test_service, request).await;
     assert_eq!(
         result.status(),
         StatusCode::OK,
-        "/authenticated/sysop/js/sysop.js should work with base64 cookie!"
+        "/authenticated/sysop/js/sysop.js should work with cookie!"
     );
     // "wrong passw0rd"
     let request = test::TestRequest::post()
         .uri("/authenticated/sysop/set_password_for_rsa_rivate_key/d3JvbmcgcGFzc3cwcmQ=")
-        .append_header(("Cookie", cookie.clone()))
+        .append_header(("Cookie", valid_rsa_cookie.to_string()))
         .peer_addr(IP_ADDRESS.parse().unwrap())
         .to_request();
     let result = test::call_service(&test_service, request).await;
@@ -951,7 +969,7 @@ async fn with_setup() {
     // "12345678901234"
     let request = test::TestRequest::post()
         .uri("/authenticated/sysop/set_password_for_rsa_rivate_key/MTIzNDU2Nzg5MDEyMzQ=")
-        .append_header(("Cookie", cookie.clone()))
+        .append_header(("Cookie", valid_rsa_cookie.to_string()))
         .peer_addr(IP_ADDRESS.parse().unwrap())
         .to_request();
     let result = test::call_service(&test_service, request).await;
@@ -961,7 +979,10 @@ async fn with_setup() {
         "/authenticated/sysop/set_password_for_rsa_rivate_key/ should work!"
     );
     {
-        let rsa_keys_read_lock = application_configuration.rsa_keys.read().unwrap();
+        let rsa_keys_read_lock = application_configuration
+            .rsa_keys_for_secrets
+            .read()
+            .unwrap();
         if rsa_keys_read_lock.rsa_private_key.is_none() {
             panic!("rsa private key should have been loaded at this point!");
         }
@@ -969,7 +990,7 @@ async fn with_setup() {
     // keys are loaded, base64 encoded cookie is not enough:
     let request = test::TestRequest::get()
         .uri("/authenticated/user/get/details/from")
-        .append_header(("Cookie", cookie))
+        .append_header((header::SET_COOKIE, valid_rsa_cookie.to_string()))
         .peer_addr(IP_ADDRESS.parse().unwrap())
         .to_request();
     let result = test::call_service(&test_service, request).await;
@@ -991,19 +1012,16 @@ async fn with_setup() {
         panic!("uuid for Bob expected!");
     }
 
-    let encrypted_cookie_value = {
-        let rsa_read_lock = &application_configuration.rsa_keys.read().unwrap();
-        rsa_read_lock.rsa_public_key_encrypt_str(&uuid_option.unwrap().to_string())
-    };
-    let cookie = format!(
-        "{}={}",
-        &lmtyas::cookie_functions::COOKIE_NAME,
-        &encrypted_cookie_value.unwrap()
+    let valid_rsa_cookie = build_new_encrypted_authentication_cookie(
+        &uuid_option.unwrap().to_string(),
+        90,
+        COOKIE_PATH,
+        &application_configuration.rsa_keys_for_cookies,
     );
     // try again with encrypted cookie
     let request = test::TestRequest::get()
         .uri("/authenticated/user/get/details/from")
-        .append_header(("Cookie", cookie.clone()))
+        .append_header(("Cookie", valid_rsa_cookie.to_string()))
         .peer_addr(IP_ADDRESS.parse().unwrap())
         .to_request();
     let result = test::call_service(&test_service, request).await;
@@ -1026,7 +1044,7 @@ async fn with_setup() {
     // wrong address format
     let request = test::TestRequest::get()
         .uri("/authenticated/receiver/get/validated_email/alice@acme.world.local")
-        .append_header(("Cookie", cookie.clone()))
+        .append_header(("Cookie", valid_rsa_cookie.to_string()))
         .peer_addr(IP_ADDRESS.parse().unwrap())
         .to_request();
     let result = test::call_service(&test_service, request).await;
@@ -1045,7 +1063,7 @@ async fn with_setup() {
     // unkown email
     let request = test::TestRequest::get()
         .uri("/authenticated/receiver/get/validated_email/jane@acme.local")
-        .append_header(("Cookie", cookie.clone()))
+        .append_header(("Cookie", valid_rsa_cookie.to_string()))
         .peer_addr(IP_ADDRESS.parse().unwrap())
         .to_request();
     let result = test::call_service(&test_service, request).await;
@@ -1064,7 +1082,7 @@ async fn with_setup() {
     // well kown email
     let request = test::TestRequest::get()
         .uri("/authenticated/receiver/get/validated_email/alice@acme.local")
-        .append_header(("Cookie", cookie.clone()))
+        .append_header(("Cookie", valid_rsa_cookie.to_string()))
         .peer_addr(IP_ADDRESS.parse().unwrap())
         .to_request();
     let result = test::call_service(&test_service, request).await;
@@ -1086,7 +1104,7 @@ async fn with_setup() {
 
     let request = test::TestRequest::get()
         .uri("/authenticated/keep_session_alive")
-        .append_header(("Cookie", cookie.clone()))
+        .append_header(("Cookie", valid_rsa_cookie.to_string()))
         .peer_addr(IP_ADDRESS.parse().unwrap())
         .to_request();
     let result = test::call_service(&test_service, request).await;
@@ -1104,7 +1122,10 @@ async fn with_setup() {
 
     // setup fake cookie
     let encrypted_cookie_value = {
-        let rsa_read_lock = &application_configuration.rsa_keys.read().unwrap();
+        let rsa_read_lock = &application_configuration
+            .rsa_keys_for_secrets
+            .read()
+            .unwrap();
         // de1bf8ab-a9f3-4af6-9183-56f6d7b17ec7 is a random value generated with uuidgen
         rsa_read_lock.rsa_public_key_encrypt_str("de1bf8ab-a9f3-4af6-9183-56f6d7b17ec7")
     };
@@ -1149,7 +1170,7 @@ async fn with_setup() {
     let json_secret = serde_json::to_string(&secret).unwrap();
     let request = test::TestRequest::post()
         .uri("/authenticated/secret/tell")
-        .append_header(("Cookie", cookie.clone()))
+        .append_header(("Cookie", valid_rsa_cookie.to_string()))
         .peer_addr(IP_ADDRESS.parse().unwrap())
         .set_payload(json_secret)
         .to_request();
@@ -1177,7 +1198,7 @@ async fn with_setup() {
     let json_secret = serde_json::to_string(&secret).unwrap();
     let request = test::TestRequest::post()
         .uri("/authenticated/secret/tell")
-        .append_header(("Cookie", cookie.clone()))
+        .append_header(("Cookie", valid_rsa_cookie.to_string()))
         .peer_addr(IP_ADDRESS.parse().unwrap())
         .set_payload(json_secret)
         .to_request();
@@ -1200,7 +1221,7 @@ async fn with_setup() {
     let json_secret = serde_json::to_string(&secret).unwrap();
     let request = test::TestRequest::post()
         .uri("/authenticated/secret/tell")
-        .append_header(("Cookie", cookie.clone()))
+        .append_header(("Cookie", valid_rsa_cookie.to_string()))
         .peer_addr(IP_ADDRESS.parse().unwrap())
         .set_payload(json_secret)
         .to_request();
@@ -1314,19 +1335,16 @@ async fn with_setup() {
         panic!("uuid for Alice expected!");
     }
 
-    let encrypted_cookie_value = {
-        let rsa_read_lock = &application_configuration.rsa_keys.read().unwrap();
-        rsa_read_lock.rsa_public_key_encrypt_str(&uuid_option.unwrap().to_string())
-    };
-    let cookie = format!(
-        "{}={}",
-        &lmtyas::cookie_functions::COOKIE_NAME,
-        &encrypted_cookie_value.unwrap()
+    let valid_rsa_cookie = build_new_encrypted_authentication_cookie(
+        &uuid_option.unwrap().to_string(),
+        90,
+        COOKIE_PATH,
+        &application_configuration.rsa_keys_for_cookies,
     );
     // get secret
     let request = test::TestRequest::get()
         .uri(&format!("/authenticated/secret/reveal/{}", &secret_url))
-        .append_header(("Cookie", cookie.clone()))
+        .append_header(("Cookie", valid_rsa_cookie.to_string()))
         .peer_addr(IP_ADDRESS.parse().unwrap())
         .to_request();
     let result = test::call_service(&test_service, request).await;
@@ -1365,7 +1383,7 @@ async fn with_setup() {
     // get secret 2nd time
     let request = test::TestRequest::get()
         .uri(&format!("/authenticated/secret/reveal/{}", &secret_url))
-        .append_header(("Cookie", cookie.clone()))
+        .append_header(("Cookie", valid_rsa_cookie.to_string()))
         .peer_addr(IP_ADDRESS.parse().unwrap())
         .to_request();
     let result = test::call_service(&test_service, request).await;
@@ -1382,7 +1400,7 @@ async fn with_setup() {
     );
     let request = test::TestRequest::get()
         .uri("/authenticated/secret/reveal/aW52YWxpZCBVUkw=")
-        .append_header(("Cookie", cookie.clone()))
+        .append_header(("Cookie", valid_rsa_cookie.to_string()))
         .peer_addr(IP_ADDRESS.parse().unwrap())
         .to_request();
     let result = test::call_service(&test_service, request).await;

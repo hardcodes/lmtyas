@@ -1,6 +1,5 @@
 #[cfg(feature = "api-access-token")]
 use crate::access_token::AccessTokenConfiguration;
-use crate::authenticated_user::SharedAuthenticatedUsersHashMap;
 use crate::authentication_middleware::SharedRequestData;
 #[cfg(feature = "authentication-oidc")]
 use crate::authentication_oidc::{OidcConfiguration, SharedOidcVerificationDataHashMap};
@@ -13,6 +12,7 @@ use crate::login_user_trait::Login;
 use crate::mail_configuration::SendEMailConfiguration;
 use crate::rsa_functions::RsaKeys;
 use crate::secret_functions::SharedSecretData;
+use crate::{authenticated_user::SharedAuthenticatedUsersHashMap, rsa_functions};
 #[cfg(feature = "authentication-oidc")]
 use log::info;
 #[cfg(feature = "authentication-oidc")]
@@ -116,8 +116,10 @@ impl ConfigurationFile {
 #[derive(Clone)]
 pub struct ApplicationConfiguration {
     pub configuration_file: ConfigurationFile,
-    // RSA keys
-    pub rsa_keys: Arc<RwLock<RsaKeys>>,
+    // RSA keys for secret encryption/decryption
+    pub rsa_keys_for_secrets: Arc<RwLock<RsaKeys>>,
+    // RSA keys for cookie encryption/decryption
+    pub rsa_keys_for_cookies: Arc<RsaKeys>,
     // SharedSecret (context for creating uuids)
     pub shared_secret: Arc<RwLock<SharedSecretData>>,
     /// stores authenticated users
@@ -180,9 +182,17 @@ impl ApplicationConfiguration {
         )
         .await
         .expect("Cannot load oidc provider metadata");
+        let rsa_keys_for_cookies = match rsa_functions::RsaKeys::generate_random_rsa_keys() {
+            Err(e) => {
+                panic!("Cannot generate random RSA keys for cookies: {}", &e);
+            }
+            Ok(rsa_keys) => rsa_keys,
+        };
+        info!("created random RSA key pair for cookie encryption/decryption");
         ApplicationConfiguration {
             configuration_file: config_file.clone(),
-            rsa_keys: Arc::new(RwLock::new(RsaKeys::new())),
+            rsa_keys_for_secrets: Arc::new(RwLock::new(RsaKeys::new())),
+            rsa_keys_for_cookies: Arc::new(rsa_keys_for_cookies),
             shared_secret: Arc::new(RwLock::new(SharedSecretData::new())),
             shared_authenticated_users: Arc::new(RwLock::new(
                 SharedAuthenticatedUsersHashMap::new(config_file.admin_accounts),
@@ -221,7 +231,7 @@ impl ApplicationConfiguration {
     /// If the files are not to be found or cannot be unlocked, the function will
     /// return a boxed error.
     pub fn load_rsa_keys(&self, rsa_private_key_password: &str) -> Result<(), Box<dyn Error>> {
-        self.rsa_keys.write().unwrap().read_from_files(
+        self.rsa_keys_for_secrets.write().unwrap().read_from_files(
             &self.configuration_file.rsa_private_key_file,
             rsa_private_key_password,
         )

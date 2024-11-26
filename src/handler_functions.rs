@@ -54,7 +54,7 @@ pub async fn still_alive(
     application_configuration: web::Data<ApplicationConfiguration>,
 ) -> impl Responder {
     if application_configuration
-        .rsa_keys
+        .rsa_keys_for_secrets
         .read()
         .unwrap()
         .rsa_private_key
@@ -191,7 +191,7 @@ pub async fn is_server_ready(
     application_configuration: web::Data<ApplicationConfiguration>,
 ) -> HttpResponse {
     if application_configuration
-        .rsa_keys
+        .rsa_keys_for_secrets
         .read()
         .unwrap()
         .rsa_private_key
@@ -429,14 +429,18 @@ async fn encrypt_store_send_secret(
         .secret
         .clone_from(&aes_encryption_result.encrypted_data);
     // rsa encrypt all data
-    let encrypted_form_data =
-        match parsed_form_data.to_encrypted(&application_configuration.rsa_keys.read().unwrap()) {
-            Ok(encrypted_form_data) => encrypted_form_data,
-            Err(e) => {
-                warn!("could not create encrypted form data: {}", &e);
-                return Err(format!("ERROR: {}", &e).into());
-            }
-        };
+    let encrypted_form_data = match parsed_form_data.to_encrypted(
+        &application_configuration
+            .rsa_keys_for_secrets
+            .read()
+            .unwrap(),
+    ) {
+        Ok(encrypted_form_data) => encrypted_form_data,
+        Err(e) => {
+            warn!("could not create encrypted form data: {}", &e);
+            return Err(format!("ERROR: {}", &e).into());
+        }
+    };
 
     // write data to disk
     let uuid = application_configuration
@@ -468,7 +472,7 @@ async fn encrypt_store_send_secret(
     debug!("url_payload = {}", &url_payload);
     // rsa encrypt url payload
     let encrypted_url_payload = match application_configuration
-        .rsa_keys
+        .rsa_keys_for_secrets
         .read()
         .unwrap()
         .rsa_public_key_encrypt_str(&url_payload)
@@ -558,7 +562,7 @@ pub async fn reveal_secret(
         percent_decode_str(&encrypted_percent_encoded_url_payload).decode_utf8_lossy();
     // rsa decrypt all data
     let url_payload = match application_configuration
-        .rsa_keys
+        .rsa_keys_for_secrets
         .read()
         .unwrap()
         .rsa_private_key_decrypt_str(&encrypted_url_payload)
@@ -599,7 +603,10 @@ pub async fn reveal_secret(
     };
     info!("success, file {} read", &path.display());
     // rsa decrypt the stored values
-    let rsa_read_lock = application_configuration.rsa_keys.read().unwrap();
+    let rsa_read_lock = application_configuration
+        .rsa_keys_for_secrets
+        .read()
+        .unwrap();
     let mut aes_encrypted = match encrypted_secret.to_decrypted(&rsa_read_lock) {
         Err(e) => {
             return HttpResponse::err_text_response(format!("ERROR: {}", &e));

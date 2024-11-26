@@ -3,7 +3,7 @@ use crate::authentication_middleware::AuthenticationRedirect;
 use crate::authentication_url::AUTH_LOGIN_FAIL_PAGE;
 use crate::configuration::ApplicationConfiguration;
 use crate::cookie_functions::{
-    build_new_authentication_cookie, build_redirect_to_resource_url_response,
+    build_new_encrypted_authentication_cookie, build_redirect_to_resource_url_response,
     empty_unix_epoch_cookie,
 };
 use crate::http_traits::CustomHttpResponse;
@@ -442,17 +442,15 @@ impl Login for OidcConfiguration {
                 &email
             );
 
-            let rsa_read_lock = application_configuration.rsa_keys.read().unwrap();
-            // when the rsa key pair already has been loaded,
-            // the cookie value is encrypted with the rsa public
-            // key otherwise its simply base64 encoded.
-            let cookie = build_new_authentication_cookie(
+            // The cookie value is encrypted with a generated rsa
+            // public key.
+            let cookie = build_new_encrypted_authentication_cookie(
                 &cookie_uuid.to_string(),
                 application_configuration
                     .configuration_file
                     .max_cookie_age_seconds,
                 &application_configuration.configuration_file.get_domain(),
-                &rsa_read_lock,
+                &application_configuration.rsa_keys_for_cookies,
             );
             return build_redirect_to_resource_url_response(
                 &cookie,

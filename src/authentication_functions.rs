@@ -3,7 +3,7 @@ extern crate env_logger;
 use crate::authenticated_user::AuthenticatedUser;
 use crate::configuration::ApplicationConfiguration;
 use crate::cookie_functions::{
-    build_new_authentication_cookie, build_new_cookie_response, get_plain_cookie_string,
+    build_new_cookie_response, build_new_encrypted_authentication_cookie, get_plain_cookie_string,
     COOKIE_NAME,
 };
 use crate::header_value_trait::HeaderValueExctractor;
@@ -23,14 +23,8 @@ pub fn get_cookie_uuid_from_http_request(
 
         if let Some(cookie) = header_value.get_value_for_cookie_with_name(COOKIE_NAME) {
             debug!("cookie = {}", &cookie);
-            let plain_cookie;
-            {
-                let rsa_read_lock = application_configuration.rsa_keys.read().unwrap();
-                // when the rsa key pair already has been loaded,
-                // the cookie value is encrypted with the rsa public
-                // key otherwise its simply base64 encoded.
-                plain_cookie = get_plain_cookie_string(&cookie, &rsa_read_lock);
-            }
+            let plain_cookie =
+                get_plain_cookie_string(&cookie, &application_configuration.rsa_keys_for_cookies);
             if let Ok(parsed_cookie_uuid) = Uuid::parse_str(&plain_cookie) {
                 return Some(parsed_cookie_uuid);
             } else {
@@ -134,14 +128,13 @@ pub fn update_authenticated_user_cookie_lifetime(req: &HttpRequest) -> HttpRespo
         // will not remove this entry
         authenticated_user.update_timestamp();
         // create cookie with the same value but renewed cookie lifetime
-        let rsa_read_lock = application_configuration.rsa_keys.read().unwrap();
-        let updated_cookie = build_new_authentication_cookie(
+        let updated_cookie = build_new_encrypted_authentication_cookie(
             &parsed_cookie_uuid.to_string(),
             application_configuration
                 .configuration_file
                 .max_cookie_age_seconds,
             &application_configuration.configuration_file.get_domain(),
-            &rsa_read_lock,
+            &application_configuration.rsa_keys_for_cookies,
         );
         let cookie_response = build_new_cookie_response(
             &updated_cookie,

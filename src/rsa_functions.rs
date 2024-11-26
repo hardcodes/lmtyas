@@ -11,6 +11,9 @@ use std::path::Path;
 
 // min bit size of the modulus (modulus * 8 = rsa key bits)
 const MIN_RSA_MODULUS_SIZE: u32 = 256;
+// bits used to generate a random RSA key pair
+const RSA_KEY_BITS: u32 = 4096;
+
 /// Holds the RSA private and public key for
 /// encryption and decryption
 pub struct RsaKeys {
@@ -39,6 +42,17 @@ impl RsaKeys {
             rsa_private_key: None,
             rsa_public_key: None,
         }
+    }
+    /// Build a new RSA key pair with a random password for the
+    /// private key. Used for cookie encryption
+    pub fn generate_random_rsa_keys() -> Result<RsaKeys, Box<dyn Error>> {
+        let rsa = Rsa::generate(RSA_KEY_BITS)?;
+        let rsa_public_key = Rsa::public_key_from_pem(&rsa.public_key_to_pem()?)?;
+        let rsa_private_key = Rsa::private_key_from_pem(&rsa.private_key_to_pem()?)?;
+        Ok(RsaKeys {
+            rsa_private_key: Some(rsa_private_key),
+            rsa_public_key: Some(rsa_public_key),
+        })
     }
     /// Loads RSA private key from the given path. To load the
     /// RSA privte key, the passphrase is needed.
