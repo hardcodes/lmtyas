@@ -90,7 +90,7 @@ pub fn build_redirect_to_resource_url_response(
 ///
 /// # Arguments
 ///
-/// - `transmitted_cookie`: cookie value that is either rsa encrypted or base64 encoded
+/// - `transmitted_cookie`: base64 encoded and rsa encrypted cookie value
 /// - `rsa`:                rsa keys to decrypt the cookie
 ///
 /// # Returns
