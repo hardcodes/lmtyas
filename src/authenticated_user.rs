@@ -39,16 +39,28 @@ pub struct AuthenticatedUser {
     pub utc_date_time: DateTime<Utc>,
     pub access_scope: AccessScope,
     pub peer_ip: String,
+    pub cookie_update_lifetime_counter: u16,
 }
 
 /// custom formatter to suppress first name, last name and mail address
 impl fmt::Display for AuthenticatedUser {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "(user_name={}, time_stamp={}, access_scope={:?}, peer_ip={})",
-            self.user_name, self.utc_date_time, self.access_scope, self.peer_ip
-        )
+        #[cfg(debug_assertions)]
+        {
+            write!(
+                f,
+                "(user_name={}, time_stamp={}, access_scope={:?}, peer_ip={}, cookie_update_counter={})",
+                self.user_name, self.utc_date_time, self.access_scope, self.peer_ip, self.cookie_update_lifetime_counter
+            )
+        }
+        #[cfg(not(debug_assertions))]
+        {
+            write!(
+                f,
+                "(user_name={}, time_stamp={}, access_scope={:?}, peer_ip={})",
+                self.user_name, self.utc_date_time, self.access_scope, self.peer_ip
+            )
+        }
     }
 }
 
@@ -73,6 +85,7 @@ impl AuthenticatedUser {
             access_scope,
             peer_ip: peer_ip.into(),
             utc_date_time: Utc::now(),
+            cookie_update_lifetime_counter: 0,
         }
     }
 
@@ -87,7 +100,10 @@ impl AuthenticatedUser {
     /// Update the timestamp before a cookie lifetime is expired
     /// to stay in the hashmap
     pub fn update_timestamp(&mut self) {
-        self.utc_date_time = Utc::now()
+        self.utc_date_time = Utc::now();
+        self.cookie_update_lifetime_counter = self.cookie_update_lifetime_counter.wrapping_add(1);
+        #[cfg(debug_assertions)]
+        info!("update_timestamp(), self = {}", &self);
     }
 }
 
@@ -202,11 +218,11 @@ impl SharedAuthenticatedUsersHashMap {
         };
         let authenticated_user =
             AuthenticatedUser::new(user_name, first_name, last_name, mail, scope, peer_ip);
-        let unix_timestamp_seconds = authenticated_user.utc_date_time.timestamp();
+        let unix_timestamp_seconds = authenticated_user.utc_date_time.timestamp() as u64;
         let unix_timestamp_subsec_nanos = authenticated_user.utc_date_time.timestamp_subsec_nanos();
         let ts = Timestamp::from_unix(
             &self.uuid_context,
-            unix_timestamp_seconds as u64,
+            unix_timestamp_seconds,
             unix_timestamp_subsec_nanos,
         );
         let request_uuid = Uuid::new_v1(ts, NODE_ID);
@@ -215,7 +231,7 @@ impl SharedAuthenticatedUsersHashMap {
             .insert(request_uuid, authenticated_user);
         Some(CookieData {
             uuid: request_uuid,
-            unix_timestamp: unix_timestamp_seconds,
+            cookie_update_lifetime_counter: 0,
         })
     }
 }

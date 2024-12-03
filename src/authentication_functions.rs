@@ -81,11 +81,10 @@ pub fn get_authenticated_user_from_request(req: &HttpRequest) -> Result<Authenti
             "decrypted_cookie_data = {}, authenticated_user = {}",
             &decrypted_cookie_data, authenticated_user.user_name
         );
-        let unix_timestamp_to_compare = authenticated_user.utc_date_time.timestamp();
-        if decrypted_cookie_data.unix_timestamp != unix_timestamp_to_compare {
+        if decrypted_cookie_data.cookie_update_lifetime_counter != authenticated_user.cookie_update_lifetime_counter {
             warn!(
-                "Cookie timestamp does not match: (cookie = {}, expected = {})",
-                &decrypted_cookie_data.unix_timestamp, &unix_timestamp_to_compare
+                "Cookie lifetime counter does not match: (cookie = {}, expected = {})",
+                &decrypted_cookie_data.cookie_update_lifetime_counter, &authenticated_user.cookie_update_lifetime_counter
             );
             return Err(ErrorUnauthorized(
                 "ERROR: no matching cookie found! Authorization expired?",
@@ -120,7 +119,7 @@ pub fn update_authenticated_user_cookie_lifetime(req: &HttpRequest) -> HttpRespo
         return HttpResponse::from_error(ErrorUnauthorized("ERROR: no app_data!"));
     }
     let application_configuration = app_data.unwrap().clone();
-    let mut decrypted_cookie_data =
+    let decrypted_cookie_data =
         match get_decrypted_cookie_data_from_http_request(req, &application_configuration) {
             Some(uuid) => uuid,
             None => {
@@ -144,12 +143,11 @@ pub fn update_authenticated_user_cookie_lifetime(req: &HttpRequest) -> HttpRespo
             &decrypted_cookie_data.to_string(),
             authenticated_user.user_name
         );
-        let timestamp_to_compare = authenticated_user.utc_date_time.timestamp();
         // Update only if timestamp matches
-        if decrypted_cookie_data.unix_timestamp != timestamp_to_compare {
+        if decrypted_cookie_data.cookie_update_lifetime_counter != authenticated_user.cookie_update_lifetime_counter {
             warn!(
-                "Cannot update cookie lifetime, cookie timestamp does not match (cookie = {}, expected = {})",
-                &decrypted_cookie_data.unix_timestamp, &timestamp_to_compare
+                "Cannot update cookie lifetime, counter does not match: (cookie = {}, expected = {})",
+                &decrypted_cookie_data.cookie_update_lifetime_counter, &authenticated_user.cookie_update_lifetime_counter
             );
             return HttpResponse::ok_text_response(
                 "ERROR: no matching cookie found! Authorization expired?",
@@ -158,7 +156,6 @@ pub fn update_authenticated_user_cookie_lifetime(req: &HttpRequest) -> HttpRespo
         // Update the timestamp in the hashmap, so that the cleanup routine
         // will not remove this entry
         authenticated_user.update_timestamp();
-        decrypted_cookie_data.unix_timestamp = authenticated_user.utc_date_time.timestamp();
         // create cookie with same uuid value but renewed cookie lifetime
         let updated_cookie = build_new_encrypted_authentication_cookie(
             &decrypted_cookie_data.to_string(),

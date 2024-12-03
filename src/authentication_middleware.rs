@@ -230,7 +230,7 @@ where
         ////////////////////////////////////////////////////////////////////////////////////////////
         // Yes (cookie) ==> let the user access the requested resources
         ////////////////////////////////////////////////////////////////////////////////////////////
-        if let Some(parsed_cookie_data) = get_decrypted_cookie_data_from_http_request(
+        if let Some(decrypted_cookie_data) = get_decrypted_cookie_data_from_http_request(
             service_request.request(),
             &application_configuration,
         ) {
@@ -239,7 +239,7 @@ where
                 .read()
                 .unwrap()
                 .authenticated_users_hashmap
-                .get(&parsed_cookie_data.uuid)
+                .get(&decrypted_cookie_data.uuid)
             {
                 let invalid_cookie_age = Utc::now()
                     - Duration::try_seconds(
@@ -248,9 +248,6 @@ where
                             .max_cookie_age_seconds,
                     )
                     .unwrap_or_else(|| Duration::try_seconds(MAX_COOKIE_AGE_SECONDS).unwrap());
-                let cookie_timestamp =
-                    DateTime::from_timestamp(parsed_cookie_data.unix_timestamp, 0)
-                        .unwrap_or(invalid_cookie_age);
                 // UUID inside cookie as referenced an `AuthenticatedUser`.
                 if peer_ip.ne(&authenticated_user.peer_ip) {
                     warn!(
@@ -271,7 +268,9 @@ where
                     .configuration_file
                     .max_cookie_age_seconds, &peer_ip, &authenticated_user
                             );
-                } else if cookie_timestamp < invalid_cookie_age {
+                } else if decrypted_cookie_data.cookie_update_lifetime_counter
+                    != authenticated_user.cookie_update_lifetime_counter
+                {
                     // The cookie data may still be valid within the meaning of `max_cookie_age_seconds` but
                     // the timestamp inside the cookie may not match: we are presented a cookie that has already
                     // been updated. Red flag!

@@ -16,8 +16,8 @@ pub const COOKIE_PATH: &str = "/";
 pub struct CookieData {
     /// Identifies the user account for the current session
     pub uuid: uuid::Uuid,
-    /// Timestamp of the last cookie update in seconds since the Unix epoch.
-    pub unix_timestamp: i64,
+    /// /// Counting cookie updates
+    pub cookie_update_lifetime_counter: u16,
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -35,20 +35,20 @@ impl FromStr for CookieData {
     /// Parse String with CookieData:
     ///
     /// ```ignore
-    /// <uuid>;<unix_time_stamp>
+    /// <uuid>;<cookie_update_lifetime_counter>
     /// ```
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let (uuid_str, unix_time_stamp_str) = s.split_once(';').ok_or(CookieDataError)?;
+        let (uuid_str, cookie_update_lifetime_counter_str) = s.split_once(';').ok_or(CookieDataError)?;
         let uuid_fromstr = uuid_str
             .parse::<uuid::Uuid>()
             .map_err(|_| CookieDataError)?;
-        let unix_timestamp_fromstr = unix_time_stamp_str
-            .parse::<i64>()
+        let cookie_update_lifetime_counter_fromstr = cookie_update_lifetime_counter_str
+            .parse::<u16>()
             .map_err(|_| CookieDataError)?;
 
         Ok(CookieData {
             uuid: uuid_fromstr,
-            unix_timestamp: unix_timestamp_fromstr,
+            cookie_update_lifetime_counter: cookie_update_lifetime_counter_fromstr,
         })
     }
 }
@@ -56,7 +56,7 @@ impl FromStr for CookieData {
 impl fmt::Display for CookieData {
     /// Display the data as String. Used to as source data for an enrypted cookie.
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{};{}", self.uuid, self.unix_timestamp)
+        write!(f, "{};{}", self.uuid, self.cookie_update_lifetime_counter)
     }
 }
 
