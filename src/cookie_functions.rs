@@ -3,10 +3,67 @@ use actix_web::{
     cookie::time::Duration, cookie::time::OffsetDateTime, cookie::Cookie, http, http::StatusCode,
     HttpResponse,
 };
+use log::debug;
+use std::fmt;
+use std::str::FromStr;
 
 /// Name of the cookie that is sent to an authenticated user browser
 pub const COOKIE_NAME: &str = env!("CARGO_PKG_NAME");
 pub const COOKIE_PATH: &str = "/";
+
+/// Contains data that is used to build a cookie.
+#[derive(Debug, PartialEq)]
+pub struct CookieData {
+    /// Identifies the user account for the current session
+    pub uuid: uuid::Uuid,
+    /// Timestamp of the last cookie update in seconds since the Unix epoch.
+    pub unix_timestamp: u64,
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub struct CookieDataError;
+
+impl fmt::Display for CookieDataError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "cannot parse cookie data")
+    }
+}
+
+impl FromStr for CookieData {
+    type Err = CookieDataError;
+
+    /// Parse String with CookieData:
+    ///
+    /// ```ignore
+    /// <uuid>;<unix_time_stamp>
+    /// ```
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let (uuid_str, unix_time_stamp_str) = s.split_once(';').ok_or(CookieDataError)?;
+        let uuid_fromstr = uuid_str
+            .parse::<uuid::Uuid>()
+            .map_err(|_| CookieDataError)?;
+        let unix_time_stamp_fromstr = unix_time_stamp_str
+            .parse::<u64>()
+            .map_err(|_| CookieDataError)?;
+
+        Ok(CookieData {
+            uuid: uuid_fromstr,
+            unix_timestamp: unix_time_stamp_fromstr,
+        })
+    }
+}
+
+impl fmt::Display for CookieData {
+    /// Display the data as String. Used to as source data for an enrypted cookie.
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "{};{}",
+            self.uuid.to_string(),
+            self.unix_timestamp.to_string()
+        )
+    }
+}
 
 /// build a new rsa encrypted authentication cookie
 ///
@@ -91,14 +148,17 @@ pub fn build_redirect_to_resource_url_response(
 /// # Arguments
 ///
 /// - `transmitted_cookie`: base64 encoded and rsa encrypted cookie value
+///  containing <uuid>;<unix_time_stamp>
 /// - `rsa`:                rsa keys to decrypt the cookie
-///
-/// # Returns
-///
-/// - plain cookie value as String
-pub fn get_plain_cookie_string(transmitted_cookie: &str, rsa: &RsaKeys) -> String {
-    rsa.rsa_private_key_decrypt_str(transmitted_cookie)
-        .unwrap_or_else(|_| -> String { "invalid_rsa_cookie_value".to_string() })
+pub fn get_decrypted_cookie_data(
+    transmitted_cookie_value: &str,
+    rsa: &RsaKeys,
+) -> Result<CookieData, CookieDataError> {
+    let decrypted_cookie_value = rsa
+        .rsa_private_key_decrypt_str(transmitted_cookie_value)
+        .unwrap_or_else(|_| -> String { "invalid_rsa_cookie_value".to_string() });
+    debug!("decrypted_cookie_value = {}", &decrypted_cookie_value);
+    CookieData::from_str(&decrypted_cookie_value)
 }
 
 /// Returns an empty cookie with an expiration date of the

@@ -230,7 +230,7 @@ where
         ////////////////////////////////////////////////////////////////////////////////////////////
         // Yes (cookie) ==> let the user access the requested resources
         ////////////////////////////////////////////////////////////////////////////////////////////
-        if let Some(parsed_cookie_uuid) =
+        if let Some(parsed_cookie_data) =
             get_cookie_uuid_from_http_request(service_request.request(), &application_configuration)
         {
             if let Some(authenticated_user) = application_configuration
@@ -238,7 +238,7 @@ where
                 .read()
                 .unwrap()
                 .authenticated_users_hashmap
-                .get(&parsed_cookie_uuid)
+                .get(&parsed_cookie_data.uuid)
             {
                 let invalid_cookie_age = Utc::now()
                     - Duration::try_seconds(
@@ -247,7 +247,10 @@ where
                             .max_cookie_age_seconds,
                     )
                     .unwrap_or_else(|| Duration::try_seconds(MAX_COOKIE_AGE_SECONDS).unwrap());
-                // UUID inside cookie as referenced a `AuthenticatedUser`.
+                let cookie_timestamp =
+                    DateTime::from_timestamp(parsed_cookie_data.unix_timestamp as i64, 0)
+                        .unwrap_or(invalid_cookie_age);
+                // UUID inside cookie as referenced an `AuthenticatedUser`.
                 if peer_ip.ne(&authenticated_user.peer_ip) {
                     warn!(
                         "Cookie stolen? peer_address = {:?}, authenticated_user = {}",
@@ -262,8 +265,18 @@ where
                     // A behaving browser would have deleted that cookie at this point.
                     // Requests with outdated cookies smell fishy!
                     warn!(
-                                "Cookie older than {} seconds! peer_address = {:?}, authenticated_user = {}",
-                                &application_configuration
+                        "Cookie older than {} seconds! peer_address = {:?}, authenticated_user = {}",
+                        &application_configuration
+                    .configuration_file
+                    .max_cookie_age_seconds, &peer_ip, &authenticated_user
+                            );
+                } else if cookie_timestamp < invalid_cookie_age {
+                    // The cookie data may still be valid within the meaning of `max_cookie_age_seconds` but
+                    // the timestamp inside the cookie may not match: we are presented a cookie that has already
+                    // been updated. Red flag!
+                    warn!(
+                        "Cookie timestampe older than {} seconds! peer_address = {:?}, authenticated_user = {}",
+                        &application_configuration
                     .configuration_file
                     .max_cookie_age_seconds, &peer_ip, &authenticated_user
                             );

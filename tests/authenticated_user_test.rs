@@ -2,16 +2,17 @@ use lmtyas::authenticated_user::{
     cleanup_authenticated_users_hashmap, AccessScope, MAX_AUTH_USERS,
 };
 use lmtyas::configuration::ApplicationConfiguration;
+use lmtyas::cookie_functions::CookieData;
 
 pub async fn test_authenticated_user(application_configuration: &ApplicationConfiguration) {
     for user_count in 1..MAX_AUTH_USERS + 1 {
-        let uuid_option: Option<uuid::Uuid>;
+        let cookie_data_option: Option<CookieData>;
         {
-            uuid_option = application_configuration
+            cookie_data_option = application_configuration
                 .shared_authenticated_users
                 .write()
                 .unwrap()
-                .new_cookie_uuid_for(
+                .new_cookie_data_for(
                     &format!("_name_name_{}", user_count),
                     &format!("first_name_{}", user_count),
                     &format!("last_name_{}", user_count),
@@ -19,7 +20,7 @@ pub async fn test_authenticated_user(application_configuration: &ApplicationConf
                     "127.0.0.1",
                 );
         }
-        if let Some(uuid) = uuid_option {
+        if let Some(cookie_data) = cookie_data_option {
             assert!(
                 user_count <= MAX_AUTH_USERS,
                 "should still be able to add user {}, max: {}",
@@ -32,7 +33,7 @@ pub async fn test_authenticated_user(application_configuration: &ApplicationConf
                 .read()
                 .unwrap()
                 .authenticated_users_hashmap
-                .get(&uuid)
+                .get(&cookie_data.uuid)
             {
                 assert_eq!(
                     stored_user.access_scope,
@@ -68,21 +69,21 @@ pub async fn test_authenticated_user(application_configuration: &ApplicationConf
         "expected zero users in hashmap"
     );
 
-    let uuid_option: Option<uuid::Uuid>;
+    let cookie_data_option: Option<CookieData>;
     {
-        uuid_option = application_configuration
+        cookie_data_option = application_configuration
             .shared_authenticated_users
             .write()
             .unwrap()
-            .new_cookie_uuid_for("walter", "Walter", "Linz", "walter@acme.local", "127.0.0.1");
+            .new_cookie_data_for("walter", "Walter", "Linz", "walter@acme.local", "127.0.0.1");
     }
-    if let Some(uuid) = uuid_option {
+    if let Some(cookie_data) = cookie_data_option {
         if let Some(stored_user) = application_configuration
             .shared_authenticated_users
             .read()
             .unwrap()
             .authenticated_users_hashmap
-            .get(&uuid)
+            .get(&cookie_data.uuid)
         {
             assert_eq!(
                 stored_user.access_scope,

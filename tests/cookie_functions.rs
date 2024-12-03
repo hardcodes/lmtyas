@@ -1,7 +1,7 @@
 use actix_web::http::StatusCode;
 use lmtyas::cookie_functions::{
-    build_new_cookie_response, build_new_encrypted_authentication_cookie, get_plain_cookie_string,
-    COOKIE_PATH,
+    build_new_cookie_response, build_new_encrypted_authentication_cookie, get_decrypted_cookie_data,
+    COOKIE_PATH
 };
 use lmtyas::rsa_functions::RsaKeys;
 
@@ -14,7 +14,7 @@ const INVALID_RSA_COOKIE: &str =
 
 #[test]
 fn cookie_functions() {
-    const COOKIE_VALUE: &str = "my cookie";
+    const COOKIE_VALUE: &str = "777f036a-0e58-4990-9e34-83570999fa42;0";
 
     let rsa_keys = RsaKeys::generate_random_rsa_keys().unwrap();
 
@@ -29,18 +29,18 @@ fn cookie_functions() {
         .unwrap()
         .replace("lmtyas=", "");
 
-    let plain_cookie = get_plain_cookie_string(&cookie, &rsa_keys);
+    let cookie_data = get_decrypted_cookie_data(&cookie, &rsa_keys);
     assert_eq!(
-        plain_cookie, COOKIE_VALUE,
+        cookie_data.unwrap().to_string(), COOKIE_VALUE,
         "cannot decrypt rsa encrypted cookie!"
     );
 
     let cookie_response = build_new_cookie_response(&valid_rsa_cookie, COOKIE_PATH.to_string());
     assert_eq!(cookie_response.status(), StatusCode::OK);
 
-    let invalid_plaintext_cookie = get_plain_cookie_string(INVALID_RSA_COOKIE, &rsa_keys);
-    assert_eq!(
-        invalid_plaintext_cookie, "invalid_rsa_cookie_value",
-        "should not be able to get plain cookie from this!"
+    let error_cookie_data = get_decrypted_cookie_data(INVALID_RSA_COOKIE, &rsa_keys);
+    assert!(
+        error_cookie_data.is_err(),
+        "should not be able to get plain cookie data from this!"
     );
 }

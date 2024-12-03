@@ -2,7 +2,7 @@ extern crate env_logger;
 use crate::authentication_middleware::AuthenticationRedirect;
 use crate::base64_trait::Base64VecU8Conversions;
 use crate::configuration::ApplicationConfiguration;
-use crate::cookie_functions::{build_new_authentication_cookie, empty_unix_epoch_cookie};
+use crate::cookie_functions::{build_new_encrypted_authentication_cookie, empty_unix_epoch_cookie};
 use crate::http_traits::CustomHttpResponse;
 use crate::ip_address::IpAdressString;
 pub use crate::ldap_common::{LdapCommonConfiguration, LdapSearchResult};
@@ -303,13 +303,12 @@ impl Login for LdapCommonConfiguration {
             }
             Ok(_) => {
                 password.zeroize();
-                info!("login success for user {}", &parsed_form_data.login_name);
 
-                if let Some(cookie_uuid) = application_configuration
+                if let Some(cookie_data) = application_configuration
                     .shared_authenticated_users
                     .write()
                     .unwrap()
-                    .new_cookie_uuid_for(
+                    .new_cookie_data_for(
                         &parsed_form_data.login_name,
                         &ldap_result.first_name,
                         &ldap_result.last_name,
@@ -317,17 +316,16 @@ impl Login for LdapCommonConfiguration {
                         &peer_ip,
                     )
                 {
-                    let rsa_read_lock = application_configuration.rsa_keys.read().unwrap();
-                    // when the rsa key pair already has been loaded,
-                    // the cookie value is encrypted with the rsa public
-                    // key otherwise its simply base64 encoded.
-                    let cookie = build_new_authentication_cookie(
-                        &cookie_uuid.to_string(),
+                    info!("login success for user {}", &parsed_form_data.login_name);
+                    // The cookie value is encrypted with a generated rsa
+                    // public key.
+                    let cookie = build_new_encrypted_authentication_cookie(
+                        &cookie_data.to_string(),
                         application_configuration
                             .configuration_file
                             .max_cookie_age_seconds,
                         &application_configuration.configuration_file.get_domain(),
-                        &rsa_read_lock,
+                        &application_configuration.rsa_keys_for_cookies,
                     );
                     let proto_fqdn = format!(
                         "https://{}",

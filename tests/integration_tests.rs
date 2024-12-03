@@ -920,7 +920,7 @@ async fn with_setup() {
         .shared_authenticated_users
         .write()
         .unwrap()
-        .new_cookie_uuid_for("walter", "Walter", "Linz", "walter@acme.local", "127.0.0.1");
+        .new_cookie_data_for("walter", "Walter", "Linz", "walter@acme.local", "127.0.0.1");
     if uuid_option.is_none() {
         panic!("uuid for Walter expected!");
     }
@@ -1007,7 +1007,7 @@ async fn with_setup() {
         .shared_authenticated_users
         .write()
         .unwrap()
-        .new_cookie_uuid_for("bob", "Bob", "Sanders", "bob@acme.local", "127.0.0.1");
+        .new_cookie_data_for("bob", "Bob", "Sanders", "bob@acme.local", "127.0.0.1");
     if uuid_option.is_none() {
         panic!("uuid for Bob expected!");
     }
@@ -1324,7 +1324,7 @@ async fn with_setup() {
         .shared_authenticated_users
         .write()
         .unwrap()
-        .new_cookie_uuid_for(
+        .new_cookie_data_for(
             "alice",
             "Alice",
             "Henderson",

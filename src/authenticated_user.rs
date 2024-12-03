@@ -5,6 +5,7 @@ use uuid::v1::{Context, Timestamp};
 use uuid::Uuid;
 extern crate env_logger;
 use crate::authentication_functions::get_authenticated_user;
+use crate::cookie_functions::CookieData;
 use crate::MAX_COOKIE_AGE_SECONDS;
 use actix_web::{dev::Payload, error::ErrorUnauthorized, Error, FromRequest, HttpRequest};
 use chrono::Duration;
@@ -177,14 +178,14 @@ impl SharedAuthenticatedUsersHashMap {
     }
 
     /// Store authenticated user data and return the uuid for the cookie
-    pub fn new_cookie_uuid_for(
+    pub fn new_cookie_data_for(
         &mut self,
         user_name: &str,
         first_name: &str,
         last_name: &str,
         mail: &str,
         peer_ip: &str,
-    ) -> Option<uuid::Uuid> {
+    ) -> Option<CookieData> {
         // A real user/browser will come back again and start a new authentication
         // attempt. A possible attacker will simply knock on the server without beeing
         // redirected to the authentication url again and stopped after reaching MAX_AUTH_USERS.
@@ -212,7 +213,7 @@ impl SharedAuthenticatedUsersHashMap {
 
         self.authenticated_users_hashmap
             .insert(request_uuid, authenticated_user);
-        Some(request_uuid)
+        Some(CookieData{uuid : request_uuid, unix_timestamp: unix_timestamp_seconds})
     }
 }
 

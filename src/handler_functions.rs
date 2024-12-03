@@ -252,9 +252,7 @@ pub async fn set_password_for_rsa_rivate_key(
             info!("rsa keys have been loaded successfully {}", &admin);
             // Clear the password now, since the rsa keys have been loaded.
             decoded_password.zeroize();
-            // Delete cookie after rsa password has been set because it
-            // is not enrypted yet.
-            HttpResponse::ok_text_response_with_empty_unix_epoch_cookie("OK")
+            HttpResponse::ok_text_response("OK")
         }
     }
 }

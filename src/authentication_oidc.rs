@@ -423,11 +423,11 @@ impl Login for OidcConfiguration {
             }
         };
 
-        if let Some(cookie_uuid) = application_configuration
+        if let Some(cookie_data) = application_configuration
             .shared_authenticated_users
             .write()
             .unwrap()
-            .new_cookie_uuid_for(
+            .new_cookie_data_for(
                 &user_details.user_name,
                 &user_details.first_name,
                 &user_details.last_name,
@@ -445,7 +445,7 @@ impl Login for OidcConfiguration {
             // The cookie value is encrypted with a generated rsa
             // public key.
             let cookie = build_new_encrypted_authentication_cookie(
-                &cookie_uuid.to_string(),
+                &cookie_data.to_string(),
                 application_configuration
                     .configuration_file
                     .max_cookie_age_seconds,
