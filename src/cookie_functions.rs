@@ -17,7 +17,7 @@ pub struct CookieData {
     /// Identifies the user account for the current session
     pub uuid: uuid::Uuid,
     /// Timestamp of the last cookie update in seconds since the Unix epoch.
-    pub unix_timestamp: u64,
+    pub unix_timestamp: i64,
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -42,13 +42,13 @@ impl FromStr for CookieData {
         let uuid_fromstr = uuid_str
             .parse::<uuid::Uuid>()
             .map_err(|_| CookieDataError)?;
-        let unix_time_stamp_fromstr = unix_time_stamp_str
-            .parse::<u64>()
+        let unix_timestamp_fromstr = unix_time_stamp_str
+            .parse::<i64>()
             .map_err(|_| CookieDataError)?;
 
         Ok(CookieData {
             uuid: uuid_fromstr,
-            unix_timestamp: unix_time_stamp_fromstr,
+            unix_timestamp: unix_timestamp_fromstr,
         })
     }
 }
@@ -56,12 +56,7 @@ impl FromStr for CookieData {
 impl fmt::Display for CookieData {
     /// Display the data as String. Used to as source data for an enrypted cookie.
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "{};{}",
-            self.uuid.to_string(),
-            self.unix_timestamp.to_string()
-        )
+        write!(f, "{};{}", self.uuid, self.unix_timestamp)
     }
 }
 
@@ -148,7 +143,7 @@ pub fn build_redirect_to_resource_url_response(
 /// # Arguments
 ///
 /// - `transmitted_cookie`: base64 encoded and rsa encrypted cookie value
-///  containing <uuid>;<unix_time_stamp>
+///   containing <uuid>;<unix_time_stamp>
 /// - `rsa`:                rsa keys to decrypt the cookie
 pub fn get_decrypted_cookie_data(
     transmitted_cookie_value: &str,

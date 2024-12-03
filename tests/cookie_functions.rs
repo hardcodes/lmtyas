@@ -1,7 +1,7 @@
 use actix_web::http::StatusCode;
 use lmtyas::cookie_functions::{
-    build_new_cookie_response, build_new_encrypted_authentication_cookie, get_decrypted_cookie_data,
-    COOKIE_PATH
+    build_new_cookie_response, build_new_encrypted_authentication_cookie,
+    get_decrypted_cookie_data, COOKIE_PATH,
 };
 use lmtyas::rsa_functions::RsaKeys;
 
@@ -31,7 +31,8 @@ fn cookie_functions() {
 
     let cookie_data = get_decrypted_cookie_data(&cookie, &rsa_keys);
     assert_eq!(
-        cookie_data.unwrap().to_string(), COOKIE_VALUE,
+        cookie_data.unwrap().to_string(),
+        COOKIE_VALUE,
         "cannot decrypt rsa encrypted cookie!"
     );
 

@@ -4,7 +4,7 @@ use std::collections::HashMap;
 use uuid::v1::{Context, Timestamp};
 use uuid::Uuid;
 extern crate env_logger;
-use crate::authentication_functions::get_authenticated_user;
+use crate::authentication_functions::get_authenticated_user_from_request;
 use crate::cookie_functions::CookieData;
 use crate::MAX_COOKIE_AGE_SECONDS;
 use actix_web::{dev::Payload, error::ErrorUnauthorized, Error, FromRequest, HttpRequest};
@@ -36,7 +36,7 @@ pub struct AuthenticatedUser {
     pub first_name: String,
     pub last_name: String,
     pub mail: String,
-    pub time_stamp: DateTime<Utc>,
+    pub utc_date_time: DateTime<Utc>,
     pub access_scope: AccessScope,
     pub peer_ip: String,
 }
@@ -47,7 +47,7 @@ impl fmt::Display for AuthenticatedUser {
         write!(
             f,
             "(user_name={}, time_stamp={}, access_scope={:?}, peer_ip={})",
-            self.user_name, self.time_stamp, self.access_scope, self.peer_ip
+            self.user_name, self.utc_date_time, self.access_scope, self.peer_ip
         )
     }
 }
@@ -72,7 +72,7 @@ impl AuthenticatedUser {
             mail: mail.into(),
             access_scope,
             peer_ip: peer_ip.into(),
-            time_stamp: Utc::now(),
+            utc_date_time: Utc::now(),
         }
     }
 
@@ -87,7 +87,7 @@ impl AuthenticatedUser {
     /// Update the timestamp before a cookie lifetime is expired
     /// to stay in the hashmap
     pub fn update_timestamp(&mut self) {
-        self.time_stamp = Utc::now()
+        self.utc_date_time = Utc::now()
     }
 }
 
@@ -100,7 +100,7 @@ impl fmt::Display for AuthenticatedAdministrator {
         write!(
             f,
             "(user_name={}, time_stamp={}, access_scope={:?}, peer_ip={})",
-            self.0.user_name, self.0.time_stamp, self.0.access_scope, self.0.peer_ip
+            self.0.user_name, self.0.utc_date_time, self.0.access_scope, self.0.peer_ip
         )
     }
 }
@@ -115,7 +115,7 @@ impl FromRequest for AuthenticatedUser {
 
     fn from_request(req: &HttpRequest, _payload: &mut Payload) -> Self::Future {
         let req = req.clone();
-        Box::pin(async move { get_authenticated_user(&req) })
+        Box::pin(async move { get_authenticated_user_from_request(&req) })
     }
 }
 
@@ -191,7 +191,7 @@ impl SharedAuthenticatedUsersHashMap {
         // redirected to the authentication url again and stopped after reaching MAX_AUTH_USERS.
         // So the webservice won't consume all memory on the host.
         if self.authenticated_users_hashmap.len() >= MAX_AUTH_USERS {
-            warn!("MAX_AUTH_USERS exceeded, possible DOS attack!");
+            warn!("MAX_AUTH_USERS exceeded, server busy or possible DOS attack!");
             return None;
         }
 
@@ -202,18 +202,21 @@ impl SharedAuthenticatedUsersHashMap {
         };
         let authenticated_user =
             AuthenticatedUser::new(user_name, first_name, last_name, mail, scope, peer_ip);
-        let unix_timestamp_seconds = authenticated_user.time_stamp.timestamp() as u64;
-        let unix_timestamp_subsec_nanos = authenticated_user.time_stamp.timestamp_subsec_nanos();
+        let unix_timestamp_seconds = authenticated_user.utc_date_time.timestamp();
+        let unix_timestamp_subsec_nanos = authenticated_user.utc_date_time.timestamp_subsec_nanos();
         let ts = Timestamp::from_unix(
             &self.uuid_context,
-            unix_timestamp_seconds,
+            unix_timestamp_seconds as u64,
             unix_timestamp_subsec_nanos,
         );
         let request_uuid = Uuid::new_v1(ts, NODE_ID);
 
         self.authenticated_users_hashmap
             .insert(request_uuid, authenticated_user);
-        Some(CookieData{uuid : request_uuid, unix_timestamp: unix_timestamp_seconds})
+        Some(CookieData {
+            uuid: request_uuid,
+            unix_timestamp: unix_timestamp_seconds,
+        })
     }
 }
 
@@ -236,7 +239,7 @@ pub fn cleanup_authenticated_users_hashmap(
     let mut items_to_remove: Vec<uuid::Uuid> = Vec::new();
     for (k, v) in &shared_authenticated_users_read_lock.authenticated_users_hashmap {
         // remove authenticated users after the configured time
-        if v.time_stamp < time_to_delete {
+        if v.utc_date_time < time_to_delete {
             info!("removing {}, {}", &k.to_string(), &v);
             items_to_remove.push(*k);
         }

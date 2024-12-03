@@ -1,6 +1,6 @@
 use log::{debug, info, warn};
 extern crate env_logger;
-use crate::authentication_functions::get_cookie_uuid_from_http_request;
+use crate::authentication_functions::get_decrypted_cookie_data_from_http_request;
 #[cfg(feature = "ldap-auth")]
 pub use crate::authentication_ldap::LdapCommonConfiguration;
 #[cfg(feature = "oidc-auth-ldap")]
@@ -230,9 +230,10 @@ where
         ////////////////////////////////////////////////////////////////////////////////////////////
         // Yes (cookie) ==> let the user access the requested resources
         ////////////////////////////////////////////////////////////////////////////////////////////
-        if let Some(parsed_cookie_data) =
-            get_cookie_uuid_from_http_request(service_request.request(), &application_configuration)
-        {
+        if let Some(parsed_cookie_data) = get_decrypted_cookie_data_from_http_request(
+            service_request.request(),
+            &application_configuration,
+        ) {
             if let Some(authenticated_user) = application_configuration
                 .shared_authenticated_users
                 .read()
@@ -248,7 +249,7 @@ where
                     )
                     .unwrap_or_else(|| Duration::try_seconds(MAX_COOKIE_AGE_SECONDS).unwrap());
                 let cookie_timestamp =
-                    DateTime::from_timestamp(parsed_cookie_data.unix_timestamp as i64, 0)
+                    DateTime::from_timestamp(parsed_cookie_data.unix_timestamp, 0)
                         .unwrap_or(invalid_cookie_age);
                 // UUID inside cookie as referenced an `AuthenticatedUser`.
                 if peer_ip.ne(&authenticated_user.peer_ip) {
@@ -257,7 +258,7 @@ where
                         &peer_ip, &authenticated_user
                     );
                 // check cookie age
-                } else if authenticated_user.time_stamp < invalid_cookie_age {
+                } else if authenticated_user.utc_date_time < invalid_cookie_age {
                     // A browser could hold a cookie that is older than 60 seconds and still valid, e.g. when
                     // an authenticated user is redirected to the index page. Since the `authenticated_user.time_stamp`
                     // is updated every 60 seconds on pages behind routes that require authentication, it should not be
