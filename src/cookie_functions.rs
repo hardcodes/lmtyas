@@ -10,6 +10,7 @@ use std::str::FromStr;
 /// Name of the cookie that is sent to an authenticated user browser
 pub const COOKIE_NAME: &str = env!("CARGO_PKG_NAME");
 pub const COOKIE_PATH: &str = "/";
+// Graceperiod for countercheck, see `counter_is_valid`.
 pub const MAX_COOKIE_COUNTER_DIFFERENCE: u16 = 1;
 
 /// Contains data inside a cookie before it is
@@ -24,11 +25,14 @@ pub struct CookieData {
 
 impl CookieData {
     /// This function is called to validate the counter
-    /// stored in this `CookieData`struct. A simpled ==
-    /// comparison does not work because that leads to
-    /// many situations with race conditions.
-    /// Therefore the counter is valied if it is in the
-    /// range of `MAX_COOKIE_COUNTER_DIFFERENCE`.
+    /// stored in this `CookieData`struct. A simple test
+    /// for equality does not work because that leads to
+    /// many situations with race conditions in the javascript
+    /// world.
+    /// Therefore the counter is valid if it is in the
+    /// range of `MAX_COOKIE_COUNTER_DIFFERENCE`. Since the
+    /// cookie lifetime is updated every 60 seconds, this
+    /// should be sufficient to catch those cases.
     pub fn counter_is_valid(&self, counter: u16) -> bool {
         if self.cookie_update_lifetime_counter > counter {
             // That should never happen!

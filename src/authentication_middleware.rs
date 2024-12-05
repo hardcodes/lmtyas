@@ -273,7 +273,9 @@ where
                 {
                     // The cookie data may still be valid within the meaning of `max_cookie_age_seconds` but
                     // the counter value inside the cookie may not match: we are presented a cookie that has
-                    // not been updated yet. Red flag!
+                    // not been updated yet. However, there is a graceperiod to prevent race conditions,
+                    // see `cookie_functions::MAX_COOKIE_COUNTER_DIFFERENCE`.
+                    // If this check fails: Red flag!
                     warn!(
                         "Cookie lifetime counter does not match: (cookie = {}, expected = {}, peer_address = {:?}, authenticated_user = {})",
                         &decrypted_cookie_data.cookie_update_lifetime_counter,
