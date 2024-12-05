@@ -250,6 +250,8 @@ where
                     .unwrap_or_else(|| Duration::try_seconds(MAX_COOKIE_AGE_SECONDS).unwrap());
                 // UUID inside cookie as referenced an `AuthenticatedUser`.
                 if peer_ip.ne(&authenticated_user.peer_ip) {
+                // NO! This maybe fishy. This also happens if devices have multiple IP addresses, e.g. a laptop with
+                // both active wifi and wired ethernet adapters.
                     warn!(
                         "Cookie stolen? peer_address = {:?}, authenticated_user = {}",
                         &peer_ip, &authenticated_user

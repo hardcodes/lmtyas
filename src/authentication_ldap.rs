@@ -186,6 +186,8 @@ impl Login for LdapCommonConfiguration {
             }
             // is authentication taking place from the same ip address as the resource request?
             if peer_ip.ne(&auth_request.peer_ip) {
+                // NO! This maybe fishy. This also happens if devices have multiple IP addresses, e.g. a laptop with
+                // both active wifi and wired ethernet adapters.
                 warn!(
                     "IP address changed since resource request: peer_address = {:?}, auth_request = {}",
                     &peer_ip, &auth_request
