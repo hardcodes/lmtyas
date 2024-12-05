@@ -10,5 +10,32 @@ You need to login with your *ACME LDAP* account to access this website.
 The website is reachable from the company network only and javascript
 needs to be enabled in your browser.
 
+For your personal amusement we created the following poem with an ai chat:
+
+In the quiet of the night, a script unfolds,
+Whispers of stories, both new and old.
+Scripting dreams in the moon's soft light,
+Characters dance, taking flight in the night.
+
+With every line, a world is spun,
+Scripting the battles lost and won.
+In margins of paper, where thoughts intertwine,
+The script of existence, both yours and mine.
+
+A playwright's heart beats in rhythmic time,
+Scripting the verses, a lyrical climb.
+Each word a brushstroke, painting the scene,
+In the theater of life, where we’ve all been.
+
+The script of the stars, in the vast, dark sky,
+Scripting the paths where our hopes learn to fly.
+In the silence of ink, where the stories reside,
+The script of our journeys, forever our guide.
+
+So let us embrace this art of the pen,
+Scripting our tales, again and again.
+For in every script, a piece of us stays,
+In the tapestry woven through time’s endless maze.
+
 Best regards
 Your it department
