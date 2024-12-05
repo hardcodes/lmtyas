@@ -288,7 +288,7 @@ pub async fn store_secret(
     };
 
     if let Err(e) =
-        encrypt_store_send_secret(&mut parsed_form_data, &application_configuration).await
+        encrypt_store_send_secret(&mut parsed_form_data, &application_configuration, None).await
     {
         return HttpResponse::err_text_response(e.to_string());
     }
@@ -413,6 +413,7 @@ async fn parse_and_validate_secret_form_data(
 async fn encrypt_store_send_secret(
     parsed_form_data: &mut Secret,
     application_configuration: &web::Data<ApplicationConfiguration>,
+    mail_template_file_option: Option<String>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     // aes encrypt the secret before rsa or hybrid rsa/aes encryption
     let aes_encryption_result = match parsed_form_data.secret.to_aes_enrypted_b64() {
@@ -487,18 +488,24 @@ async fn encrypt_store_send_secret(
         "encrypted_percent_encoded_url_payload = {}",
         &encrypted_percent_encoded_url_payload
     );
-    // send email to receiver
-    let mail_body_template = match application_configuration
-        .configuration_file
-        .email_configuration
-        .load_mail_template()
-    {
+    // load the optional mail template file or the default in the application configuration.
+    let mail_body_template_option = match mail_template_file_option {
+        None => application_configuration
+            .configuration_file
+            .email_configuration
+            .load_mail_template(),
+        Some(template_filename) => {
+            ValidatedAccessTokenPayload::load_mail_template(&template_filename)
+        }
+    };
+    let mail_body_template = match mail_body_template_option {
         Ok(mail_body_template) => mail_body_template,
         Err(e) => {
             warn!("error loading mail template: {}", &e);
             return Err("ERROR: cannot send email!".into());
         }
     };
+    // Build body and subject, then send email to receiver.
     let mail_body = &parsed_form_data.build_mail_body(
         &mail_body_template,
         &encrypted_percent_encoded_url_payload.to_string(),
@@ -774,8 +781,12 @@ pub async fn api_store_secret(
             }
         };
 
-    if let Err(e) =
-        encrypt_store_send_secret(&mut parsed_form_data, &application_configuration).await
+    if let Err(e) = encrypt_store_send_secret(
+        &mut parsed_form_data,
+        &application_configuration,
+        validated_access_token_payload.mail_template_file,
+    )
+    .await
     {
         return HttpResponse::err_text_response(e.to_string());
     }
@@ -785,6 +796,6 @@ pub async fn api_store_secret(
 /// Default route if feature is disabled.
 #[cfg(not(feature = "api-access-token"))]
 pub async fn api_store_secret(_req: HttpRequest) -> HttpResponse {
-    warn!("route access forbidden!");
+    warn!("route access forbidden (api access token)!");
     HttpResponse::err_text_response("ERROR forbidden!")
 }

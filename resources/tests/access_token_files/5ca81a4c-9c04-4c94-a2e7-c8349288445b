@@ -3,7 +3,8 @@
     "nbf": 1704063600,
     "exp": 4102354800,
     "from_email": "IT scripting team <do-not-reply@lmtyas.acme.home.arpa>",
-    "from_display_name": "our scriptig team",
+    "from_display_name": "scriptig team",
+    "mail_template_file": "resources/config/mailtemplate-access-token.txt",
     "iss": "https://127.0.0.1:8844",
     "aud": "https://127.0.0.1:8844/api/v1/secret"
 }

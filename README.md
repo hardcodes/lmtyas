@@ -490,6 +490,13 @@ Two files need to be created for each access token to work:
 
     - **NOTE1**: `iss` and `aud` are optional and will only be validated if present in the access token file on the server side.
     - **NOTE2**: Change `127.0.0.1:8844` to a valid DNS name/ip address/port combination that makes sense in your environment.
+    - **NOTE3**: You optionally may add an extra attribute `mail_template_file` with a path/filename of a mail template file. This will be used instead of the default mail template, e.g.
+  
+      ```
+      "mail_template_file": "resources/tests/config/mailtemplateaccess-token.txt"
+      ```
+
+      See also Note1 in section *[configuration file](#configuration-file)*.
 2. **Access token**
 
     The same values must be used for `NOW`, `ENDDATE` and as `UUID` like in the server file!
@@ -539,8 +546,9 @@ Here is an example utilizing `curl` to send a secret to user *Alice* via the URL
 ```bash
 FILECONTENT=$(cat resources/tests/access_token_payload/test-token-payload.json)
 TOKEN=$(echo -n "${FILECONTENT}"|base64 --wrap 0)
-# Add --insecure if your web service uses a self signed certificate.
-curl --include \
+# dev web service uses a self signed certificate, so we use --insecure.
+curl --insecure \
+--include \
 --header "Authorization: Bearer ${TOKEN}" \
 --request POST \
 --data "{\"FromEmail\":\"\",\

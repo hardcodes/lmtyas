@@ -12,6 +12,7 @@ use chrono::DateTime;
 use log::{debug, info, warn};
 use serde::{Deserialize, Serialize};
 use std::fmt;
+use std::fs;
 use std::future::Future;
 use std::path::Path;
 use std::pin::Pin;
@@ -91,6 +92,7 @@ fn get_access_token_payload(req: &HttpRequest) -> Result<ValidatedAccessTokenPay
         .rsa_private_key
         .is_none()
     {
+        info!("RSA private key has not been loaded, cannot accept access token.");
         return Err(ErrorServiceUnavailable("System not ready for encryption!"));
     }
 
@@ -202,6 +204,7 @@ fn get_access_token_payload(req: &HttpRequest) -> Result<ValidatedAccessTokenPay
             exp: bearer_token.exp,
             from_email: access_token_file.from_email,
             from_display_name: access_token_file.from_display_name,
+            mail_template_file: access_token_file.mail_template_file,
             ip_address,
         });
     }
@@ -279,6 +282,8 @@ pub struct AccessTokenFile {
     /// display name that gets used in the email sent
     /// to the secret receiver
     pub from_display_name: String,
+    /// Optional mail template filename
+    pub mail_template_file: Option<String>,
     /// Optional information for the access token user
     pub iss: Option<String>,
     /// Optional information for the access token user
@@ -311,13 +316,15 @@ pub struct ValidatedAccessTokenPayload {
     pub nbf: i64,
     /// Expires at (Unix timestamp)
     pub exp: i64,
-    /// email address that will be inserted when sending
+    /// Email address that will be inserted when sending
     /// the email to the secret receiver
     pub from_email: String,
-    /// display name that gets used in the email sent
+    /// Display name that gets used in the email sent
     /// to the secret receiver
     pub from_display_name: String,
-    /// ip_adress of the scripting host
+    /// Optional mail template filename
+    pub mail_template_file: Option<String>,
+    /// Ip_adress of the scripting host
     pub ip_address: String,
 }
 
@@ -328,5 +335,15 @@ impl fmt::Display for ValidatedAccessTokenPayload {
             "(sub={}, nbf={}, exp={}, from_email={}, from_display_name={})",
             self.sub, self.nbf, self.exp, self.from_email, self.from_display_name,
         )
+    }
+}
+
+impl ValidatedAccessTokenPayload {
+    /// loads the optional mail template file
+    pub fn load_mail_template(
+        mail_template_filename: &str,
+    ) -> Result<String, Box<dyn std::error::Error>> {
+        let mail_body_template = fs::read_to_string(mail_template_filename)?;
+        Ok(mail_body_template)
     }
 }
