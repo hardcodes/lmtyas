@@ -1003,17 +1003,25 @@ async fn with_setup() {
     ///////////////////////////////////////////////////////////////////////////
     // Log in Bob
     ///////////////////////////////////////////////////////////////////////////
-    let uuid_option = application_configuration
+    let cookie_data_bob = match application_configuration
         .shared_authenticated_users
         .write()
         .unwrap()
-        .new_cookie_data_for("bob", "Bob", "Sanders", "bob@acme.local", "127.0.0.1");
-    if uuid_option.is_none() {
-        panic!("uuid for Bob expected!");
-    }
+        .new_cookie_data_for("bob", "Bob", "Sanders", "bob@acme.local", "127.0.0.1")
+    {
+        Some(c) => c,
+        None => {
+            panic!("cookie_data for Bob expected!");
+        }
+    };
 
+    let valid_cookie_value = format!(
+        "{};{}",
+        cookie_data_bob.uuid.to_string(),
+        &cookie_data_bob.cookie_update_lifetime_counter
+    );
     let valid_rsa_cookie = build_new_encrypted_authentication_cookie(
-        &uuid_option.unwrap().to_string(),
+        &valid_cookie_value,
         90,
         COOKIE_PATH,
         &application_configuration.rsa_keys_for_cookies,
@@ -1127,7 +1135,7 @@ async fn with_setup() {
             .read()
             .unwrap();
         // de1bf8ab-a9f3-4af6-9183-56f6d7b17ec7 is a random value generated with uuidgen
-        rsa_read_lock.rsa_public_key_encrypt_str("de1bf8ab-a9f3-4af6-9183-56f6d7b17ec7")
+        rsa_read_lock.rsa_public_key_encrypt_str("de1bf8ab-a9f3-4af6-9183-56f6d7b17ec7;0")
     };
     let fake_cookie = format!(
         "{}={}",
@@ -1146,8 +1154,6 @@ async fn with_setup() {
         "/authenticated/keep_session_alive should not work with a fake cookie!"
     );
 
-    // TODO: check updated cookie value if possible.
-
     ///////////////////////////////////////////////////////////////////////////
     // Tell secret
     ///////////////////////////////////////////////////////////////////////////
@@ -1157,80 +1163,100 @@ async fn with_setup() {
         .take(16)
         .map(char::from)
         .collect();
+    // get updated cookie
+    if let Some(authenticated_bob) = application_configuration
+        .shared_authenticated_users
+        .read()
+        .unwrap()
+        .authenticated_users_hashmap
+        .get(&cookie_data_bob.uuid)
+    {
+        let valid_cookie_value = format!(
+            "{};{}",
+            cookie_data_bob.uuid.to_string(),
+            &authenticated_bob.cookie_update_lifetime_counter
+        );
+        let valid_updated_rsa_cookie = build_new_encrypted_authentication_cookie(
+            &valid_cookie_value,
+            90,
+            COOKIE_PATH,
+            &application_configuration.rsa_keys_for_cookies,
+        );
 
-    let base64_secret = SECRET_PLAINTEXT.to_base64_encoded();
-    let secret = lmtyas::secret_functions::Secret {
-        from_email: "bob@acme.local".to_string(),
-        from_display_name: "Bob Sanders".to_string(),
-        to_email: "alice@acme.local".to_string(),
-        to_display_name: "Alice Henderson".to_string(),
-        context: random_context.clone(),
-        secret: base64_secret.clone(),
-    };
-    let json_secret = serde_json::to_string(&secret).unwrap();
-    let request = test::TestRequest::post()
-        .uri("/authenticated/secret/tell")
-        .append_header(("Cookie", valid_rsa_cookie.to_string()))
-        .peer_addr(IP_ADDRESS.parse().unwrap())
-        .set_payload(json_secret)
-        .to_request();
-    let result = test::call_service(&test_service, request).await;
-    assert_eq!(
-        result.status(),
-        StatusCode::OK,
-        "authenticated/secret/tell should work!"
-    );
-    let body = test::read_body(result).await;
-    assert_eq!(
-        body.try_into_bytes().unwrap(),
-        "OK".as_bytes(),
-        "authenticated/secret/tell should return OK!"
-    );
-    // wrong receiver email format
-    let secret = lmtyas::secret_functions::Secret {
-        from_email: "bob@acme.local".to_string(),
-        from_display_name: "Bob Sanders".to_string(),
-        to_email: "alice@acme.world.local".to_string(),
-        to_display_name: "Alice Henderson".to_string(),
-        context: random_context.clone(),
-        secret: base64_secret.clone(),
-    };
-    let json_secret = serde_json::to_string(&secret).unwrap();
-    let request = test::TestRequest::post()
-        .uri("/authenticated/secret/tell")
-        .append_header(("Cookie", valid_rsa_cookie.to_string()))
-        .peer_addr(IP_ADDRESS.parse().unwrap())
-        .set_payload(json_secret)
-        .to_request();
-    let result = test::call_service(&test_service, request).await;
-    assert_eq!(
-        result.status(),
-        StatusCode::BAD_REQUEST,
-        "authenticated/secret/tell should not work!"
-    );
+        let base64_secret = SECRET_PLAINTEXT.to_base64_encoded();
+        let secret = lmtyas::secret_functions::Secret {
+            from_email: "bob@acme.local".to_string(),
+            from_display_name: "Bob Sanders".to_string(),
+            to_email: "alice@acme.local".to_string(),
+            to_display_name: "Alice Henderson".to_string(),
+            context: random_context.clone(),
+            secret: base64_secret.clone(),
+        };
+        let json_secret = serde_json::to_string(&secret).unwrap();
+        let request = test::TestRequest::post()
+            .uri("/authenticated/secret/tell")
+            .append_header(("Cookie", valid_updated_rsa_cookie.to_string()))
+            .peer_addr(IP_ADDRESS.parse().unwrap())
+            .set_payload(json_secret)
+            .to_request();
+        let result = test::call_service(&test_service, request).await;
+        assert_eq!(
+            result.status(),
+            StatusCode::OK,
+            "authenticated/secret/tell should work!"
+        );
+        let body = test::read_body(result).await;
+        assert_eq!(
+            body.try_into_bytes().unwrap(),
+            "OK".as_bytes(),
+            "authenticated/secret/tell should return OK!"
+        );
+        // wrong receiver email format
+        let secret = lmtyas::secret_functions::Secret {
+            from_email: "bob@acme.local".to_string(),
+            from_display_name: "Bob Sanders".to_string(),
+            to_email: "alice@acme.world.local".to_string(),
+            to_display_name: "Alice Henderson".to_string(),
+            context: random_context.clone(),
+            secret: base64_secret.clone(),
+        };
+        let json_secret = serde_json::to_string(&secret).unwrap();
+        let request = test::TestRequest::post()
+            .uri("/authenticated/secret/tell")
+            .append_header(("Cookie", valid_updated_rsa_cookie.to_string()))
+            .peer_addr(IP_ADDRESS.parse().unwrap())
+            .set_payload(json_secret)
+            .to_request();
+        let result = test::call_service(&test_service, request).await;
+        assert_eq!(
+            result.status(),
+            StatusCode::BAD_REQUEST,
+            "authenticated/secret/tell should not work!"
+        );
 
-    // nonexistent receiver email
-    let secret = lmtyas::secret_functions::Secret {
-        from_email: "bob@acme.local".to_string(),
-        from_display_name: "Bob Sanders".to_string(),
-        to_email: "jane@acme.local".to_string(),
-        to_display_name: "Jane Doe".to_string(),
-        context: random_context.clone(),
-        secret: base64_secret.clone(),
-    };
-    let json_secret = serde_json::to_string(&secret).unwrap();
-    let request = test::TestRequest::post()
-        .uri("/authenticated/secret/tell")
-        .append_header(("Cookie", valid_rsa_cookie.to_string()))
-        .peer_addr(IP_ADDRESS.parse().unwrap())
-        .set_payload(json_secret)
-        .to_request();
-    let result = test::call_service(&test_service, request).await;
-    assert_eq!(
-        result.status(),
-        StatusCode::BAD_REQUEST,
-        "authenticated/secret/tell should not work!"
-    );
+        // nonexistent receiver email
+        let secret = lmtyas::secret_functions::Secret {
+            from_email: "bob@acme.local".to_string(),
+            from_display_name: "Bob Sanders".to_string(),
+            to_email: "jane@acme.local".to_string(),
+            to_display_name: "Jane Doe".to_string(),
+            context: random_context.clone(),
+            secret: base64_secret.clone(),
+        };
+        let json_secret = serde_json::to_string(&secret).unwrap();
+        let request = test::TestRequest::post()
+            .uri("/authenticated/secret/tell")
+            .append_header(("Cookie", valid_updated_rsa_cookie.to_string()))
+            .peer_addr(IP_ADDRESS.parse().unwrap())
+            .set_payload(json_secret)
+            .to_request();
+        let result = test::call_service(&test_service, request).await;
+        assert_eq!(
+            result.status(),
+            StatusCode::BAD_REQUEST,
+            "authenticated/secret/tell should not work!"
+        );
+    }
 
     ///////////////////////////////////////////////////////////////////////////
     // Validate sent mail

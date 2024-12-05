@@ -55,7 +55,7 @@ pub fn get_decrypted_cookie_data_from_http_request(
 pub fn get_authenticated_user_from_request(req: &HttpRequest) -> Result<AuthenticatedUser, Error> {
     let app_data: Option<&web::Data<ApplicationConfiguration>> = req.app_data();
     if app_data.is_none() {
-        warn!("app_data is none (get_authenticated_user_from_request)!");
+        warn!("Cannot get user, app_data is empty (should never happen)!");
         return Err(ErrorUnauthorized("ERROR: no app_data!"));
     }
     let application_configuration = app_data.unwrap().clone();
@@ -81,10 +81,14 @@ pub fn get_authenticated_user_from_request(req: &HttpRequest) -> Result<Authenti
             "decrypted_cookie_data = {}, authenticated_user = {}",
             &decrypted_cookie_data, authenticated_user.user_name
         );
-        if decrypted_cookie_data.cookie_update_lifetime_counter != authenticated_user.cookie_update_lifetime_counter {
+        // Is cookie lifetime counter is within range?
+        if !decrypted_cookie_data
+            .counter_is_valid(authenticated_user.cookie_update_lifetime_counter)
+        {
             warn!(
                 "Cookie lifetime counter does not match: (cookie = {}, expected = {})",
-                &decrypted_cookie_data.cookie_update_lifetime_counter, &authenticated_user.cookie_update_lifetime_counter
+                &decrypted_cookie_data.cookie_update_lifetime_counter,
+                &authenticated_user.cookie_update_lifetime_counter
             );
             return Err(ErrorUnauthorized(
                 "ERROR: no matching cookie found! Authorization expired?",
@@ -115,7 +119,7 @@ pub fn get_authenticated_user_from_request(req: &HttpRequest) -> Result<Authenti
 pub fn update_authenticated_user_cookie_lifetime(req: &HttpRequest) -> HttpResponse {
     let app_data: Option<&web::Data<ApplicationConfiguration>> = req.app_data();
     if app_data.is_none() {
-        warn!("app_data is empty(none)!");
+        warn!("Cannot update cookie, app_data is empty (should never happen)!");
         return HttpResponse::from_error(ErrorUnauthorized("ERROR: no app_data!"));
     }
     let application_configuration = app_data.unwrap().clone();
@@ -143,8 +147,10 @@ pub fn update_authenticated_user_cookie_lifetime(req: &HttpRequest) -> HttpRespo
             &decrypted_cookie_data.to_string(),
             authenticated_user.user_name
         );
-        // Update only if timestamp matches
-        if decrypted_cookie_data.cookie_update_lifetime_counter != authenticated_user.cookie_update_lifetime_counter {
+        // Update only if cookie lifetime counter is within range
+        if !decrypted_cookie_data
+            .counter_is_valid(authenticated_user.cookie_update_lifetime_counter)
+        {
             warn!(
                 "Cannot update cookie lifetime, counter does not match: (cookie = {}, expected = {})",
                 &decrypted_cookie_data.cookie_update_lifetime_counter, &authenticated_user.cookie_update_lifetime_counter
@@ -153,12 +159,18 @@ pub fn update_authenticated_user_cookie_lifetime(req: &HttpRequest) -> HttpRespo
                 "ERROR: no matching cookie found! Authorization expired?",
             );
         }
-        // Update the timestamp in the hashmap, so that the cleanup routine
-        // will not remove this entry
+        // Update the timestamp for the `authenticated_user`, so that the cleanup routine
+        // will not remove this entry from the hashmap.
+        // The cookie lifetime counter is also incremented.
         authenticated_user.update_timestamp();
-        // create cookie with same uuid value but renewed cookie lifetime
+        // Create a new cookie with same uuid value but incremented cookie lifetime counter value.
+        let updated_cookie_data = CookieData {
+            uuid: decrypted_cookie_data.uuid,
+            cookie_update_lifetime_counter: authenticated_user.cookie_update_lifetime_counter,
+        };
+        debug!("updated_cookie_data = {}", &updated_cookie_data);
         let updated_cookie = build_new_encrypted_authentication_cookie(
-            &decrypted_cookie_data.to_string(),
+            &updated_cookie_data.to_string(),
             application_configuration
                 .configuration_file
                 .max_cookie_age_seconds,
@@ -182,5 +194,3 @@ pub fn update_authenticated_user_cookie_lifetime(req: &HttpRequest) -> HttpRespo
     );
     HttpResponse::ok_text_response("ERROR: no matching cookie found! Authorization expired?")
 }
-
-// TODO: extract common parts of get_authenticated_user_from_request and update_authenticated_user_cookie_lifetime

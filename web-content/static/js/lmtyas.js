@@ -181,12 +181,7 @@ function keepSessionAlive(url) {
   }
   else {
     keepAliveCount++;
-    if (keepAliveCount > 1) {
-      queryWebService(url, logQueryResult, logQueryResult);
-    }
-    else{
-      console.log("skipping immediate keepalive query")
-    }
+    queryWebService(url, logQueryResult, logQueryResult);
   }
 }
 

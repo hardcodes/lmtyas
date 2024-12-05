@@ -1,5 +1,5 @@
 use chrono::{DateTime, Utc};
-use log::{info, warn};
+use log::{debug, info, warn};
 use std::collections::HashMap;
 use uuid::v1::{Context, Timestamp};
 use uuid::Uuid;
@@ -14,8 +14,8 @@ use std::future::Future;
 use std::pin::Pin;
 use std::sync::{Arc, RwLock};
 
-/// maximum number of authenticated users that are stored in the
-/// hashmap to prevent server overload or a DOS attack.
+/// Maximum number of authenticated users that are stored in the
+/// hashmap to prevent server overload or contain a DOS attack.
 pub const MAX_AUTH_USERS: usize = 512;
 /// Used to build unique uuids for resource requests
 const NODE_ID: &[u8; 6] = &[0x27, 0x9b, 0xbe, 0x13, 0x86, 0x80];
@@ -89,7 +89,7 @@ impl AuthenticatedUser {
         }
     }
 
-    /// get display name of authenticated user
+    /// Get display name of authenticated user
     /// (first name [SPACE] last name)
     pub fn display_name(&self) -> String {
         format!("{} {}", &self.first_name, &self.last_name)
@@ -101,9 +101,10 @@ impl AuthenticatedUser {
     /// to stay in the hashmap
     pub fn update_timestamp(&mut self) {
         self.utc_date_time = Utc::now();
+        // This counter is used to compare a received cookie with data in the hashmap, this
+        // way a cookies changes its content with every update.
         self.cookie_update_lifetime_counter = self.cookie_update_lifetime_counter.wrapping_add(1);
-        #[cfg(debug_assertions)]
-        info!("update_timestamp(), self = {}", &self);
+        debug!("update_timestamp(), self = {}", &self);
     }
 }
 
@@ -113,11 +114,22 @@ pub struct AuthenticatedAdministrator(AuthenticatedUser);
 /// custom formatter to suppress first name, last name and mail address
 impl fmt::Display for AuthenticatedAdministrator {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "(user_name={}, time_stamp={}, access_scope={:?}, peer_ip={})",
-            self.0.user_name, self.0.utc_date_time, self.0.access_scope, self.0.peer_ip
-        )
+        #[cfg(debug_assertions)]
+        {
+            write!(
+                f,
+                "(user_name={}, time_stamp={}, access_scope={:?}, peer_ip={}, cookie_update_lifetime_counter={})",
+                self.0.user_name, self.0.utc_date_time, self.0.access_scope, self.0.peer_ip, self.0.cookie_update_lifetime_counter
+            )
+        }
+        #[cfg(not(debug_assertions))]
+        {
+            write!(
+                f,
+                "(user_name={}, time_stamp={}, access_scope={:?}, peer_ip={})",
+                self.0.user_name, self.0.utc_date_time, self.0.access_scope, self.0.peer_ip
+            )
+        }
     }
 }
 
@@ -160,7 +172,7 @@ impl FromRequest for AuthenticatedAdministrator {
 }
 
 /// This hashmap uses the uuid that is generated when a new user is inserted
-/// as a key. The uuid is stored as (encoded/enrypted) cookie in the client browser.
+/// as a key. The uuid is stored as enrypted cookie in the client browser.
 pub type AuthenticatedUsersHashMap = HashMap<Uuid, AuthenticatedUser>;
 
 /// Information about authenticated users shared between the worker threads

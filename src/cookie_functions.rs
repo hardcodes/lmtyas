@@ -3,21 +3,40 @@ use actix_web::{
     cookie::time::Duration, cookie::time::OffsetDateTime, cookie::Cookie, http, http::StatusCode,
     HttpResponse,
 };
-use log::debug;
+use log::{debug, warn};
 use std::fmt;
 use std::str::FromStr;
 
 /// Name of the cookie that is sent to an authenticated user browser
 pub const COOKIE_NAME: &str = env!("CARGO_PKG_NAME");
 pub const COOKIE_PATH: &str = "/";
+pub const MAX_COOKIE_COUNTER_DIFFERENCE: u16 = 1;
 
-/// Contains data that is used to build a cookie.
+/// Contains data inside a cookie before it is
+/// encrypted or after it is decrypted.
 #[derive(Debug, PartialEq)]
 pub struct CookieData {
     /// Identifies the user account for the current session
     pub uuid: uuid::Uuid,
-    /// /// Counting cookie updates
+    /// Counting cookie lifetime updates
     pub cookie_update_lifetime_counter: u16,
+}
+
+impl CookieData {
+    /// This function is called to validate the counter
+    /// stored in this `CookieData`struct. A simpled ==
+    /// comparison does not work because that leads to
+    /// many situations with race conditions.
+    /// Therefore the counter is valied if it is in the
+    /// range of `MAX_COOKIE_COUNTER_DIFFERENCE`.
+    pub fn counter_is_valid(&self, counter: u16) -> bool {
+        if self.cookie_update_lifetime_counter > counter {
+            // That should never happen!
+            warn!("cookie_update_lifetime_counter is too big!");
+            return false;
+        }
+        counter - self.cookie_update_lifetime_counter <= MAX_COOKIE_COUNTER_DIFFERENCE
+    }
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -37,8 +56,9 @@ impl FromStr for CookieData {
     /// ```ignore
     /// <uuid>;<cookie_update_lifetime_counter>
     /// ```
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let (uuid_str, cookie_update_lifetime_counter_str) = s.split_once(';').ok_or(CookieDataError)?;
+    fn from_str(decrypted_cookie: &str) -> Result<Self, Self::Err> {
+        let (uuid_str, cookie_update_lifetime_counter_str) =
+            decrypted_cookie.split_once(';').ok_or(CookieDataError)?;
         let uuid_fromstr = uuid_str
             .parse::<uuid::Uuid>()
             .map_err(|_| CookieDataError)?;
@@ -54,7 +74,7 @@ impl FromStr for CookieData {
 }
 
 impl fmt::Display for CookieData {
-    /// Display the data as String. Used to as source data for an enrypted cookie.
+    /// Display the data as String. Used to as source data for an encrypted cookie.
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{};{}", self.uuid, self.cookie_update_lifetime_counter)
     }
@@ -72,12 +92,12 @@ impl fmt::Display for CookieData {
 ///
 /// - `actix_web::cookie::Cookie`
 pub fn build_new_encrypted_authentication_cookie(
-    cookie_value: &str,
+    plaintext_cookie_value: &str,
     max_age_seconds: i64,
     domain: &str,
     rsa: &RsaKeys,
 ) -> Cookie<'static> {
-    let encrypted_cookie_value = match rsa.rsa_public_key_encrypt_str(cookie_value) {
+    let encrypted_cookie_value = match rsa.rsa_public_key_encrypt_str(plaintext_cookie_value) {
         Err(_) => String::from("invalid_rsa_cookie"),
         Ok(value) => value,
     };
@@ -138,19 +158,19 @@ pub fn build_redirect_to_resource_url_response(
         .finish()
 }
 
-/// Get plain cookie value from rsa encrypted value.
+/// Get plaintext cookie value from rsa encrypted value.
 ///
 /// # Arguments
 ///
 /// - `transmitted_cookie`: base64 encoded and rsa encrypted cookie value
-///   containing <uuid>;<unix_time_stamp>
+///   containing <uuid>;<cookie_update_lifetime_counter>
 /// - `rsa`:                rsa keys to decrypt the cookie
 pub fn get_decrypted_cookie_data(
-    transmitted_cookie_value: &str,
+    encrypted_cookie_value: &str,
     rsa: &RsaKeys,
 ) -> Result<CookieData, CookieDataError> {
     let decrypted_cookie_value = rsa
-        .rsa_private_key_decrypt_str(transmitted_cookie_value)
+        .rsa_private_key_decrypt_str(encrypted_cookie_value)
         .unwrap_or_else(|_| -> String { "invalid_rsa_cookie_value".to_string() });
     debug!("decrypted_cookie_value = {}", &decrypted_cookie_value);
     CookieData::from_str(&decrypted_cookie_value)

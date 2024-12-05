@@ -268,18 +268,17 @@ where
                     .configuration_file
                     .max_cookie_age_seconds, &peer_ip, &authenticated_user
                             );
-                } else if decrypted_cookie_data.cookie_update_lifetime_counter
-                    != authenticated_user.cookie_update_lifetime_counter
+                } else if !decrypted_cookie_data
+                    .counter_is_valid(authenticated_user.cookie_update_lifetime_counter)
                 {
                     // The cookie data may still be valid within the meaning of `max_cookie_age_seconds` but
-                    // the timestamp inside the cookie may not match: we are presented a cookie that has already
-                    // been updated. Red flag!
+                    // the counter value inside the cookie may not match: we are presented a cookie that has
+                    // not been updated yet. Red flag!
                     warn!(
-                        "Cookie timestampe older than {} seconds! peer_address = {:?}, authenticated_user = {}",
-                        &application_configuration
-                    .configuration_file
-                    .max_cookie_age_seconds, &peer_ip, &authenticated_user
-                            );
+                        "Cookie lifetime counter does not match: (cookie = {}, expected = {}, peer_address = {:?}, authenticated_user = {})",
+                        &decrypted_cookie_data.cookie_update_lifetime_counter,
+                        &authenticated_user.cookie_update_lifetime_counter, &peer_ip, &authenticated_user
+                    );
                 } else {
                     info!("user is already authenticated: {}", &authenticated_user);
 
@@ -322,6 +321,10 @@ where
                 "uuid for the request {} is {}",
                 &request_path_with_query, &request_uuid
             );
+            // If no (valid) cookie is present, the browser is redirected to the configured
+            // authentication instance. A possible invalid cookie will be deleted by giving
+            // the browser the order to delete any cookie from this service with the redirect
+            // response.
             let redirect_service_response =
                     <AuthenticationRedirectType as AuthenticationRedirect>::get_authentication_redirect_response(
                         &request_path_with_query,
