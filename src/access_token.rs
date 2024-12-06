@@ -227,8 +227,18 @@ fn validate_access_token(
     }
     let now = chrono::offset::Local::now();
     debug!("now = {}", &now);
-    let exp = DateTime::from_timestamp(access_token_file.exp, 0).expect("Invalid exp timestamp!");
-    let nbf = DateTime::from_timestamp(access_token_file.nbf, 0).expect("Invalid nbf timestamp!");
+    let exp = match DateTime::from_timestamp(access_token_file.exp, 0) {
+        None => {
+            return Err("Invalid exp timestamp!".into());
+        }
+        Some(exp) => exp,
+    };
+    let nbf = match DateTime::from_timestamp(access_token_file.nbf, 0) {
+        None => {
+            return Err("Invalid nbf timestamp!".into());
+        }
+        Some(exp) => exp,
+    };
     if exp < now {
         return Err("Access token expired!".into());
     }
