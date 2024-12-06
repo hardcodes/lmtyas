@@ -93,7 +93,7 @@ macro_rules! app (
             )
             .service(
                 web::scope("api")
-                .route("/v1/secret", web::post().to(api_store_secret))
+                .route("/v1/secret", web::post().to(api_v1_store_secret))
             )
             .service(
                 web::scope("html")

@@ -751,12 +751,12 @@ pub async fn not_found_404() -> HttpResponse {
 /// This function is used by scripts where the caller presents
 /// an access token for authentication that we provided manually beforehand.
 #[cfg(feature = "api-access-token")]
-pub async fn api_store_secret(
+pub async fn api_v1_store_secret(
     bytes: Bytes,
     validated_access_token_payload: ValidatedAccessTokenPayload,
     application_configuration: web::Data<ApplicationConfiguration>,
 ) -> HttpResponse {
-    debug!("api_store_Secret()");
+    debug!("api_v1_store_secret()");
 
     // At this point the `AccessTokenPayload` has been validated
     // and is presented as `ValidatedAccessTokenPayload` with extra
