@@ -182,27 +182,28 @@ impl ApplicationConfiguration {
         };
 
         #[cfg(feature = "authentication-oidc")]
-        info!(
-            "getting provider metadata from {}",
-            &config_file.oidc_configuration.provider_metadata_url
-        );
-        #[cfg(feature = "authentication-oidc")]
-        let issuer_url =
-            match IssuerUrl::new(config_file.oidc_configuration.provider_metadata_url.clone()) {
+        let provider_metadata = {
+            info!(
+                "getting provider metadata from {}",
+                &config_file.oidc_configuration.provider_metadata_url
+            );
+            let issuer_url = match IssuerUrl::new(
+                config_file.oidc_configuration.provider_metadata_url.clone(),
+            ) {
                 Err(e) => {
                     return Err(format!("cannot build issuer_url: {}", e).into());
                 }
                 Ok(i) => i,
             };
-        // this call does not time out!
-        #[cfg(feature = "authentication-oidc")]
-        let provider_metadata =
+            // this call does not time out!
             match CoreProviderMetadata::discover_async(issuer_url, async_http_client).await {
                 Err(e) => {
                     return Err(format!("cannot load oidc provider metadata: {}", e).into());
                 }
                 Ok(p) => p,
-            };
+            }
+        };
+
         let rsa_keys_for_cookies = match rsa_functions::RsaKeys::generate_random_rsa_keys() {
             Err(e) => {
                 return Err(format!("Cannot generate random RSA keys for cookies: {}", &e).into());
