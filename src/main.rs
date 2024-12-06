@@ -14,6 +14,7 @@ use lmtyas::log_functions::extract_request_path;
 use lmtyas::login_user_trait::Login;
 use lmtyas::MAX_FORM_BYTES_LEN;
 use log::info;
+use log::warn;
 use std::io::Write;
 use std::path::Path;
 
@@ -40,7 +41,13 @@ async fn main() -> std::io::Result<()> {
         .unwrap()
         .to_string();
     let application_configuration =
-        ApplicationConfiguration::read_from_file(Path::new(&config_file)).await;
+        match ApplicationConfiguration::read_from_file(Path::new(&config_file)).await {
+            Err(e) => {
+                warn!("Cannot load application configuration: {}", &e);
+                std::process::exit(1);
+            }
+            Ok(a) => a,
+        };
     // make a clone of the web_bind_address since it will be used
     // after moving application_configuration into the webservice
     let web_bind_address = application_configuration

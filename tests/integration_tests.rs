@@ -67,7 +67,8 @@ async fn with_setup() {
     let application_configuration = ApplicationConfiguration::read_from_file(
         Path::new(common::WORKSPACE_DIR).join("resources/config/lmtyas-config.json"),
     )
-    .await;
+    .await
+    .unwrap();
 
     ///////////////////////////////////////////////////////////////////////////
     // Test with configuration.

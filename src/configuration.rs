@@ -91,14 +91,48 @@ impl ConfigurationFile {
         let reader = BufReader::new(file);
         // Read the JSON contents of the file as an instance of `ConfigurationFile`.
         let mut parsed_config: ConfigurationFile = serde_json::from_reader(reader)?;
-        // check if tke rsa key files exists because they are loaded later on,
+        // Check if the file for TLS exist, the service cannot start without them.
+        if !Path::new(&parsed_config.ssl_private_key_file).exists() {
+            return Err(format!(
+                "ssl_private_key_file {} does not exist!",
+                &parsed_config.rsa_private_key_file
+            )
+            .into());
+        }
+        if !Path::new(&parsed_config.ssl_certificate_chain_file).exists() {
+            return Err(format!(
+                "ssl_certificate_chain_file {} does not exist!",
+                &parsed_config.rsa_private_key_file
+            )
+            .into());
+        }
+        // Check if the `rsa_private_key_file` exists because it is are loaded later on,
         // when the password is entered by the administator.
         // The server must not start if such a key component is missing.
         if !Path::new(&parsed_config.rsa_private_key_file).exists() {
-            panic!(
-                "rsa private key file {} does not exist!",
+            return Err(format!(
+                "rsa_private_key_file {} does not exist!",
                 &parsed_config.rsa_private_key_file
-            );
+            )
+            .into());
+        }
+        // Check for mail template.
+        if !Path::new(
+            &parsed_config
+                .email_configuration
+                .mail_template_file
+                .as_os_str(),
+        )
+        .exists()
+        {
+            return Err(format!(
+                "mail template does not exist: {:?}",
+                &parsed_config
+                    .email_configuration
+                    .mail_template_file
+                    .as_ref()
+            )
+            .into());
         }
         #[cfg(feature = "ldap-auth")]
         parsed_config
@@ -151,22 +185,14 @@ impl ApplicationConfiguration {
     /// - `ApplicationConfiguration`
     pub async fn read_from_file<P: AsRef<Path>>(
         configuration_file_path: P,
-    ) -> ApplicationConfiguration {
-        let config_file = ConfigurationFile::read_from_file(configuration_file_path)
-            .expect("Cannot load the json configuration file!");
-        if !Path::new(
-            config_file
-                .email_configuration
-                .mail_template_file
-                .as_os_str(),
-        )
-        .exists()
-        {
-            panic!(
-                "mail template does not exist: {:?}",
-                config_file.email_configuration.mail_template_file.as_ref()
-            );
-        }
+    ) -> Result<ApplicationConfiguration, Box<dyn Error>> {
+        let config_file = match ConfigurationFile::read_from_file(configuration_file_path) {
+            Err(e) => {
+                return Err(e);
+            }
+            Ok(c) => c,
+        };
+
         #[cfg(feature = "authentication-oidc")]
         info!(
             "getting provider metadata from {}",
@@ -188,7 +214,7 @@ impl ApplicationConfiguration {
             Ok(rsa_keys) => rsa_keys,
         };
         info!("created random RSA key pair for cookie encryption/decryption");
-        ApplicationConfiguration {
+        Ok(ApplicationConfiguration {
             configuration_file: config_file.clone(),
             rsa_keys_for_secrets: Arc::new(RwLock::new(RsaKeys::new())),
             rsa_keys_for_cookies: Arc::new(rsa_keys_for_cookies),
@@ -222,7 +248,7 @@ impl ApplicationConfiguration {
             email_regex: Regex::new(crate::EMAIL_REGEX).expect(
                 "Cannot build generic email regex, see pub const EMAIL_REGEX in file lib.rs!",
             ),
-        }
+        })
     }
 
     /// Reads the RSA key files which are referenced in the configuration file
