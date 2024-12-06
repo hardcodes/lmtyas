@@ -204,6 +204,29 @@ impl ApplicationConfiguration {
             }
         };
 
+        #[cfg(feature = "authentication-oidc")]
+        let oidc_client = {
+            let redirect_url = match RedirectUrl::new(format!(
+                "https://{}/authentication{}",
+                &config_file.fqdn, AUTH_ROUTE
+            )) {
+                Err(e) => {
+                    return Err(format!("Invalid redirect URL {}", e).into());
+                }
+                Ok(r) => r,
+            };
+
+            CoreClient::from_provider_metadata(
+                provider_metadata,
+                ClientId::new(config_file.oidc_configuration.client_id.clone()),
+                Some(ClientSecret::new(
+                    config_file.oidc_configuration.client_secret.clone(),
+                )),
+            )
+            // Set the URL the user will be redirected to after the authorization process.
+            .set_redirect_uri(redirect_url)
+        };
+
         let rsa_keys_for_cookies = match rsa_functions::RsaKeys::generate_random_rsa_keys() {
             Err(e) => {
                 return Err(format!("Cannot generate random RSA keys for cookies: {}", &e).into());
@@ -211,6 +234,15 @@ impl ApplicationConfiguration {
             Ok(rsa_keys) => rsa_keys,
         };
         info!("created random RSA key pair for cookie encryption/decryption");
+        let email_regex = match Regex::new(crate::EMAIL_REGEX) {
+            Err(_) => {
+                return Err(
+                    "Cannot build generic email regex, see pub const EMAIL_REGEX in file lib.rs!"
+                        .into(),
+                );
+            }
+            Ok(r) => r,
+        };
         Ok(ApplicationConfiguration {
             configuration_file: config_file.clone(),
             rsa_keys_for_secrets: Arc::new(RwLock::new(RsaKeys::new())),
@@ -221,30 +253,12 @@ impl ApplicationConfiguration {
             )),
             shared_request_data: Arc::new(RwLock::new(SharedRequestData::new())),
             #[cfg(feature = "authentication-oidc")]
-            oidc_client: Arc::new(
-                CoreClient::from_provider_metadata(
-                    provider_metadata,
-                    ClientId::new(config_file.oidc_configuration.client_id),
-                    Some(ClientSecret::new(
-                        config_file.oidc_configuration.client_secret,
-                    )),
-                )
-                // Set the URL the user will be redirected to after the authorization process.
-                .set_redirect_uri(
-                    RedirectUrl::new(format!(
-                        "https://{}/authentication{}",
-                        &config_file.fqdn, AUTH_ROUTE
-                    ))
-                    .expect("Invalid redirect URL"),
-                ),
-            ),
+            oidc_client: Arc::new(oidc_client),
             #[cfg(feature = "oidc-auth-ldap")]
             shared_oidc_verification_data: Arc::new(RwLock::new(
                 SharedOidcVerificationDataHashMap::new(),
             )),
-            email_regex: Regex::new(crate::EMAIL_REGEX).expect(
-                "Cannot build generic email regex, see pub const EMAIL_REGEX in file lib.rs!",
-            ),
+            email_regex,
         })
     }
 
