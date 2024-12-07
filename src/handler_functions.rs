@@ -7,7 +7,7 @@ use crate::authenticated_user::{AccessScope, AuthenticatedAdministrator, Authent
 use crate::authentication_functions::update_authenticated_user_cookie_lifetime;
 use crate::base64_trait::Base64VecU8Conversions;
 use crate::configuration::ApplicationConfiguration;
-use crate::csrf_html_template::{inject_csrf_token, CsrfTemplateFile};
+use crate::csrf_html_template::{inject_csrf_token, CsrfTemplateFile, ValidateCsrfToken};
 #[cfg(feature = "get-userdata-ldap")]
 use crate::get_userdata_ldap::GetUserDataLdapBackend;
 use crate::get_userdata_trait::GetUserData;
@@ -281,6 +281,7 @@ pub async fn store_secret(
         &bytes,
         &application_configuration,
         &user,
+        ValidateCsrfToken::Yes,
     )
     .await
     {
@@ -325,6 +326,7 @@ async fn parse_and_validate_secret_form_data(
     bytes: &Bytes,
     application_configuration: &web::Data<ApplicationConfiguration>,
     user: &AuthenticatedUser,
+    validate_csrf_token: ValidateCsrfToken,
 ) -> Result<Secret, Box<dyn std::error::Error>> {
     let bytes_vec = bytes.to_vec();
     let form_data = match String::from_utf8(bytes_vec) {
@@ -354,15 +356,17 @@ async fn parse_and_validate_secret_form_data(
         }
     };
     debug!("parsed_form_data={:?}", &parsed_form_data);
-    match parsed_form_data.csrf_token {
-        None => {
-            warn!("empty csrf token!");
-            return Err(ERROR_CRSF_VALIDATION.into());
-        }
-        Some(ref form_data_csrf_token) => {
-            if *form_data_csrf_token != user.csrf_token {
-                warn!("csrf token does not match!");
+    if ValidateCsrfToken::Yes == validate_csrf_token {
+        match parsed_form_data.csrf_token {
+            None => {
+                warn!("empty csrf token!");
                 return Err(ERROR_CRSF_VALIDATION.into());
+            }
+            Some(ref form_data_csrf_token) => {
+                if *form_data_csrf_token != user.csrf_token {
+                    warn!("csrf token does not match!");
+                    return Err(ERROR_CRSF_VALIDATION.into());
+                }
             }
         }
     }
@@ -786,15 +790,19 @@ pub async fn api_v1_store_secret(
         AccessScope::ScriptUser,
         validated_access_token_payload.ip_address,
     );
-    let mut parsed_form_data =
-        match parse_and_validate_secret_form_data(&bytes, &application_configuration, &script_user)
-            .await
-        {
-            Ok(parsed_form_data) => parsed_form_data,
-            Err(e) => {
-                return HttpResponse::err_text_response(e.to_string());
-            }
-        };
+    let mut parsed_form_data = match parse_and_validate_secret_form_data(
+        &bytes,
+        &application_configuration,
+        &script_user,
+        ValidateCsrfToken::No,
+    )
+    .await
+    {
+        Ok(parsed_form_data) => parsed_form_data,
+        Err(e) => {
+            return HttpResponse::err_text_response(e.to_string());
+        }
+    };
 
     if let Err(e) = encrypt_store_send_secret(
         &mut parsed_form_data,

@@ -606,6 +606,7 @@ async fn with_setup() {
         to_display_name: "".to_string(),
         context: CONTEXT.to_string(),
         secret: base64_secret,
+        csrf_token: None,
     };
     let json_secret = serde_json::to_string(&secret).unwrap();
     let request = test::TestRequest::post()
@@ -870,6 +871,7 @@ async fn with_setup() {
         to_display_name: "".to_string(),
         context: CONTEXT.to_string(),
         secret: base64_secret,
+        csrf_token: None,
     };
     let json_secret = serde_json::to_string(&secret).unwrap();
     let request = test::TestRequest::post()
@@ -1192,6 +1194,7 @@ async fn with_setup() {
             to_display_name: "Alice Henderson".to_string(),
             context: random_context.clone(),
             secret: base64_secret.clone(),
+            csrf_token: Some(authenticated_bob.csrf_token.clone()),
         };
         let json_secret = serde_json::to_string(&secret).unwrap();
         let request = test::TestRequest::post()
@@ -1220,6 +1223,7 @@ async fn with_setup() {
             to_display_name: "Alice Henderson".to_string(),
             context: random_context.clone(),
             secret: base64_secret.clone(),
+            csrf_token: Some(authenticated_bob.csrf_token.clone()),
         };
         let json_secret = serde_json::to_string(&secret).unwrap();
         let request = test::TestRequest::post()
@@ -1243,6 +1247,7 @@ async fn with_setup() {
             to_display_name: "Jane Doe".to_string(),
             context: random_context.clone(),
             secret: base64_secret.clone(),
+            csrf_token: Some(authenticated_bob.csrf_token.clone()),
         };
         let json_secret = serde_json::to_string(&secret).unwrap();
         let request = test::TestRequest::post()

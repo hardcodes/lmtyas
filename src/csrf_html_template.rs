@@ -28,6 +28,13 @@ impl fmt::Display for CsrfTemplateFile {
     }
 }
 
+/// Used instead of a boolean.
+#[derive(Debug, PartialEq, Eq)]
+pub enum ValidateCsrfToken {
+    Yes,
+    No,
+}
+
 /// Loads template file and injects the given CSRF token and returns it
 /// as HttpResult.
 pub fn inject_csrf_token(
