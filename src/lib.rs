@@ -20,6 +20,7 @@ pub mod get_userdata_ldap;
 pub mod get_userdata_trait;
 pub mod handler_functions;
 pub mod header_value_trait;
+pub mod csrf_html_template;
 pub mod http_traits;
 pub mod ip_address;
 #[cfg(feature = "ldap-common")]
