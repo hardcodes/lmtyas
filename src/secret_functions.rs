@@ -67,6 +67,8 @@ pub struct Secret {
     pub context: String,
     #[serde(rename = "Secret")]
     pub secret: String,
+    #[serde(rename = "CsrfToken")]
+    pub csrf_token: Option<String>,
 }
 
 impl Secret {
@@ -122,6 +124,7 @@ impl Secret {
             to_display_name: encrypted_to_display_name,
             context: encrypted_context,
             secret: encrypted_secret,
+            csrf_token: None,
         };
         Ok(secret)
     }
@@ -151,6 +154,7 @@ impl Secret {
             to_display_name: decrypted_to_display_name,
             context: decrypted_context,
             secret: decrypted_secret,
+            csrf_token: None,
         };
         Ok(secret)
     }
