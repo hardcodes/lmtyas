@@ -98,6 +98,7 @@ macro_rules! app (
             .service(
                 web::scope("html")
                     .wrap(CheckAuthentication)
+                    .route("/tell.html", web::get().to(csrf_template_tell_form))
                     .service(Files::new("/", "web-content/authenticated/").index_file("tell.html")),
             )
             .service(

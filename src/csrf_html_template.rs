@@ -1,46 +1,48 @@
-use actix_web::HttpResponse;
-use log::warn;
+use std::error::Error;
+use std::fmt;
 use std::fs::read_to_string;
 use std::path::Path;
 
-/// List of template files. For just two files
-/// it makes sense to use hardcoded values.
-const TEMPLATE_FILES: [&str; 2] = ["reveal.html", "tell.html"];
-/// Basedirectory for the template files
-const TEMPLATE_BASEDIR: &str = "web-content/authenticated/";
 /// CSRF token pattern that will be replaced in template files
 const CSRF_TOKEN_PATTERN: &str = r"{CSRF_TOKEN}";
 
-pub struct CsrfHtmlTemplate {}
+/// Enum of template files.
+#[derive(Debug, PartialEq, Eq)]
+pub enum CsrfTemplateFile {
+    /// tell.html
+    Tell,
+    /// sysop.html
+    Sysop,
+}
 
-impl CsrfHtmlTemplate {
-    /// Loads template file and injects the given CSRF token and returns it
-    /// as HttpResult.
-    pub fn inject_csrf_token(filename: &str, csrf_token_payload: &str) -> HttpResponse {
-        if !is_template_file(filename) {
-            return HttpResponse::NotFound().finish();
-        }
-        let file_content = match read_to_string(Path::new(TEMPLATE_BASEDIR).join(filename)) {
-            Err(e) => {
-                warn!("Cannot load csrf template file: {}", e);
-                return HttpResponse::NotFound().finish();
+impl fmt::Display for CsrfTemplateFile {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            CsrfTemplateFile::Tell => {
+                write!(f, "web-content/authenticated/tell.html")
             }
-            Ok(f) => f,
-        };
-        let file_content_with_csrf_token =
-            file_content.replace(CSRF_TOKEN_PATTERN, csrf_token_payload);
-        HttpResponse::Ok()
-            .content_type("text/html; charset=UTF-8")
-            .append_header(("X-Content-Type-Options", "nosniff"))
-            .append_header(("Access-Control-Allow-Origin", "*"))
-            .body(file_content_with_csrf_token)
+            CsrfTemplateFile::Sysop => {
+                write!(f, "web-content/admin-html/sysop.html")
+            }
+        }
     }
 }
 
-/// Check if the given filename is one of the template files.
-fn is_template_file(filename: &str) -> bool {
-    match TEMPLATE_FILES.into_iter().find(|&f| f == filename) {
-        None => false,
-        Some(_) => true,
-    }
+/// Loads template file and injects the given CSRF token and returns it
+/// as HttpResult.
+pub fn inject_csrf_token(
+    selected_csrf_template_file: CsrfTemplateFile,
+    csrf_token_payload: &str,
+) -> Result<String, Box<dyn Error>> {
+    let file_content = match read_to_string(Path::new(&selected_csrf_template_file.to_string())) {
+        Err(e) => {
+            return Err(format!(
+                "cannot load csrf template file '{}': {}",
+                &selected_csrf_template_file, e
+            )
+            .into());
+        }
+        Ok(f) => f,
+    };
+    Ok(file_content.replace(CSRF_TOKEN_PATTERN, csrf_token_payload))
 }

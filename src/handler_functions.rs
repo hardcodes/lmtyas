@@ -7,6 +7,7 @@ use crate::authenticated_user::{AccessScope, AuthenticatedAdministrator, Authent
 use crate::authentication_functions::update_authenticated_user_cookie_lifetime;
 use crate::base64_trait::Base64VecU8Conversions;
 use crate::configuration::ApplicationConfiguration;
+use crate::csrf_html_template::{inject_csrf_token, CsrfTemplateFile};
 #[cfg(feature = "get-userdata-ldap")]
 use crate::get_userdata_ldap::GetUserDataLdapBackend;
 use crate::get_userdata_trait::GetUserData;
@@ -798,4 +799,20 @@ pub async fn api_v1_store_secret(
 pub async fn api_store_secret(_req: HttpRequest) -> HttpResponse {
     warn!("route access forbidden (api access token)!");
     HttpResponse::err_text_response("ERROR forbidden!")
+}
+
+/// Returns tell.html page with injected CSRF token,
+pub async fn csrf_template_tell_form(user: AuthenticatedUser) -> HttpResponse {
+    debug!("tell.html is requested from {}", &user);
+    match inject_csrf_token(CsrfTemplateFile::Tell, &user.csrf_token) {
+        Err(e) => {
+            warn!("{}", e);
+            not_found_404().await
+        }
+        Ok(body) => HttpResponse::Ok()
+            .content_type("text/html; charset=UTF-8")
+            .append_header(("X-Content-Type-Options", "nosniff"))
+            .append_header(("Access-Control-Allow-Origin", "*"))
+            .body(body),
+    }
 }
