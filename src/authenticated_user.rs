@@ -13,12 +13,16 @@ use std::fmt;
 use std::future::Future;
 use std::pin::Pin;
 use std::sync::{Arc, RwLock};
+use rand::{thread_rng, Rng};
+use rand::distributions::Alphanumeric;
 
 /// Maximum number of authenticated users that are stored in the
 /// hashmap to prevent server overload or contain a DOS attack.
 pub const MAX_AUTH_USERS: usize = 512;
-/// Used to build unique uuids for resource requests
+/// Used to build unique uuids for resource requests.
 const NODE_ID: &[u8; 6] = &[0x27, 0x9b, 0xbe, 0x13, 0x86, 0x80];
+// Number of characters in the random generated CSRF token.
+const CSRF_TOKEN_LENGTH: usize = 256;
 
 /// Defines the type of user
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -40,6 +44,7 @@ pub struct AuthenticatedUser {
     pub access_scope: AccessScope,
     pub peer_ip: String,
     pub cookie_update_lifetime_counter: u16,
+    pub csrf_token: String,
 }
 
 /// custom formatter to suppress first name, last name and mail address
@@ -49,8 +54,8 @@ impl fmt::Display for AuthenticatedUser {
         {
             write!(
                 f,
-                "(user_name={}, time_stamp={}, access_scope={:?}, peer_ip={}, cookie_update_counter={})",
-                self.user_name, self.utc_date_time, self.access_scope, self.peer_ip, self.cookie_update_lifetime_counter
+                "(user_name={}, time_stamp={}, access_scope={:?}, peer_ip={}, cookie_update_counter={}, csrf_token={})",
+                self.user_name, self.utc_date_time, self.access_scope, self.peer_ip, self.cookie_update_lifetime_counter, self.csrf_token
             )
         }
         #[cfg(not(debug_assertions))]
@@ -86,6 +91,11 @@ impl AuthenticatedUser {
             peer_ip: peer_ip.into(),
             utc_date_time: Utc::now(),
             cookie_update_lifetime_counter: 0,
+            csrf_token: thread_rng()
+            .sample_iter(&Alphanumeric)
+            .take(CSRF_TOKEN_LENGTH)
+            .map(char::from)
+            .collect()
         }
     }
 
