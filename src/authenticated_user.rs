@@ -9,12 +9,12 @@ use crate::cookie_functions::CookieData;
 use crate::MAX_COOKIE_AGE_SECONDS;
 use actix_web::{dev::Payload, error::ErrorUnauthorized, Error, FromRequest, HttpRequest};
 use chrono::Duration;
+use rand::distributions::Alphanumeric;
+use rand::{thread_rng, Rng};
 use std::fmt;
 use std::future::Future;
 use std::pin::Pin;
 use std::sync::{Arc, RwLock};
-use rand::{thread_rng, Rng};
-use rand::distributions::Alphanumeric;
 
 /// Maximum number of authenticated users that are stored in the
 /// hashmap to prevent server overload or contain a DOS attack.
@@ -92,10 +92,10 @@ impl AuthenticatedUser {
             utc_date_time: Utc::now(),
             cookie_update_lifetime_counter: 0,
             csrf_token: thread_rng()
-            .sample_iter(&Alphanumeric)
-            .take(CSRF_TOKEN_LENGTH)
-            .map(char::from)
-            .collect()
+                .sample_iter(&Alphanumeric)
+                .take(CSRF_TOKEN_LENGTH)
+                .map(char::from)
+                .collect(),
         }
     }
 
@@ -181,7 +181,7 @@ pub struct SharedAuthenticatedUsersHashMap {
     /// They are ot derived from the ldap server because
     /// other authentication methods may be
     /// implemented in future versions.
-    /// It shouldn't be too many accounts anyway.
+    /// There shouldn't be too many accounts anyway.
     admin_accounts: Vec<String>,
 }
 
