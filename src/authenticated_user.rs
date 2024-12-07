@@ -124,22 +124,7 @@ pub struct AuthenticatedAdministrator(AuthenticatedUser);
 /// custom formatter to suppress first name, last name and mail address
 impl fmt::Display for AuthenticatedAdministrator {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        #[cfg(debug_assertions)]
-        {
-            write!(
-                f,
-                "(user_name={}, time_stamp={}, access_scope={:?}, peer_ip={}, cookie_update_lifetime_counter={})",
-                self.0.user_name, self.0.utc_date_time, self.0.access_scope, self.0.peer_ip, self.0.cookie_update_lifetime_counter
-            )
-        }
-        #[cfg(not(debug_assertions))]
-        {
-            write!(
-                f,
-                "(user_name={}, time_stamp={}, access_scope={:?}, peer_ip={})",
-                self.0.user_name, self.0.utc_date_time, self.0.access_scope, self.0.peer_ip
-            )
-        }
+        write!(f, "{}", self.0)
     }
 }
 
