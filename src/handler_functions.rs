@@ -39,6 +39,8 @@ type UserDataImpl = GetUserDataLdapBackend;
 /// Characters that will be percent encoded
 /// https://url.spec.whatwg.org/#fragment-percent-encode-set
 const FRAGMENT: &AsciiSet = &CONTROLS.add(b'/').add(b'=');
+/// Error message for missing or wrong CSRF token.
+const ERROR_CRSF_VALIDATION: &str = "ERROR: cross-site-request-forgery verification failed";
 
 /// Redirect browser to our index page.
 pub async fn redirect_to_index() -> HttpResponse {
@@ -352,6 +354,18 @@ async fn parse_and_validate_secret_form_data(
         }
     };
     debug!("parsed_form_data={:?}", &parsed_form_data);
+    match parsed_form_data.csrf_token {
+        None => {
+            warn!("empty csrf token!");
+            return Err(ERROR_CRSF_VALIDATION.into());
+        }
+        Some(ref form_data_csrf_token) => {
+            if *form_data_csrf_token != user.csrf_token {
+                warn!("csrf token does not match!");
+                return Err(ERROR_CRSF_VALIDATION.into());
+            }
+        }
+    }
     if parsed_form_data.from_email.len() > MAX_FORM_INPUT_LEN {
         warn!("from email > {} chars!", MAX_FORM_INPUT_LEN);
         return Err(format!("ERROR: from email > {} chars {}", MAX_FORM_INPUT_LEN, &user).into());

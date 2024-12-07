@@ -184,6 +184,7 @@ function sendFormData() {
         ToDisplayName: document.getElementById("ToDisplayName").value,
         Context: document.getElementById("Context").value,
         Secret: secret,
+        CsrfToken: document.getElementById("CsrfToken").value,
     };
     let jsonString = JSON.stringify(jsonObject);
     sendToWebService("/authenticated/secret/tell", displaySubmission, errorOnSubmission, jsonString, 5);
