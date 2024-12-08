@@ -465,13 +465,13 @@ async fn with_setup() {
     ///////////////////////////////////////////////////////////////////////////
 
     let request = test::TestRequest::post()
-        .uri("/authenticated/sysop/set_password_for_rsa_rivate_key/MTIzNDU2Nzg5MDEyMzQ=")
+        .uri("/authenticated/sysop/set_password_for_rsa_rivate_key")
         .to_request();
     let result = test::call_service(&test_service, request).await;
     assert_eq!(
         result.status(),
         StatusCode::FOUND,
-        "/authenticated/sysop/set_password_for_rsa_rivate_key/ should redirect!"
+        "/authenticated/sysop/set_password_for_rsa_rivate_key should redirect!"
     );
 
     let request = test::TestRequest::get()
@@ -891,118 +891,151 @@ async fn with_setup() {
     // Testing setting of RSA password
     ///////////////////////////////////////////////////////////////////////////
 
-    // // keys have been set in previous steps
-    // {
-    //     let rsa_keys_read_lock = application_configuration
-    //         .rsa_keys_for_secrets
-    //         .read()
-    //         .unwrap();
-    //     if rsa_keys_read_lock.rsa_private_key.is_none() {
-    //         panic!("rsa private key should have been loaded at this point!");
-    //     }
-    // }
-    // {
-    //     // We replace `RsaKeys` with a new (empty) version
-    //     let mut rsa_keys_write_lock = application_configuration
-    //         .rsa_keys_for_secrets
-    //         .write()
-    //         .unwrap();
-    //     let _old_keys = std::mem::take(&mut *rsa_keys_write_lock);
-    // }
-    // {
-    //     let rsa_keys_read_lock = application_configuration
-    //         .rsa_keys_for_secrets
-    //         .read()
-    //         .unwrap();
-    //     if rsa_keys_read_lock.rsa_private_key.is_some() {
-    //         panic!("rsa private key should not have been loaded at this point!");
-    //     }
-    // }
     // Log in walter
-    let uuid_option = application_configuration
+    let cookie_data_walter = match application_configuration
         .shared_authenticated_users
         .write()
         .unwrap()
-        .new_cookie_data_for("walter", "Walter", "Linz", "walter@acme.local", "127.0.0.1");
-    if uuid_option.is_none() {
-        panic!("uuid for Walter expected!");
-    }
-
-    let valid_rsa_cookie = build_new_encrypted_authentication_cookie(
-        &uuid_option.unwrap().to_string(),
-        90,
-        COOKIE_PATH,
-        &application_configuration.rsa_keys_for_cookies,
-    );
-    let request = test::TestRequest::get()
-        .uri("/authenticated/sysop/sysop.html")
-        .append_header(("Cookie", valid_rsa_cookie.to_string()))
-        .peer_addr(IP_ADDRESS.parse().unwrap())
-        .to_request();
-    let result = test::call_service(&test_service, request).await;
-    assert_eq!(
-        result.status(),
-        StatusCode::OK,
-        "/authenticated/sysop/sysop.html should work with cookie!"
-    );
-
-    let request = test::TestRequest::get()
-        .uri("/authenticated/sysop/js/sysop.js")
-        .append_header(("Cookie", valid_rsa_cookie.to_string()))
-        .peer_addr(IP_ADDRESS.parse().unwrap())
-        .to_request();
-    let result = test::call_service(&test_service, request).await;
-    assert_eq!(
-        result.status(),
-        StatusCode::OK,
-        "/authenticated/sysop/js/sysop.js should work with cookie!"
-    );
-    // "wrong passw0rd"
-    let request = test::TestRequest::post()
-        .uri("/authenticated/sysop/set_password_for_rsa_rivate_key/d3JvbmcgcGFzc3cwcmQ=")
-        .append_header(("Cookie", valid_rsa_cookie.to_string()))
-        .peer_addr(IP_ADDRESS.parse().unwrap())
-        .to_request();
-    let result = test::call_service(&test_service, request).await;
-    assert_eq!(
-        result.status(),
-        StatusCode::BAD_REQUEST,
-        "/authenticated/sysop/set_password_for_rsa_rivate_key/ should not work!"
-    );
-    // "12345678901234"
-    let request = test::TestRequest::post()
-        .uri("/authenticated/sysop/set_password_for_rsa_rivate_key/MTIzNDU2Nzg5MDEyMzQ=")
-        .append_header(("Cookie", valid_rsa_cookie.to_string()))
-        .peer_addr(IP_ADDRESS.parse().unwrap())
-        .to_request();
-    let result = test::call_service(&test_service, request).await;
-    assert_eq!(
-        result.status(),
-        StatusCode::OK,
-        "/authenticated/sysop/set_password_for_rsa_rivate_key/ should work!"
-    );
+        .new_cookie_data_for("walter", "Walter", "Linz", "walter@acme.local", "127.0.0.1")
     {
-        let rsa_keys_read_lock = application_configuration
-            .rsa_keys_for_secrets
-            .read()
-            .unwrap();
-        if rsa_keys_read_lock.rsa_private_key.is_none() {
-            panic!("rsa private key should have been loaded at this point!");
+        Some(c) => c,
+        None => {
+            panic!("cookie_data for Walter expected!");
         }
-    }
-    // keys are loaded, base64 encoded cookie is not enough:
-    let request = test::TestRequest::get()
-        .uri("/authenticated/user/get/details/from")
-        .append_header((header::SET_COOKIE, valid_rsa_cookie.to_string()))
-        .peer_addr(IP_ADDRESS.parse().unwrap())
-        .to_request();
-    let result = test::call_service(&test_service, request).await;
-    assert_eq!(
-        result.status(),
-        StatusCode::FOUND,
-        "/authenticated/user/get/details/from should redirect!"
-    );
+    };
 
+    if let Some(authenticated_walter) = application_configuration
+        .shared_authenticated_users
+        .read()
+        .unwrap()
+        .authenticated_users_hashmap
+        .get(&cookie_data_walter.uuid)
+    {
+        let valid_walter_cookie_value = format!(
+            "{};{}",
+            cookie_data_walter.uuid.to_string(),
+            &authenticated_walter.cookie_update_lifetime_counter
+        );
+
+        let valid_rsa_cookie = build_new_encrypted_authentication_cookie(
+            &valid_walter_cookie_value,
+            90,
+            COOKIE_PATH,
+            &application_configuration.rsa_keys_for_cookies,
+        );
+        let request = test::TestRequest::get()
+            .uri("/authenticated/sysop/sysop.html")
+            .append_header(("Cookie", valid_rsa_cookie.to_string()))
+            .peer_addr(IP_ADDRESS.parse().unwrap())
+            .to_request();
+        let result = test::call_service(&test_service, request).await;
+        assert_eq!(
+            result.status(),
+            StatusCode::OK,
+            "/authenticated/sysop/sysop.html should work with cookie!"
+        );
+        let body = test::read_body(result).await;
+        assert!(
+            std::str::from_utf8(&body.try_into_bytes().unwrap())
+                .unwrap()
+                .contains(&authenticated_walter.csrf_token),
+            "sysop.html should contain crsf token!"
+        );
+
+        let request = test::TestRequest::get()
+            .uri("/authenticated/sysop/js/sysop.js")
+            .append_header(("Cookie", valid_rsa_cookie.to_string()))
+            .peer_addr(IP_ADDRESS.parse().unwrap())
+            .to_request();
+        let result = test::call_service(&test_service, request).await;
+        assert_eq!(
+            result.status(),
+            StatusCode::OK,
+            "/authenticated/sysop/js/sysop.js should work with cookie!"
+        );
+        // "wrong passw0rd" + right csrf token
+        let wrong_b64_password_csrf =
+            format!("d3JvbmcgcGFzc3cwcmQ=;{}", &authenticated_walter.csrf_token);
+        let request = test::TestRequest::post()
+            .uri("/authenticated/sysop/set_password_for_rsa_rivate_key")
+            .append_header(("Cookie", valid_rsa_cookie.to_string()))
+            .peer_addr(IP_ADDRESS.parse().unwrap())
+            .set_payload(wrong_b64_password_csrf)
+            .to_request();
+        let result = test::call_service(&test_service, request).await;
+        assert_eq!(
+            result.status(),
+            StatusCode::BAD_REQUEST,
+            "/authenticated/sysop/set_password_for_rsa_rivate_key should not work!"
+        );
+        // right password "12345678901234" (MTIzNDU2Nzg5MDEyMzQ=)
+        let ok_b64_password_csrf =
+            format!("MTIzNDU2Nzg5MDEyMzQ=;{}", &authenticated_walter.csrf_token);
+        let bad_b64_password_csrf_1 =
+            format!("MTIzNDU2Nzg5MDEyMzQ={}", &authenticated_walter.csrf_token);
+        let bad_b64_password_csrf_2 =
+            format!("MTIzNDU2Nzg5MDEyMzQ=;{}x", &authenticated_walter.csrf_token);
+        // missing ; separator
+        let request = test::TestRequest::post()
+            .uri("/authenticated/sysop/set_password_for_rsa_rivate_key")
+            .append_header(("Cookie", valid_rsa_cookie.to_string()))
+            .peer_addr(IP_ADDRESS.parse().unwrap())
+            .set_payload(bad_b64_password_csrf_1)
+            .to_request();
+        let result = test::call_service(&test_service, request).await;
+        assert_eq!(
+            result.status(),
+            StatusCode::BAD_REQUEST,
+            "/authenticated/sysop/set_password_for_rsa_rivate_key should not work!"
+        );
+        // wrong csrf token
+        let request = test::TestRequest::post()
+            .uri("/authenticated/sysop/set_password_for_rsa_rivate_key")
+            .append_header(("Cookie", valid_rsa_cookie.to_string()))
+            .peer_addr(IP_ADDRESS.parse().unwrap())
+            .set_payload(bad_b64_password_csrf_2)
+            .to_request();
+        let result = test::call_service(&test_service, request).await;
+        assert_eq!(
+            result.status(),
+            StatusCode::BAD_REQUEST,
+            "/authenticated/sysop/set_password_for_rsa_rivate_key should not work!"
+        );
+        // right password and csrf token
+        let request = test::TestRequest::post()
+            .uri("/authenticated/sysop/set_password_for_rsa_rivate_key")
+            .append_header(("Cookie", valid_rsa_cookie.to_string()))
+            .peer_addr(IP_ADDRESS.parse().unwrap())
+            .set_payload(ok_b64_password_csrf)
+            .to_request();
+        let result = test::call_service(&test_service, request).await;
+        assert_eq!(
+            result.status(),
+            StatusCode::OK,
+            "/authenticated/sysop/set_password_for_rsa_rivate_key should work!"
+        );
+        {
+            let rsa_keys_read_lock = application_configuration
+                .rsa_keys_for_secrets
+                .read()
+                .unwrap();
+            if rsa_keys_read_lock.rsa_private_key.is_none() {
+                panic!("rsa private key should have been loaded at this point!");
+            }
+        }
+        // keys are loaded, base64 encoded cookie is not enough:
+        let request = test::TestRequest::get()
+            .uri("/authenticated/user/get/details/from")
+            .append_header((header::SET_COOKIE, valid_rsa_cookie.to_string()))
+            .peer_addr(IP_ADDRESS.parse().unwrap())
+            .to_request();
+        let result = test::call_service(&test_service, request).await;
+        assert_eq!(
+            result.status(),
+            StatusCode::FOUND,
+            "/authenticated/user/get/details/from should redirect!"
+        );
+    }
     ///////////////////////////////////////////////////////////////////////////
     // Log in Bob
     ///////////////////////////////////////////////////////////////////////////
