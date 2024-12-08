@@ -1186,6 +1186,27 @@ async fn with_setup() {
             &application_configuration.rsa_keys_for_cookies,
         );
 
+        // Check if tell.html form contains the CSRF token generated for user bob
+        let request = test::TestRequest::get()
+            .uri("/html/tell.html")
+            .append_header(("Cookie", valid_updated_rsa_cookie.to_string()))
+            .peer_addr(IP_ADDRESS.parse().unwrap())
+            .to_request();
+        let result = test::call_service(&test_service, request).await;
+        assert_eq!(
+            result.status(),
+            StatusCode::OK,
+            "GET /html/tell.html should work!"
+        );
+        let body = test::read_body(result).await;
+        assert!(
+            std::str::from_utf8(&body.try_into_bytes().unwrap())
+                .unwrap()
+                .contains(&authenticated_bob.csrf_token),
+            "tell.html should contain crsf token!"
+        );
+
+        // build and send secret
         let base64_secret = SECRET_PLAINTEXT.to_base64_encoded();
         let secret = lmtyas::secret_functions::Secret {
             from_email: "bob@acme.local".to_string(),
@@ -1214,6 +1235,54 @@ async fn with_setup() {
             body.try_into_bytes().unwrap(),
             "OK".as_bytes(),
             "authenticated/secret/tell should return OK!"
+        );
+        // no CSRF token
+        let secret = lmtyas::secret_functions::Secret {
+            from_email: "bob@acme.local".to_string(),
+            from_display_name: "Bob Sanders".to_string(),
+            to_email: "alice@acme.local".to_string(),
+            to_display_name: "Alice Henderson".to_string(),
+            context: random_context.clone(),
+            secret: base64_secret.clone(),
+            csrf_token: None,
+        };
+        let json_secret = serde_json::to_string(&secret).unwrap();
+        let request = test::TestRequest::post()
+            .uri("/authenticated/secret/tell")
+            .append_header(("Cookie", valid_updated_rsa_cookie.to_string()))
+            .peer_addr(IP_ADDRESS.parse().unwrap())
+            .set_payload(json_secret)
+            .to_request();
+        let result = test::call_service(&test_service, request).await;
+        assert_eq!(
+            result.status(),
+            StatusCode::BAD_REQUEST,
+            "authenticated/secret/tell should not work!"
+        );
+        // wrong CSRF token
+        let mut wrong_csrf_token = authenticated_bob.csrf_token.clone();
+        wrong_csrf_token.push('x');
+        let secret = lmtyas::secret_functions::Secret {
+            from_email: "bob@acme.local".to_string(),
+            from_display_name: "Bob Sanders".to_string(),
+            to_email: "alice@acme.local".to_string(),
+            to_display_name: "Alice Henderson".to_string(),
+            context: random_context.clone(),
+            secret: base64_secret.clone(),
+            csrf_token: Some(wrong_csrf_token),
+        };
+        let json_secret = serde_json::to_string(&secret).unwrap();
+        let request = test::TestRequest::post()
+            .uri("/authenticated/secret/tell")
+            .append_header(("Cookie", valid_updated_rsa_cookie.to_string()))
+            .peer_addr(IP_ADDRESS.parse().unwrap())
+            .set_payload(json_secret)
+            .to_request();
+        let result = test::call_service(&test_service, request).await;
+        assert_eq!(
+            result.status(),
+            StatusCode::BAD_REQUEST,
+            "authenticated/secret/tell should not work!"
         );
         // wrong receiver email format
         let secret = lmtyas::secret_functions::Secret {
