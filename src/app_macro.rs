@@ -51,7 +51,7 @@ macro_rules! app (
                 web::scope("authenticated/sysop")
                     .wrap(CheckAuthentication)
                     .route(
-                        "/set_password_for_rsa_rivate_key/{password}",
+                        "/set_password_for_rsa_rivate_key",
                         web::post().to(set_password_for_rsa_rivate_key),
                     )
                     // serve files to admins only

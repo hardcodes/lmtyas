@@ -50,8 +50,9 @@ function setRsaPassword() {
         console.log("ERROR: could not convert password to base64: " + output);
         showErrorMessage("ERROR: could not convert password to base64");
     }
-    let url = "/authenticated/sysop/set_password_for_rsa_rivate_key/" + rsaPassword;
-    sendToWebService(url, displaySubmission, errorOnSubmission, 5);
+    let payload = rsaPassword + ';' + document.getElementById("CsrfToken").value;
+    sendToWebService("/authenticated/sysop/set_password_for_rsa_rivate_key", displaySubmission, errorOnSubmission, payload, 5);
+    document.getElementById("SubmitButton").classList.add("lmtyas-hidden");
 }
 
 function displaySubmission(resulttext) {

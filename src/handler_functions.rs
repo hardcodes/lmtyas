@@ -210,15 +210,30 @@ pub async fn is_server_ready(
 /// with the provided password.
 pub async fn set_password_for_rsa_rivate_key(
     admin: AuthenticatedAdministrator,
-    mut base64_encoded_password: web::Path<String>,
+    mut base64_encoded_password_csrf_token: String,
     application_configuration: web::Data<ApplicationConfiguration>,
 ) -> HttpResponse {
-    if base64_encoded_password.len() > MAX_FORM_BYTES_LEN {
+    if base64_encoded_password_csrf_token.len() > MAX_FORM_BYTES_LEN {
         warn!("form data exceeds {} bytes! {}", MAX_FORM_BYTES_LEN, &admin);
+        base64_encoded_password_csrf_token.zeroize();
         return HttpResponse::err_text_response(format!(
             "ERROR: more than {} bytes of data sent",
             &MAX_FORM_BYTES_LEN
         ));
+    }
+    let (base64_encoded_password, csrf_token) =
+        match base64_encoded_password_csrf_token.split_once(';') {
+            None => {
+                warn!("csrf token missng!");
+                base64_encoded_password_csrf_token.zeroize();
+                return HttpResponse::err_text_response(ERROR_CRSF_VALIDATION);
+            }
+            Some((password, token)) => (password, token),
+        };
+    if csrf_token != admin.csrf_token() {
+        warn!("csrf token does not match!");
+        base64_encoded_password_csrf_token.zeroize();
+        return HttpResponse::err_text_response(ERROR_CRSF_VALIDATION);
     }
     // The password was encoded before the transfer to make sure
     // that special characters would be transferred correctly.
@@ -227,15 +242,15 @@ pub async fn set_password_for_rsa_rivate_key(
     // ```ignore
     // PASS^°§$%&/()=?ß\´`+*~'#"-_.:,;<>{}[]öäüÜÄÖáàãÁÀâåæÂÅéèêëÉÈÊËçœŒ|WORD
     // ``````
-    let base64_decoded_password = match Vec::from_base64_encoded(base64_encoded_password.as_str()) {
+    let base64_decoded_password = match Vec::from_base64_encoded(base64_encoded_password) {
         Ok(v) => v,
         Err(e) => {
-            base64_encoded_password.zeroize();
+            base64_encoded_password_csrf_token.zeroize();
             warn!("Cannot decode base64 rsa password: {}, {}", &e, &admin);
             return HttpResponse::err_text_response("ERROR: password was not set");
         }
     };
-    base64_encoded_password.zeroize();
+    base64_encoded_password_csrf_token.zeroize();
     let mut decoded_password = match String::from_utf8(base64_decoded_password) {
         Ok(password) => password.trim_matches(char::from(0)).to_string(),
         Err(e) => {
