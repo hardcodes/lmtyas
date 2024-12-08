@@ -1,6 +1,6 @@
+use async_fs::read_to_string;
 use std::error::Error;
 use std::fmt;
-use std::fs::read_to_string;
 use std::path::Path;
 
 /// CSRF token pattern that will be replaced in template files
@@ -37,19 +37,20 @@ pub enum ValidateCsrfToken {
 
 /// Loads template file and injects the given CSRF token and returns it
 /// as HttpResult.
-pub fn inject_csrf_token(
+pub async fn inject_csrf_token(
     selected_csrf_template_file: CsrfTemplateFile,
     csrf_token_payload: &str,
 ) -> Result<String, Box<dyn Error>> {
-    let file_content = match read_to_string(Path::new(&selected_csrf_template_file.to_string())) {
-        Err(e) => {
-            return Err(format!(
-                "cannot load csrf template file '{}': {}",
-                &selected_csrf_template_file, e
-            )
-            .into());
-        }
-        Ok(f) => f,
-    };
+    let file_content =
+        match read_to_string(Path::new(&selected_csrf_template_file.to_string())).await {
+            Err(e) => {
+                return Err(format!(
+                    "cannot load csrf template file '{}': {}",
+                    &selected_csrf_template_file, e
+                )
+                .into());
+            }
+            Ok(f) => f,
+        };
     Ok(file_content.replace(CSRF_TOKEN_PATTERN, csrf_token_payload))
 }
