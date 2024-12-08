@@ -738,11 +738,6 @@ pub async fn get_validated_receiver_email(
     HttpResponse::ok_text_response(receiver_email.to_ascii_lowercase())
 }
 
-/// Get admin protected sysop.html.
-pub async fn get_sysop_html(_admin: AuthenticatedAdministrator) -> impl Responder {
-    NamedFile::open_async("web-content/admin-html/sysop.html").await
-}
-
 /// Get admin protected sysop.js.
 pub async fn get_sysop_js(_admin: AuthenticatedAdministrator) -> impl Responder {
     NamedFile::open_async("web-content/admin-html/js/sysop.js").await
