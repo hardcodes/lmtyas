@@ -57,6 +57,7 @@
         <br>
         <div id="ServiceIsNotReady" class="lmtyas-login-bg">
           <form id="RsaPasswordForm" name="RsaPasswordForm" accept-charset="UTF-8">
+            <input id="CsrfToken" name="CsrfToken" type="hidden" value="{CSRF_TOKEN}" readonly>
             <p>
               <label for="RsaPassword">password for RSA private key</label>
               <input id="RsaPassword" name="RsaPassword" minlength="14" maxlength="128" type="password" value="" required>

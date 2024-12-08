@@ -824,9 +824,25 @@ pub async fn api_store_secret(_req: HttpRequest) -> HttpResponse {
 }
 
 /// Returns tell.html page with injected CSRF token,
-pub async fn csrf_template_tell_form(user: AuthenticatedUser) -> HttpResponse {
+pub async fn csrf_template_tell_html(user: AuthenticatedUser) -> HttpResponse {
     debug!("tell.html is requested from {}", &user);
     match inject_csrf_token(CsrfTemplateFile::Tell, &user.csrf_token) {
+        Err(e) => {
+            warn!("{}", e);
+            not_found_404().await
+        }
+        Ok(body) => HttpResponse::Ok()
+            .content_type("text/html; charset=UTF-8")
+            .append_header(("X-Content-Type-Options", "nosniff"))
+            .append_header(("Access-Control-Allow-Origin", "*"))
+            .body(body),
+    }
+}
+
+/// Returns sysop.html page with injected CSRF token,
+pub async fn csrf_template_sysop_html(admin: AuthenticatedAdministrator) -> HttpResponse {
+    debug!("sysop.html is requested from {}", &admin);
+    match inject_csrf_token(CsrfTemplateFile::Sysop, &admin.csrf_token()) {
         Err(e) => {
             warn!("{}", e);
             not_found_404().await

@@ -121,6 +121,13 @@ impl AuthenticatedUser {
 /// Administrators are still users just with a different scope
 pub struct AuthenticatedAdministrator(AuthenticatedUser);
 
+impl AuthenticatedAdministrator {
+    /// Get the CSRF token.
+    pub fn csrf_token(&self) -> String {
+        self.0.csrf_token.clone()
+    }
+}
+
 /// custom formatter to suppress first name, last name and mail address
 impl fmt::Display for AuthenticatedAdministrator {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

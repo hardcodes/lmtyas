@@ -57,7 +57,7 @@ macro_rules! app (
                     // serve files to admins only
                     // for just two files dedicated functions are fine
                     // with more to come a more generic approach must be used
-                    .route("/sysop.html", web::get().to(get_sysop_html))
+                    .route("/sysop.html", web::get().to(csrf_template_sysop_html))
                     .route("/js/sysop.js", web::get().to(get_sysop_js)),
             )
             // routes for authenticated regular users
@@ -98,7 +98,7 @@ macro_rules! app (
             .service(
                 web::scope("html")
                     .wrap(CheckAuthentication)
-                    .route("/tell.html", web::get().to(csrf_template_tell_form))
+                    .route("/tell.html", web::get().to(csrf_template_tell_html))
                     .service(Files::new("/", "web-content/authenticated/").index_file("tell.html")),
             )
             .service(
