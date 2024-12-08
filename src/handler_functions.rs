@@ -224,14 +224,14 @@ pub async fn set_password_for_rsa_rivate_key(
     let (base64_encoded_password, csrf_token) =
         match base64_encoded_password_csrf_token.split_once(';') {
             None => {
-                warn!("csrf token missng!");
+                warn!("csrf token missng! {}", &admin);
                 base64_encoded_password_csrf_token.zeroize();
                 return HttpResponse::err_text_response(ERROR_CRSF_VALIDATION);
             }
             Some((password, token)) => (password, token),
         };
     if csrf_token != admin.csrf_token() {
-        warn!("csrf token does not match!");
+        warn!("csrf token does not match! {}", &admin);
         base64_encoded_password_csrf_token.zeroize();
         return HttpResponse::err_text_response(ERROR_CRSF_VALIDATION);
     }
@@ -355,8 +355,8 @@ async fn parse_and_validate_secret_form_data(
     if form_data.len() > MAX_FORM_BYTES_LEN {
         warn!("form data exceeds {} bytes! {}", MAX_FORM_BYTES_LEN, &user);
         return Err(format!(
-            "ERROR: more than {} bytes of data sent",
-            &MAX_FORM_BYTES_LEN
+            "ERROR: more than {} bytes of data sent {}",
+            &MAX_FORM_BYTES_LEN, &user
         )
         .into());
     }
@@ -374,12 +374,12 @@ async fn parse_and_validate_secret_form_data(
     if ValidateCsrfToken::Yes == validate_csrf_token {
         match parsed_form_data.csrf_token {
             None => {
-                warn!("empty csrf token!");
+                warn!("empty csrf token! {}", &user);
                 return Err(ERROR_CRSF_VALIDATION.into());
             }
             Some(ref form_data_csrf_token) => {
                 if *form_data_csrf_token != user.csrf_token {
-                    warn!("csrf token does not match!");
+                    warn!("csrf token does not match! {}", &user);
                     return Err(ERROR_CRSF_VALIDATION.into());
                 }
             }
