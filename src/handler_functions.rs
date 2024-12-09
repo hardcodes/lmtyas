@@ -224,7 +224,7 @@ pub async fn set_password_for_rsa_rivate_key(
     let (base64_encoded_password, csrf_token) =
         match base64_encoded_password_csrf_token.split_once(';') {
             None => {
-                warn!("csrf token missng! {}", &admin);
+                warn!("csrf token missing! {}", &admin);
                 base64_encoded_password_csrf_token.zeroize();
                 return HttpResponse::err_text_response(ERROR_CRSF_VALIDATION);
             }
