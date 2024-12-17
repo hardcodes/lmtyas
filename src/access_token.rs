@@ -316,11 +316,11 @@ impl AccessTokenFile {
 /// The data will be used in the handler function of the api request.
 /// This way the access token file must only be read once.
 pub struct ValidatedAccessTokenPayload {
-    /// Inormation the the user
+    /// Information the the user
     pub iss: String,
     /// The name of our access token file
     pub sub: String,
-    /// Inormation the the user
+    /// Information the the user
     pub aud: String,
     /// Not valid before (Unix timestamp)
     pub nbf: i64,
