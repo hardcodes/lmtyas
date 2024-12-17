@@ -286,10 +286,10 @@ pub struct AccessTokenFile {
     pub nbf: i64,
     /// Expires at (Unix timestamp)
     pub exp: i64,
-    /// email address that will be inserted when sending
+    /// Email address that will be inserted when sending
     /// the email to the secret receiver
     pub from_email: String,
-    /// display name that gets used in the email sent
+    /// Display name that gets used in the email sent
     /// to the secret receiver
     pub from_display_name: String,
     /// Optional mail template filename
