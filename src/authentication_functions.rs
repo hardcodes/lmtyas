@@ -177,10 +177,7 @@ pub fn update_authenticated_user_cookie_lifetime(req: &HttpRequest) -> HttpRespo
             &application_configuration.configuration_file.get_domain(),
             &application_configuration.rsa_keys_for_cookies,
         );
-        let cookie_response = build_new_cookie_response(
-            &updated_cookie,
-            application_configuration.configuration_file.fqdn.clone(),
-        );
+        let cookie_response = build_new_cookie_response(&updated_cookie);
         debug!(
             "updated cookie lifetime, HttpResponse = {:?}",
             &cookie_response

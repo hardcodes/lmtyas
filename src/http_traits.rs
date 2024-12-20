@@ -10,7 +10,6 @@ pub trait CustomHttpResponse {
     /// fn cumbersome_example(cookie: Cookie) -> HttpResponse{
     ///   return HttpResponse::Ok()
     ///   .content_type("application/text")
-    ///   .append_header(("Access-Control-Allow-Origin", "*"))
     ///   .append_header((http::header::SET_COOKIE, cookie.to_string()))
     ///   .body("OK: this is fine!");
     /// }
@@ -37,7 +36,6 @@ pub trait CustomHttpResponse {
     ///         .finish();
     ///         HttpResponse::Ok()
     ///         .content_type("application/text")
-    ///         .append_header(("Access-Control-Allow-Origin", "*"))
     ///         .append_header((
     ///         http::header::SET_COOKIE,
     ///         empty_unix_epoch_cookie.to_string(),
@@ -55,7 +53,6 @@ pub trait CustomHttpResponse {
     /// fn cumbersome_example() -> HttpResponse{
     ///   return HttpResponse::Ok()
     ///   .content_type("application/text")
-    ///   .append_header(("Access-Control-Allow-Origin", "*"))
     ///   .body("OK: this is fine!");
     /// }
     /// ```
@@ -69,7 +66,6 @@ pub trait CustomHttpResponse {
     /// fn cumbersome_example() -> HttpResponse{
     ///   return HttpResponse::Ok()
     ///   .content_type("application/json")
-    ///   .append_header(("Access-Control-Allow-Origin", "*"))
     ///   .body("{\"this\": \"that\"}");
     /// }
     /// ```
@@ -83,7 +79,6 @@ pub trait CustomHttpResponse {
     /// fn cumbersome_example() -> HttpResponse{
     ///   return HttpResponse::BadRequest()
     ///   .content_type("application/text")
-    ///   .append_header(("Access-Control-Allow-Origin", "*"))
     ///   .body("ERROR: this is bad!");
     /// }
     /// ```
@@ -100,7 +95,6 @@ impl CustomHttpResponse for HttpResponse {
         return HttpResponse::Ok()
             .content_type("application/text; charset=UTF-8")
             .append_header(("X-Content-Type-Options", "nosniff"))
-            .append_header(("Access-Control-Allow-Origin", "*"))
             .body(body);
     }
 
@@ -111,7 +105,6 @@ impl CustomHttpResponse for HttpResponse {
         return HttpResponse::Ok()
             .content_type("application/text; charset=UTF-8")
             .append_header(("X-Content-Type-Options", "nosniff"))
-            .append_header(("Access-Control-Allow-Origin", "*"))
             .append_header((http::header::SET_COOKIE, cookie.to_string()))
             .body(body);
     }
@@ -123,7 +116,6 @@ impl CustomHttpResponse for HttpResponse {
         return HttpResponse::Ok()
             .content_type("application/text; charset=UTF-8")
             .append_header(("X-Content-Type-Options", "nosniff"))
-            .append_header(("Access-Control-Allow-Origin", "*"))
             .append_header((
                 http::header::SET_COOKIE,
                 empty_unix_epoch_cookie().to_string(),
@@ -138,7 +130,6 @@ impl CustomHttpResponse for HttpResponse {
         return HttpResponse::Ok()
             .content_type("application/json; charset=UTF-8")
             .append_header(("X-Content-Type-Options", "nosniff"))
-            .append_header(("Access-Control-Allow-Origin", "*"))
             .body(body);
     }
 
@@ -149,7 +140,6 @@ impl CustomHttpResponse for HttpResponse {
         return HttpResponse::BadRequest()
             .content_type("application/text; charset=UTF-8")
             .append_header(("X-Content-Type-Options", "nosniff"))
-            .append_header(("Access-Control-Allow-Origin", "*"))
             .body(body);
     }
 }

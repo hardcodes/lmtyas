@@ -454,14 +454,7 @@ impl Login for OidcConfiguration {
                 &application_configuration.configuration_file.get_domain(),
                 &application_configuration.rsa_keys_for_cookies,
             );
-            return build_redirect_to_resource_url_response(
-                &cookie,
-                url_requested,
-                format!(
-                    "https://{}",
-                    application_configuration.configuration_file.fqdn.clone()
-                ),
-            );
+            return build_redirect_to_resource_url_response(&cookie, url_requested);
         } else {
             warn!("cannot create cookie id for email {}", &email);
             return HttpResponse::err_text_response("ERROR: login failed");

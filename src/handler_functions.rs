@@ -47,7 +47,6 @@ pub async fn redirect_to_index() -> HttpResponse {
     debug!("redirecting to /index.html");
     let response = HttpResponse::build(StatusCode::SEE_OTHER)
         .append_header((header::LOCATION, "/index.html".to_string()))
-        .append_header(("Access-Control-Allow-Origin", "*"))
         .finish();
     response
 }
@@ -844,7 +843,6 @@ pub async fn csrf_template_tell_html(user: AuthenticatedUser) -> HttpResponse {
         Ok(body) => HttpResponse::Ok()
             .content_type("text/html; charset=UTF-8")
             .append_header(("X-Content-Type-Options", "nosniff"))
-            .append_header(("Access-Control-Allow-Origin", "*"))
             .body(body),
     }
 }
@@ -860,7 +858,6 @@ pub async fn csrf_template_sysop_html(admin: AuthenticatedAdministrator) -> Http
         Ok(body) => HttpResponse::Ok()
             .content_type("text/html; charset=UTF-8")
             .append_header(("X-Content-Type-Options", "nosniff"))
-            .append_header(("Access-Control-Allow-Origin", "*"))
             .body(body),
     }
 }

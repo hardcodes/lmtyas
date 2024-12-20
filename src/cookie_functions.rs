@@ -130,11 +130,10 @@ pub fn build_new_encrypted_authentication_cookie(
 /// # Returns
 ///
 /// - `HttpResponse`
-pub fn build_new_cookie_response(cookie: &Cookie, allowed_origin: String) -> HttpResponse {
+pub fn build_new_cookie_response(cookie: &Cookie) -> HttpResponse {
     HttpResponse::build(StatusCode::OK)
         .content_type("application/text")
         .append_header((http::header::SET_COOKIE, cookie.to_string()))
-        .append_header(("Access-Control-Allow-Origin", allowed_origin))
         .body("OK")
 }
 
@@ -150,15 +149,10 @@ pub fn build_new_cookie_response(cookie: &Cookie, allowed_origin: String) -> Htt
 ///
 /// - `HttpResponse`
 #[allow(dead_code)]
-pub fn build_redirect_to_resource_url_response(
-    cookie: &Cookie,
-    location: String,
-    allowed_origin: String,
-) -> HttpResponse {
+pub fn build_redirect_to_resource_url_response(cookie: &Cookie, location: String) -> HttpResponse {
     HttpResponse::build(StatusCode::FOUND)
         .append_header((http::header::LOCATION, location))
         .append_header((http::header::SET_COOKIE, cookie.to_string()))
-        .append_header(("Access-Control-Allow-Origin", allowed_origin))
         .finish()
 }
 

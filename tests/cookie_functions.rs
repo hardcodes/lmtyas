@@ -36,7 +36,7 @@ fn cookie_functions() {
         "cannot decrypt rsa encrypted cookie!"
     );
 
-    let cookie_response = build_new_cookie_response(&valid_rsa_cookie, COOKIE_PATH.to_string());
+    let cookie_response = build_new_cookie_response(&valid_rsa_cookie);
     assert_eq!(cookie_response.status(), StatusCode::OK);
 
     let error_cookie_data = get_decrypted_cookie_data(INVALID_RSA_COOKIE, &rsa_keys);
