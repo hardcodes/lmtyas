@@ -934,3 +934,7 @@ The code is dual licensed under the [MIT License](./LICENSE-MIT) **or** the [APA
 # Contribution
 
 Unless you explicitly state otherwise, any contribution intentionally submitted for inclusion in this crate by you, as defined in the Apache-2.0 license, shall be dual licensed as above, without any additional terms or conditions.
+
+# Honorable mention
+
+The javascrpt function `findGetParameterNoDecodeURIComponent()` was heavily inspired by this question on [stackoverflow.com](https://stackoverflow.com/questions/5448545/how-to-retrieve-get-parameters-from-javascript). But keeping it as comment in `lmtyas.js` tripped vulnerability scanners.

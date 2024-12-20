@@ -192,7 +192,6 @@ function initKeepAliveInterval(url, seconds = 60) {
   }
 }
 
-// inspired by https://stackoverflow.com/questions/5448545/how-to-retrieve-get-parameters-from-javascript
 function findGetParameterNoDecodeURIComponent(parameterName) {
   var result = null,
     tmp = [];
