@@ -29,21 +29,6 @@ use std::io::BufReader;
 use std::path::Path;
 use std::sync::{Arc, RwLock};
 
-/// valid secure cipers for TLS1v2 and TLS 1v3
-// const CIPHER_LIST: &str = concat!(
-//     "TLS_AES_128_GCM_SHA256:",
-//     "TLS_AES_256_GCM_SHA384:",
-//     "TLS_CHACHA20_POLY1305_SHA256:",
-//     "ECDHE-ECDSA-AES128-GCM-SHA256:",
-//     "ECDHE-RSA-AES128-GCM-SHA256:",
-//     "ECDHE-ECDSA-AES256-GCM-SHA384:",
-//     "ECDHE-RSA-AES256-GCM-SHA384:",
-//     "ECDHE-ECDSA-CHACHA20-POLY1305:",
-//     "ECDHE-RSA-CHACHA20-POLY1305:",
-//     "DHE-RSA-AES128-GCM-SHA256:",
-//     "DHE-RSA-AES256-GCM-SHA384"
-// );
-
 /// Holds the deserialized entries of the json file
 /// that is passed to the program
 #[derive(Clone, Deserialize, Debug)]
@@ -283,6 +268,8 @@ impl ApplicationConfiguration {
         let private_key =
             PrivateKeyDer::from_pem_file(self.configuration_file.ssl_private_key_file.clone())?;
 
+        // Looking for a way to select ciphers explitictly, e.g. like
+        // https://wiki.mozilla.org/Security/Server_Side_TLS#Intermediate_compatibility_(recommended)
         Ok(
             rustls::ServerConfig::builder_with_protocol_versions(rustls::ALL_VERSIONS)
                 .with_no_client_auth()
