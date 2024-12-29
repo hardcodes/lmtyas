@@ -283,9 +283,11 @@ impl ApplicationConfiguration {
         let private_key =
             PrivateKeyDer::from_pem_file(self.configuration_file.ssl_private_key_file.clone())?;
 
-        Ok(rustls::ServerConfig::builder()
-            .with_no_client_auth()
-            .with_single_cert(cert_chain, private_key)?)
+        Ok(
+            rustls::ServerConfig::builder_with_protocol_versions(rustls::ALL_VERSIONS)
+                .with_no_client_auth()
+                .with_single_cert(cert_chain, private_key)?,
+        )
     }
 }
 
