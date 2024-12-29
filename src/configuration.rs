@@ -20,8 +20,8 @@ use openidconnect::{
     reqwest::async_http_client,
     ClientId, ClientSecret, IssuerUrl, RedirectUrl,
 };
-use openssl::ssl::{SslAcceptor, SslAcceptorBuilder, SslFiletype, SslMethod, SslOptions};
 use regex::Regex;
+use rustls::pki_types::{pem::PemObject, CertificateDer, PrivateKeyDer};
 use serde::{Deserialize, Serialize};
 use std::error::Error;
 use std::fs::File;
@@ -30,19 +30,19 @@ use std::path::Path;
 use std::sync::{Arc, RwLock};
 
 /// valid secure cipers for TLS1v2 and TLS 1v3
-const CIPHER_LIST: &str = concat!(
-    "TLS_AES_128_GCM_SHA256:",
-    "TLS_AES_256_GCM_SHA384:",
-    "TLS_CHACHA20_POLY1305_SHA256:",
-    "ECDHE-ECDSA-AES128-GCM-SHA256:",
-    "ECDHE-RSA-AES128-GCM-SHA256:",
-    "ECDHE-ECDSA-AES256-GCM-SHA384:",
-    "ECDHE-RSA-AES256-GCM-SHA384:",
-    "ECDHE-ECDSA-CHACHA20-POLY1305:",
-    "ECDHE-RSA-CHACHA20-POLY1305:",
-    "DHE-RSA-AES128-GCM-SHA256:",
-    "DHE-RSA-AES256-GCM-SHA384"
-);
+// const CIPHER_LIST: &str = concat!(
+//     "TLS_AES_128_GCM_SHA256:",
+//     "TLS_AES_256_GCM_SHA384:",
+//     "TLS_CHACHA20_POLY1305_SHA256:",
+//     "ECDHE-ECDSA-AES128-GCM-SHA256:",
+//     "ECDHE-RSA-AES128-GCM-SHA256:",
+//     "ECDHE-ECDSA-AES256-GCM-SHA384:",
+//     "ECDHE-RSA-AES256-GCM-SHA384:",
+//     "ECDHE-ECDSA-CHACHA20-POLY1305:",
+//     "ECDHE-RSA-CHACHA20-POLY1305:",
+//     "DHE-RSA-AES128-GCM-SHA256:",
+//     "DHE-RSA-AES256-GCM-SHA384"
+// );
 
 /// Holds the deserialized entries of the json file
 /// that is passed to the program
@@ -273,26 +273,19 @@ impl ApplicationConfiguration {
         )
     }
 
-    /// Build the `SslAcceptorBuilder` for HTTPS connections
-    ///
-    /// # Returns
-    ///
-    /// - `SslAcceptorBuilder`
-    pub fn get_ssl_acceptor_builder(&self) -> SslAcceptorBuilder {
-        let mut ssl_acceptor_builder = SslAcceptor::mozilla_intermediate(SslMethod::tls()).unwrap();
-        ssl_acceptor_builder
-            .set_private_key_file(
-                &self.configuration_file.ssl_private_key_file,
-                SslFiletype::PEM,
-            )
-            .unwrap();
-        ssl_acceptor_builder
-            .set_certificate_chain_file(&self.configuration_file.ssl_certificate_chain_file)
-            .unwrap();
-        ssl_acceptor_builder
-            .set_options(SslOptions::NO_SSLV2 | SslOptions::NO_SSLV3 | SslOptions::NO_TLSV1_1);
-        ssl_acceptor_builder.set_cipher_list(CIPHER_LIST).unwrap();
-        ssl_acceptor_builder
+    /// Load certificate chain and its private key and return it as `rustls::ServerConfig`
+    pub fn load_rustls_config(&self) -> Result<rustls::ServerConfig, Box<dyn Error>> {
+        let cert_chain = CertificateDer::pem_file_iter(
+            self.configuration_file.ssl_certificate_chain_file.clone(),
+        )?
+        .map(|cert| cert.unwrap())
+        .collect();
+        let private_key =
+            PrivateKeyDer::from_pem_file(self.configuration_file.ssl_private_key_file.clone())?;
+
+        Ok(rustls::ServerConfig::builder()
+            .with_no_client_auth()
+            .with_single_cert(cert_chain, private_key)?)
     }
 }
 

@@ -54,8 +54,6 @@ async fn main() -> std::io::Result<()> {
         .configuration_file
         .web_bind_address
         .clone();
-    // load ssl keys
-    let ssl_acceptor_builder = application_configuration.get_ssl_acceptor_builder();
 
     // build cleanup timers and store references to keep them running
     let timer_guards = build_cleanup_timers(&application_configuration);
@@ -70,6 +68,23 @@ async fn main() -> std::io::Result<()> {
         "script-src 'self';",
         "style-src 'self';",
     );
+
+    match rustls::crypto::aws_lc_rs::default_provider().install_default() {
+        Ok(r) => r,
+        Err(_) => {
+            warn!("Cannot install rusttls crypto provider.");
+            std::process::exit(1);
+        }
+    };
+
+    let rusttls_server_config = match application_configuration.load_rustls_config() {
+        Ok(c) => c,
+        Err(e) => {
+            warn!("Cannot load tls certficate : {}", &e);
+            std::process::exit(1);
+        }
+    };
+
     info!(
         "{} {} ({}) will bind to {}",
         &lmtyas::PROGRAM_NAME,
@@ -90,7 +105,7 @@ async fn main() -> std::io::Result<()> {
         )
     })
     .keep_alive(std::time::Duration::from_secs(45))
-    .bind_openssl(web_bind_address, ssl_acceptor_builder)?
+    .bind_rustls_0_23(web_bind_address, rusttls_server_config)?
     .run()
     .await
 }
