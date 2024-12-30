@@ -6,8 +6,10 @@ use lmtyas::authentication_middleware::CheckAuthentication;
 #[cfg(feature = "oidc-auth-ldap")]
 use lmtyas::authentication_oidc::OidcConfiguration;
 use lmtyas::authentication_url;
-use lmtyas::cert_renewal::UNIX_DOMAIN_SOCKET_FILE;
-use lmtyas::cert_renewal::{uds_reload_cert, uds_unknown_request, TlsCertStatus};
+use lmtyas::cert_renewal::{
+    check_cert_reload_requested_timer, uds_reload_cert, uds_unknown_request,
+    CERT_TIMER_INTERVAL_SECONDS, UNIX_DOMAIN_SOCKET_FILE,
+};
 use lmtyas::cleanup_timer::build_cleanup_timers;
 use lmtyas::cli_parser::{parse_cli_parameters, ARG_CONFIG_FILE};
 use lmtyas::configuration::ApplicationConfiguration;
@@ -19,6 +21,7 @@ use log::info;
 use log::warn;
 use std::io::Write;
 use std::path::Path;
+use timer::{Guard, Timer};
 
 #[cfg(feature = "ldap-auth")]
 type AuthConfiguration = LdapCommonConfiguration;
@@ -113,7 +116,18 @@ async fn main() -> std::io::Result<()> {
     .bind_rustls_0_23(web_bind_address, rusttls_server_config)?
     .run();
     let https_server_handle = tcp_server.handle();
-
+    // let check_cert_renewal_timer = Timer::new();
+    // let _check_cert_renewal_timer_guard = check_cert_renewal_timer.schedule_repeating(
+    //     chrono::Duration::try_seconds(CERT_TIMER_INTERVAL_SECONDS).unwrap(),
+    //     move || {
+    //         check_cert_reload_requested_timer(&application_configuration, &https_server_handle)
+    //             .await
+    //     },
+    // );
+    {
+        let mut tcp_server_handle_rwlock = application_configuration.tcp_server_handle.write().unwrap();
+        *tcp_server_handle_rwlock = Some(&https_server_handle);
+    }
 
     log::info!("starting HTTP server at unix:{}", &UNIX_DOMAIN_SOCKET_FILE);
 
@@ -121,9 +135,7 @@ async fn main() -> std::io::Result<()> {
     // from the Unix system where we run at.
     let uds_server = HttpServer::new(move || {
         App::new()
-            .wrap(middleware::Logger::new(
-                "%a %{User-Agent}i %r %U",
-            ))
+            .wrap(middleware::Logger::new("%a %{User-Agent}i %r %U"))
             // clone of the application configuration
             .app_data(web::Data::new(application_configuration.clone()))
             .service(web::resource("/reload-cert").to(uds_reload_cert))

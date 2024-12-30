@@ -29,6 +29,7 @@ use std::fs::File;
 use std::io::BufReader;
 use std::path::Path;
 use std::sync::{Arc, RwLock};
+use actix_web::dev::ServerHandle;
 
 /// Holds the deserialized entries of the json file
 /// that is passed to the program
@@ -151,8 +152,12 @@ pub struct ApplicationConfiguration {
     /// stores the optional oidc verification data
     #[cfg(feature = "oidc-auth-ldap")]
     pub shared_oidc_verification_data: Arc<RwLock<SharedOidcVerificationDataHashMap>>,
+    // stores the regex after the config file has been read
     pub email_regex: Regex,
+    // stores the current status of the TLS/SSL certificate
     pub tls_cert_status: Arc<RwLock<TlsCertStatus>>,
+    // stores the server handle of the tcp/https server
+    pub tcp_server_handle: Arc<RwLock<Option<ServerHandle>>>,
 }
 
 /// Build a new instance of ApplicationConfiguration
@@ -247,6 +252,7 @@ impl ApplicationConfiguration {
             )),
             email_regex,
             tls_cert_status: Arc::new(RwLock::new(TlsCertStatus::NotLoaded)),
+            tcp_server_handle: Arc::new(RwLock::new(None))
         })
     }
 
