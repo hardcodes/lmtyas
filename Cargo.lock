@@ -2007,6 +2007,7 @@ dependencies = [
  "chrono",
  "clap",
  "env_logger",
+ "futures",
  "futures-util",
  "lazy_static",
  "ldap3",

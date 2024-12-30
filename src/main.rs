@@ -6,6 +6,8 @@ use lmtyas::authentication_middleware::CheckAuthentication;
 #[cfg(feature = "oidc-auth-ldap")]
 use lmtyas::authentication_oidc::OidcConfiguration;
 use lmtyas::authentication_url;
+use lmtyas::cert_renewal::UNIX_DOMAIN_SOCKET_FILE;
+use lmtyas::cert_renewal::{uds_reload_cert, uds_unknown_request, TlsCertStatus};
 use lmtyas::cleanup_timer::build_cleanup_timers;
 use lmtyas::cli_parser::{parse_cli_parameters, ARG_CONFIG_FILE};
 use lmtyas::configuration::ApplicationConfiguration;
@@ -23,6 +25,7 @@ type AuthConfiguration = LdapCommonConfiguration;
 #[cfg(feature = "oidc-auth-ldap")]
 type AuthConfiguration = OidcConfiguration;
 
+#[cfg(unix)]
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     // crate env_logger is configured via the RUST_LOG environment variable
@@ -93,19 +96,43 @@ async fn main() -> std::io::Result<()> {
         &web_bind_address
     );
 
-    // The app! macro contains all routes that are used to build the service.
-    // Creating them this way makes them reusable for testing. Idea taken from
-    // https://stackoverflow.com/questions/72415245/actix-web-integration-tests-reusing-the-main-thread-application
-    // See answer from Ovidiu Gheorghies.
-    HttpServer::new(move || {
+    let application_configuration_clone = application_configuration.clone();
+    // HTTPS web server (public facing service)
+    let tcp_server = HttpServer::new(move || {
+        // The app! macro contains all routes that are used to build the service.
+        // Creating them this way makes them reusable for testing. Idea taken from
+        // https://stackoverflow.com/questions/72415245/actix-web-integration-tests-reusing-the-main-thread-application
+        // See answer from Ovidiu Gheorghies.
         lmtyas::app!(
-            application_configuration,
+            application_configuration_clone,
             content_security_policy,
             MAX_FORM_BYTES_LEN
         )
     })
     .keep_alive(std::time::Duration::from_secs(45))
     .bind_rustls_0_23(web_bind_address, rusttls_server_config)?
-    .run()
-    .await
+    .run();
+    let https_server_handle = tcp_server.handle();
+
+
+    log::info!("starting HTTP server at unix:{}", &UNIX_DOMAIN_SOCKET_FILE);
+
+    // Unix domain socket listening for commands
+    // from the Unix system where we run at.
+    let uds_server = HttpServer::new(move || {
+        App::new()
+            .wrap(middleware::Logger::new(
+                "%a %{User-Agent}i %r %U",
+            ))
+            // clone of the application configuration
+            .app_data(web::Data::new(application_configuration.clone()))
+            .service(web::resource("/reload-cert").to(uds_reload_cert))
+            .default_service(web::to(uds_unknown_request))
+    })
+    .workers(1)
+    .bind_uds(UNIX_DOMAIN_SOCKET_FILE)?
+    .run();
+
+    futures::future::try_join(tcp_server, uds_server).await?;
+    Ok(())
 }

@@ -144,6 +144,7 @@ sudo mkdir -p /opt/lmtyas/local/css
 sudo mkdir -p /opt/lmtyas/local/gfx
 sudo mkdir -p /opt/lmtyas/local/html
 sudo mkdir -p /opt/lmtyas/local/js
+sudo mkdir -p /opt/lmtyas/socket
 # copy binary
 sudo cp target/release/lmtyas /opt/lmtyas/
 # copy files
@@ -440,6 +441,30 @@ Organizational Unit Name (eg, section) []:HQ
 Common Name (e.g. server FQDN or YOUR name) []:lmtyas.home.arpa
 Email Address []:rainer.zufall@lmtyas.home.arpa
 ```
+
+## Security - Web Service - SSL/TLS - ACME
+
+Since version 3.0.0 `lmtyas` opens a Unix Domain Socket to listen for a command to reload a certificate. When that happens, the request will be stored in the application configuration. A timer will call a function that checks that value an reloads the certificates and restarts the server if needed.
+
+A debug build will use the file `/tmp/actix-uds.socket`, a production build the file `<install directory>/socket/actix-uds.socket`, e.g. `/opt/lmtyas/socket/actix-uds.socket`.
+
+E.g. use `curl` for requesting a reload of the certifcate:
+
+**debug build**
+
+```bash
+curl --unix-socket /tmp/actix-uds.socket http://localhost/reload-cert
+received reload cert request!
+```
+
+**production build**
+
+```bash
+curl --unix-socket /opt/lmtyas/socket/actix-uds.socket http://localhost/reload-cert
+received reload cert request!
+```
+
+This way you can renew your certificates via [ACME-protocol](https://de.wikipedia.org/wiki/Automatic_Certificate_Management_Environment), e.g. using [certbot](https://certbot.eff.org/) and inform the server afterwards.
 
 
 ## Security - API Token

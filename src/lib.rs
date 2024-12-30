@@ -11,6 +11,7 @@ pub mod authentication_middleware;
 #[cfg(feature = "authentication-oidc")]
 pub mod authentication_oidc;
 pub mod base64_trait;
+pub mod cert_renewal;
 pub mod cleanup_timer;
 pub mod cli_parser;
 pub mod configuration;

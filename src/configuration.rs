@@ -5,6 +5,7 @@ use crate::authentication_middleware::SharedRequestData;
 use crate::authentication_oidc::{OidcConfiguration, SharedOidcVerificationDataHashMap};
 #[cfg(feature = "oidc-auth-ldap")]
 use crate::authentication_url::AUTH_ROUTE;
+use crate::cert_renewal::TlsCertStatus;
 #[cfg(feature = "ldap-common")]
 use crate::ldap_common::LdapCommonConfiguration;
 #[cfg(any(feature = "ldap-auth", feature = "authentication-oidc"))]
@@ -151,6 +152,7 @@ pub struct ApplicationConfiguration {
     #[cfg(feature = "oidc-auth-ldap")]
     pub shared_oidc_verification_data: Arc<RwLock<SharedOidcVerificationDataHashMap>>,
     pub email_regex: Regex,
+    pub tls_cert_status: Arc<RwLock<TlsCertStatus>>,
 }
 
 /// Build a new instance of ApplicationConfiguration
@@ -244,6 +246,7 @@ impl ApplicationConfiguration {
                 SharedOidcVerificationDataHashMap::new(),
             )),
             email_regex,
+            tls_cert_status: Arc::new(RwLock::new(TlsCertStatus::NotLoaded)),
         })
     }
 
@@ -268,6 +271,10 @@ impl ApplicationConfiguration {
         let private_key =
             PrivateKeyDer::from_pem_file(self.configuration_file.ssl_private_key_file.clone())?;
 
+        {
+            let mut tls_cert_status_write_lock = self.tls_cert_status.write().unwrap();
+            *tls_cert_status_write_lock = TlsCertStatus::HasBeenLoaded;
+        }
         // Looking for a way to select ciphers explitictly, e.g. like
         // https://wiki.mozilla.org/Security/Server_Side_TLS#Intermediate_compatibility_(recommended)
         Ok(
