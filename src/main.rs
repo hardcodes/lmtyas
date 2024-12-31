@@ -87,6 +87,9 @@ async fn main() -> std::io::Result<()> {
         }
     };
 
+    //////////////////////////////////////////////////////////
+    // START TODO: put in exrta thread that will be awaited in main.
+    // here we can loop and reload certs if the server stops.
     info!(
         "{} {} ({}) will bind to {}",
         &lmtyas::PROGRAM_NAME,
@@ -117,6 +120,9 @@ async fn main() -> std::io::Result<()> {
             application_configuration.tcp_server_handle.write().unwrap();
         *tcp_server_handle_rwlock = Some(https_server_handle);
     }
+    //////////////////////////////////////////////////////////
+    // END TODO
+    //////////////////////////////////////////////////////////
 
     log::info!("starting HTTP server at unix:{}", &UNIX_DOMAIN_SOCKET_FILE);
 

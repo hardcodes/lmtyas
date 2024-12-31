@@ -26,9 +26,14 @@ pub async fn uds_reload_cert(
     application_configuration: web::Data<ApplicationConfiguration>,
 ) -> &'static str {
     const RETURN_MESSAGE: &str = "received reload cert request!";
-    let mut tls_cert_status_rwlock = application_configuration.tls_cert_status.write().unwrap();
-    *tls_cert_status_rwlock = TlsCertStatus::ReloadRequested;
     info!("received reload cert request via unix domain socket!");
+    let mut tls_cert_status_rwlock = application_configuration.tls_cert_status.write().unwrap();
+    if *tls_cert_status_rwlock != TlsCertStatus::HasBeenLoaded {
+        // Make sure that we were not called too early, before the server was even started.
+        warn!("https server is not ready yet, cannot reload certificate");
+        return RETURN_MESSAGE;
+    }
+    *tls_cert_status_rwlock = TlsCertStatus::ReloadRequested;
 
     let tcp_server_handle_rwlock = application_configuration.tcp_server_handle.read().unwrap();
     let handle = match tcp_server_handle_rwlock.as_ref() {
@@ -42,6 +47,6 @@ pub async fn uds_reload_cert(
     drop(tcp_server_handle_rwlock);
     info!("stopping https server");
     handle.stop(true).await;
-    
+
     RETURN_MESSAGE
 }
