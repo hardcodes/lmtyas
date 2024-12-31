@@ -14,6 +14,7 @@ use crate::mail_configuration::SendEMailConfiguration;
 use crate::rsa_functions::RsaKeys;
 use crate::secret_functions::SharedSecretData;
 use crate::{authenticated_user::SharedAuthenticatedUsersHashMap, rsa_functions};
+use actix_web::dev::ServerHandle;
 use log::info;
 #[cfg(feature = "authentication-oidc")]
 use openidconnect::{
@@ -29,7 +30,6 @@ use std::fs::File;
 use std::io::BufReader;
 use std::path::Path;
 use std::sync::{Arc, RwLock};
-use actix_web::dev::ServerHandle;
 
 /// Holds the deserialized entries of the json file
 /// that is passed to the program
@@ -252,7 +252,7 @@ impl ApplicationConfiguration {
             )),
             email_regex,
             tls_cert_status: Arc::new(RwLock::new(TlsCertStatus::NotLoaded)),
-            tcp_server_handle: Arc::new(RwLock::new(None))
+            tcp_server_handle: Arc::new(RwLock::new(None)),
         })
     }
 
