@@ -134,7 +134,7 @@ impl ConfigurationFile {
 /// Holds the complete configuration information
 /// that is passed to the HttpServer
 #[derive(Clone)]
-pub struct ApplicationConfiguration {
+pub struct ApplicationConfiguration<'a> {
     pub configuration_file: ConfigurationFile,
     // RSA keys for secret encryption/decryption
     pub rsa_keys_for_secrets: Arc<RwLock<RsaKeys>>,
@@ -157,15 +157,15 @@ pub struct ApplicationConfiguration {
     // stores the current status of the TLS/SSL certificate
     pub tls_cert_status: Arc<RwLock<TlsCertStatus>>,
     // stores the server handle of the tcp/https server
-    pub tcp_server_handle: Arc<RwLock<Option<ServerHandle>>>,
+    pub tcp_server_handle: Arc<RwLock<Option<&'a ServerHandle>>>,
 }
 
 /// Build a new instance of ApplicationConfiguration
-impl ApplicationConfiguration {
+impl<'a> ApplicationConfiguration<'a> {
     /// Reads the configuration file
     pub async fn read_from_file<P: AsRef<Path>>(
         configuration_file_path: P,
-    ) -> Result<ApplicationConfiguration, Box<dyn Error>> {
+    ) -> Result<ApplicationConfiguration<'a>, Box<dyn Error>> {
         let config_file = match ConfigurationFile::read_from_file(configuration_file_path) {
             Err(e) => {
                 return Err(e);

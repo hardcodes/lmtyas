@@ -4,7 +4,7 @@ use lmtyas::authenticated_user::{
 use lmtyas::configuration::ApplicationConfiguration;
 use lmtyas::cookie_functions::CookieData;
 
-pub async fn test_authenticated_user(application_configuration: &ApplicationConfiguration) {
+pub async fn test_authenticated_user<'a>(application_configuration: &ApplicationConfiguration<'a>) {
     for user_count in 1..MAX_AUTH_USERS + 1 {
         let cookie_data_option: Option<CookieData>;
         {

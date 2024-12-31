@@ -52,8 +52,8 @@ pub async fn redirect_to_index() -> HttpResponse {
 }
 
 /// Show a monitoring system that we are still alive.
-pub async fn still_alive(
-    application_configuration: web::Data<ApplicationConfiguration>,
+pub async fn still_alive<'a>(
+    application_configuration: web::Data<ApplicationConfiguration<'a>>,
 ) -> impl Responder {
     if application_configuration
         .rsa_keys_for_secrets
@@ -69,8 +69,8 @@ pub async fn still_alive(
 }
 
 /// returns a hint what account should be used for login
-pub async fn get_login_hint(
-    application_configuration: web::Data<ApplicationConfiguration>,
+pub async fn get_login_hint<'a>(
+    application_configuration: web::Data<ApplicationConfiguration<'a>>,
 ) -> impl Responder {
     let login_hint = application_configuration
         .configuration_file
@@ -80,8 +80,8 @@ pub async fn get_login_hint(
 }
 
 /// Returns a hint about valid mail addresses.
-pub async fn get_mail_hint(
-    application_configuration: web::Data<ApplicationConfiguration>,
+pub async fn get_mail_hint<'a>(
+    application_configuration: web::Data<ApplicationConfiguration<'a>>,
 ) -> impl Responder {
     const EMPTY_MAIL_HINT_JSON: &str = "{\"MailHint\": \"\"}";
     match &application_configuration.configuration_file.mail_hint {
@@ -93,8 +93,8 @@ pub async fn get_mail_hint(
 }
 
 /// Returns a href and target to the imprint page.
-pub async fn get_imprint_link(
-    application_configuration: web::Data<ApplicationConfiguration>,
+pub async fn get_imprint_link<'a>(
+    application_configuration: web::Data<ApplicationConfiguration<'a>>,
 ) -> impl Responder {
     const SERDE_SERIALIZE_IMPRINT_ERROR: &str = "ERROR: failed to serialize imprint link";
     let imprint_link = &application_configuration.configuration_file.imprint.clone();
@@ -105,8 +105,8 @@ pub async fn get_imprint_link(
 }
 
 /// Returns a href and target to the privacy statement page.
-pub async fn get_privacy_link(
-    application_configuration: web::Data<ApplicationConfiguration>,
+pub async fn get_privacy_link<'a>(
+    application_configuration: web::Data<ApplicationConfiguration<'a>>,
 ) -> impl Responder {
     const SERDE_SERIALIZE_PRIVACY_ERROR: &str = "ERROR: failed to serialize privacy link";
     let privacy_link = &application_configuration.configuration_file.privacy.clone();
@@ -189,8 +189,8 @@ pub async fn get_privacy_html() -> impl Responder {
 /// Returns true or false as json value so that
 /// the web form can check if the rsa private key
 /// is already stored in the running server.
-pub async fn is_server_ready(
-    application_configuration: web::Data<ApplicationConfiguration>,
+pub async fn is_server_ready<'a>(
+    application_configuration: web::Data<ApplicationConfiguration<'a>>,
 ) -> HttpResponse {
     if application_configuration
         .rsa_keys_for_secrets
@@ -207,10 +207,10 @@ pub async fn is_server_ready(
 
 /// Loads the RSA private key and unlocks it
 /// with the provided password.
-pub async fn set_password_for_rsa_rivate_key(
+pub async fn set_password_for_rsa_rivate_key<'a>(
     admin: AuthenticatedAdministrator,
     mut base64_encoded_password_csrf_token: String,
-    application_configuration: web::Data<ApplicationConfiguration>,
+    application_configuration: web::Data<ApplicationConfiguration<'a>>,
 ) -> HttpResponse {
     if base64_encoded_password_csrf_token.len() > MAX_FORM_BYTES_LEN {
         warn!("form data exceeds {} bytes! {}", MAX_FORM_BYTES_LEN, &admin);
@@ -284,10 +284,10 @@ pub async fn set_password_for_rsa_rivate_key(
 /// # Returns
 ///
 /// - `HttpResponse`
-pub async fn store_secret(
+pub async fn store_secret<'a>(
     bytes: Bytes,
     user: AuthenticatedUser,
-    application_configuration: web::Data<ApplicationConfiguration>,
+    application_configuration: web::Data<ApplicationConfiguration<'a>>,
 ) -> HttpResponse {
     debug!("store_secret()");
 
@@ -336,9 +336,9 @@ fn get_base64_encoded_secret_len(parsed_secret: &str) -> usize {
 /// This function is async because we call
 /// `<UserDataImpl as GetUserData>::get_receiver_display_name`
 /// which queries an external server.
-async fn parse_and_validate_secret_form_data(
+async fn parse_and_validate_secret_form_data<'a>(
     bytes: &Bytes,
-    application_configuration: &web::Data<ApplicationConfiguration>,
+    application_configuration: &web::Data<ApplicationConfiguration<'a>>,
     user: &AuthenticatedUser,
     validate_csrf_token: ValidateCsrfToken,
 ) -> Result<Secret, Box<dyn std::error::Error>> {
@@ -443,9 +443,9 @@ async fn parse_and_validate_secret_form_data(
 /// stores it on disk and sends the email with
 /// the link to reveal the secret.
 /// This way it can be used from multiple functions.
-async fn encrypt_store_send_secret(
+async fn encrypt_store_send_secret<'a>(
     parsed_form_data: &mut Secret,
-    application_configuration: &web::Data<ApplicationConfiguration>,
+    application_configuration: &web::Data<ApplicationConfiguration<'a>>,
     mail_template_file_option: Option<String>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     // aes encrypt the secret before rsa or hybrid rsa/aes encryption
@@ -587,9 +587,9 @@ async fn encrypt_store_send_secret(
 /// # Returns
 ///
 /// - `HttpResponse`
-pub async fn reveal_secret(
+pub async fn reveal_secret<'a>(
     encrypted_percent_encoded_url_payload: web::Path<String>,
-    application_configuration: web::Data<ApplicationConfiguration>,
+    application_configuration: web::Data<ApplicationConfiguration<'a>>,
     user: AuthenticatedUser,
 ) -> HttpResponse {
     debug!(
@@ -721,10 +721,10 @@ pub async fn get_authenticated_user_details(user: AuthenticatedUser) -> HttpResp
 /// Returns lower case `receiver_email` as result string if the mail
 /// could be validated, else return `crate::UNKOWN_RECEIVER_EMAIL`
 /// as result string to the frontend.
-pub async fn get_validated_receiver_email(
+pub async fn get_validated_receiver_email<'a>(
     email_path: web::Path<String>,
     user: AuthenticatedUser,
-    application_configuration: web::Data<ApplicationConfiguration>,
+    application_configuration: web::Data<ApplicationConfiguration<'a>>,
 ) -> HttpResponse {
     debug!("get_validated_receiver_email()");
     let email = email_path.into_inner();
@@ -779,10 +779,10 @@ pub async fn not_found_404() -> HttpResponse {
 /// This function is used by scripts where the caller presents
 /// an access token for authentication that we provided manually beforehand.
 #[cfg(feature = "api-access-token")]
-pub async fn api_v1_store_secret(
+pub async fn api_v1_store_secret<'a>(
     bytes: Bytes,
     validated_access_token_payload: ValidatedAccessTokenPayload,
-    application_configuration: web::Data<ApplicationConfiguration>,
+    application_configuration: web::Data<ApplicationConfiguration<'a>>,
 ) -> HttpResponse {
     debug!("api_v1_store_secret()");
 

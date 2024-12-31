@@ -25,10 +25,10 @@ pub trait Login {
     /// # Returns
     ///
     /// - `HttpResponse`
-    async fn login_user(
+    async fn login_user<'a>(
         bytes: Bytes,
         http_request: HttpRequest,
-        application_configuration: web::Data<ApplicationConfiguration>,
+        application_configuration: web::Data<ApplicationConfiguration<'a>>,
     ) -> HttpResponse {
         debug!("bytes = {:?}", &bytes);
         debug!("http_request = {:?}", &http_request);

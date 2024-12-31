@@ -73,7 +73,7 @@ impl FromRequest for ValidatedAccessTokenPayload {
 }
 
 /// Extracts the access token from the request and validates it.
-fn get_access_token_payload(req: &HttpRequest) -> Result<ValidatedAccessTokenPayload, Error> {
+fn get_access_token_payload<'a>(req: &HttpRequest) -> Result<ValidatedAccessTokenPayload, Error> {
     let app_data: Option<&web::Data<ApplicationConfiguration>> = req.app_data();
     if app_data.is_none() {
         // Should not happen!

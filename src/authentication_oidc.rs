@@ -160,10 +160,10 @@ impl Login for OidcConfiguration {
     /// This function is called when a user logs in.
     /// In case of this OIDC implementation this means
     /// the callback (redirect) from the OIDC idp server.
-    async fn login_user(
+    async fn login_user<'a>(
         _bytes: Bytes,
         request: HttpRequest,
-        application_configuration: web::Data<ApplicationConfiguration>,
+        application_configuration: web::Data<ApplicationConfiguration<'a>>,
     ) -> HttpResponse {
         debug!("oidc response:\n\n{:?}", request);
         // accept GET method only
