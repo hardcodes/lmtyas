@@ -444,16 +444,21 @@ Email Address []:rainer.zufall@lmtyas.home.arpa
 
 ## Security - Web Service - SSL/TLS - ACME
 
-Since version 3.0.0 `lmtyas` opens a Unix Domain Socket to listen for a command to reload a certificate. When that happens, the request will be stored in the application configuration. A timer will call a function every `CERT_TIMER_INTERVAL_SECONDS` seconds that checks that value an reloads the certificates and restarts the server if needed.
+Since version 3.0.0 `lmtyas` opens a Unix Domain Socket to listen for a command to reload the certificate and private key that are used for the TLS encryption.
 
-A debug build will use the file `/tmp/actix-uds.socket`, a production build the file `<install directory>/socket/actix-uds.socket`, e.g. `/opt/lmtyas/socket/actix-uds.socket`.
+- When request was reveied, it will be stored in the application configuration,
+- the https server will be stopped,
+- the certficate files will be reread and
+- the server started again.
+  
+A debug build will use the file `/tmp/lmtyas-uds.socket`, a production build the file `<install directory>/socket/lmtyas-uds.socket`, e.g. `/opt/lmtyas/socket/lmtyas-uds.socket`.
 
 E.g. use `curl` for requesting a reload of the certifcate:
 
 **debug build**
 
 ```bash
-curl --unix-socket /tmp/actix-uds.socket http://localhost/reload-cert
+curl --unix-socket /tmp/lmtyas-uds.socket http://localhost/reload-cert
 received reload cert request!
 ```
 
