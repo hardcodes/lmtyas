@@ -156,8 +156,8 @@ pub struct ApplicationConfiguration {
     pub email_regex: Regex,
     // stores the current status of the TLS/SSL certificate
     pub tls_cert_status: Arc<RwLock<TlsCertStatus>>,
-    // stores the server handle of the tcp/https server
-    pub tcp_server_handle: Arc<RwLock<Option<ServerHandle>>>,
+    // stores the server handle of the unix domain socket server
+    pub uds_server_handle: Arc<RwLock<Option<ServerHandle>>>,
 }
 
 /// Build a new instance of ApplicationConfiguration
@@ -252,7 +252,7 @@ impl ApplicationConfiguration {
             )),
             email_regex,
             tls_cert_status: Arc::new(RwLock::new(TlsCertStatus::NotLoaded)),
-            tcp_server_handle: Arc::new(RwLock::new(None)),
+            uds_server_handle: Arc::new(RwLock::new(None)),
         })
     }
 

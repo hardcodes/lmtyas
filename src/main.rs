@@ -6,7 +6,9 @@ use lmtyas::authentication_middleware::CheckAuthentication;
 #[cfg(feature = "oidc-auth-ldap")]
 use lmtyas::authentication_oidc::OidcConfiguration;
 use lmtyas::authentication_url;
-use lmtyas::cert_renewal::{uds_reload_cert, uds_unknown_request, UNIX_DOMAIN_SOCKET_FILE};
+use lmtyas::cert_renewal::{
+    uds_reload_cert, uds_unknown_request, UdsConfiguration, UNIX_DOMAIN_SOCKET_FILE,
+};
 use lmtyas::cleanup_timer::build_cleanup_timers;
 use lmtyas::cli_parser::{parse_cli_parameters, ARG_CONFIG_FILE};
 use lmtyas::configuration::ApplicationConfiguration;
@@ -87,6 +89,8 @@ async fn main() -> std::io::Result<()> {
         }
     };
 
+    let uds_configuration = UdsConfiguration::new(application_configuration.tls_cert_status.clone());
+
     //////////////////////////////////////////////////////////
     // START TODO: put in exrta thread that will be awaited in main.
     // here we can loop and reload certs if the server stops.
@@ -111,13 +115,13 @@ async fn main() -> std::io::Result<()> {
             MAX_FORM_BYTES_LEN
         )
     })
-    .keep_alive(std::time::Duration::from_secs(45))
+    .keep_alive(std::time::Duration::from_secs(30))
     .bind_rustls_0_23(web_bind_address, rusttls_server_config)?
     .run();
+    // store the tcp/https-server handle, so that the uds server can stop it.
     let https_server_handle = tcp_server.handle();
     {
-        let mut tcp_server_handle_rwlock =
-            application_configuration.tcp_server_handle.write().unwrap();
+        let mut tcp_server_handle_rwlock = uds_configuration.tcp_server_handle.write().unwrap();
         *tcp_server_handle_rwlock = Some(https_server_handle);
     }
     //////////////////////////////////////////////////////////
@@ -132,13 +136,19 @@ async fn main() -> std::io::Result<()> {
         App::new()
             .wrap(middleware::Logger::new("%a %{User-Agent}i %r %U"))
             // clone of the application configuration
-            .app_data(web::Data::new(application_configuration.clone()))
+            .app_data(web::Data::new(uds_configuration.clone()))
             .service(web::resource("/reload-cert").to(uds_reload_cert))
             .default_service(web::to(uds_unknown_request))
     })
     .workers(1)
     .bind_uds(UNIX_DOMAIN_SOCKET_FILE)?
     .run();
+    // store the uds server handle, so that the tcp/https-server control thread can stop it.
+    let uds_server_handle = uds_server.handle();
+    {
+        let mut uds_server_handle_rwlock = application_configuration.uds_server_handle.write().unwrap();
+        *uds_server_handle_rwlock = Some(uds_server_handle);
+    }
 
     futures::future::try_join(tcp_server, uds_server).await?;
     Ok(())

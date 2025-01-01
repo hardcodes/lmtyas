@@ -451,7 +451,7 @@ Since version 3.0.0 `lmtyas` opens a Unix Domain Socket to listen for a command 
 - the certficate files will be reread and
 - the server started again.
   
-A debug build will use the file `/tmp/lmtyas-uds.socket`, a production build the file `<install directory>/socket/lmtyas-uds.socket`, e.g. `/opt/lmtyas/socket/lmtyas-uds.socket`.
+A debug build will use the file `/tmp/lmtyas-uds.socket`, a production build the file `<work directory>/socket/lmtyas-uds.socket`, e.g. `/opt/lmtyas/socket/lmtyas-uds.socket`.
 
 E.g. use `curl` for requesting a reload of the certifcate:
 
@@ -468,6 +468,8 @@ received reload cert request!
 curl --unix-socket /opt/lmtyas/socket/actix-uds.socket http://localhost/reload-cert
 received reload cert request!
 ```
+
+**NOTE**: the curl command may block for a while until the tcp/https server has been stopped. You may want to add the `--max-time <seconds>` parameter when calling `curl` in a batch script to prevent the script from blocking too long. Make sure that `<seconds>` is big enough though. `300` is a good starting point and really should give the server enough time to stop and respond.
 
 This way you can renew your certificates via [ACME-protocol](https://de.wikipedia.org/wiki/Automatic_Certificate_Management_Environment), e.g. using [certbot](https://certbot.eff.org/) and inform the server afterwards.
 
