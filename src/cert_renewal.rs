@@ -111,8 +111,9 @@ pub async fn tcp_server_loop(
             *tcp_server_handle_rwlock = Some(https_server_handle);
         }
         tcp_server.await?;
-        let tls_cert_status_rlock = application_configuration.tls_cert_status.read().unwrap();
-        if TlsCertStatus::ReloadRequested != *tls_cert_status_rlock {
+        if TlsCertStatus::ReloadRequested
+            != *application_configuration.tls_cert_status.read().unwrap()
+        {
             // This should never happen!
             warn!("https server stopped unexpectedly");
             let uds_server_handle_rlock =
