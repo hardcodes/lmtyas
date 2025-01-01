@@ -203,6 +203,7 @@ sudo chown -R lmtyas:lmtyas /opt/lmtyas/
 sudo find /opt/lmtyas/ -type f -exec chmod 640 {} \;
 sudo find /opt/lmtyas/web-content -type f -exec chmod 440 {} \;
 sudo find /opt/lmtyas/ -type d -exec chmod 550 {} \;
+sudo chmod 750 /opt/lmtyas/socket
 chmod 750 output/secrets
 sudo chmod 550 /opt/lmtyas/lmtyas
 sudo chown -R root:lmtyas /etc/lmtyas/
