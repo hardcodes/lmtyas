@@ -444,12 +444,12 @@ Email Address []:rainer.zufall@lmtyas.home.arpa
 
 ## Security - Web Service - SSL/TLS - ACME
 
-Since version 3.0.0 `lmtyas` opens a Unix Domain Socket to listen for a command to reload the certificate and private key that are used for the TLS encryption.
+Since version 3.0.0 `lmtyas` opens a Unix Domain Socket to listen for a command to reload the certificate and private key that are used for TLS encryption of the HTTPS server.
 
-- When request was reveied, it will be stored in the application configuration,
+When request was received,
 - the https server will be stopped,
 - the certficate files will be reread and
-- the server started again.
+- the server started again with the running config. No need to [set RSA password](#set-rsa-password).
   
 A debug build will use the file `/tmp/lmtyas-uds.socket`, a production build the file `<work directory>/socket/lmtyas-uds.socket`, e.g. `/opt/lmtyas/socket/lmtyas-uds.socket`.
 

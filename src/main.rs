@@ -1,30 +1,11 @@
-use actix_files::Files;
-use actix_web::{guard, middleware, web, App, HttpResponse, HttpServer};
-#[cfg(feature = "ldap-auth")]
-use lmtyas::authentication_ldap::LdapCommonConfiguration;
-use lmtyas::authentication_middleware::CheckAuthentication;
-#[cfg(feature = "oidc-auth-ldap")]
-use lmtyas::authentication_oidc::OidcConfiguration;
-use lmtyas::authentication_url;
-use lmtyas::cert_renewal::{
-    uds_reload_cert, uds_unknown_request, UdsConfiguration, UNIX_DOMAIN_SOCKET_FILE,
-};
+use lmtyas::cert_renewal::{tcp_server_loop, uds_server, UdsConfiguration};
 use lmtyas::cleanup_timer::build_cleanup_timers;
 use lmtyas::cli_parser::{parse_cli_parameters, ARG_CONFIG_FILE};
 use lmtyas::configuration::ApplicationConfiguration;
-use lmtyas::handler_functions::*;
-use lmtyas::log_functions::extract_request_path;
-use lmtyas::login_user_trait::Login;
-use lmtyas::MAX_FORM_BYTES_LEN;
 use log::info;
 use log::warn;
 use std::io::Write;
 use std::path::Path;
-
-#[cfg(feature = "ldap-auth")]
-type AuthConfiguration = LdapCommonConfiguration;
-#[cfg(feature = "oidc-auth-ldap")]
-type AuthConfiguration = OidcConfiguration;
 
 #[cfg(unix)]
 #[actix_web::main]
@@ -52,26 +33,10 @@ async fn main() -> std::io::Result<()> {
             }
             Ok(a) => a,
         };
-    // make a clone of the web_bind_address since it will be used
-    // after moving application_configuration into the webservice
-    let web_bind_address = application_configuration
-        .configuration_file
-        .web_bind_address
-        .clone();
 
     // build cleanup timers and store references to keep them running
     let timer_guards = build_cleanup_timers(&application_configuration);
     info!("started {} cleanup timers", timer_guards.len());
-
-    // values for the csp-header
-    let content_security_policy = concat!(
-        "form-action 'self';",
-        "frame-ancestors 'none';",
-        "connect-src 'self';",
-        "default-src 'self';",
-        "script-src 'self';",
-        "style-src 'self';",
-    );
 
     match rustls::crypto::aws_lc_rs::default_provider().install_default() {
         Ok(r) => r,
@@ -81,75 +46,22 @@ async fn main() -> std::io::Result<()> {
         }
     };
 
-    let rusttls_server_config = match application_configuration.load_rustls_config() {
-        Ok(c) => c,
-        Err(e) => {
-            warn!("Cannot load tls certficate : {}", &e);
-            std::process::exit(1);
-        }
-    };
-
-    let uds_configuration = UdsConfiguration::new(application_configuration.tls_cert_status.clone());
+    let uds_configuration =
+        UdsConfiguration::new(application_configuration.tls_cert_status.clone());
 
     //////////////////////////////////////////////////////////
-    // START TODO: put in exrta thread that will be awaited in main.
-    // here we can loop and reload certs if the server stops.
-    info!(
-        "{} {} ({}) will bind to {}",
-        &lmtyas::PROGRAM_NAME,
-        &lmtyas::PROGRAM_VERSION,
-        &lmtyas::BUILD_TYPE,
-        &web_bind_address
-    );
-
-    let application_configuration_clone = application_configuration.clone();
-    // HTTPS web server (public facing service)
-    let tcp_server = HttpServer::new(move || {
-        // The app! macro contains all routes that are used to build the service.
-        // Creating them this way makes them reusable for testing. Idea taken from
-        // https://stackoverflow.com/questions/72415245/actix-web-integration-tests-reusing-the-main-thread-application
-        // See answer from Ovidiu Gheorghies.
-        lmtyas::app!(
-            application_configuration_clone,
-            content_security_policy,
-            MAX_FORM_BYTES_LEN
-        )
-    })
-    .keep_alive(std::time::Duration::from_secs(30))
-    .bind_rustls_0_23(web_bind_address, rusttls_server_config)?
-    .run();
-    // store the tcp/https-server handle, so that the uds server can stop it.
-    let https_server_handle = tcp_server.handle();
-    {
-        let mut tcp_server_handle_rwlock = uds_configuration.tcp_server_handle.write().unwrap();
-        *tcp_server_handle_rwlock = Some(https_server_handle);
-    }
+    // Here we can loop and reload certs if the server stops.
     //////////////////////////////////////////////////////////
-    // END TODO
-    //////////////////////////////////////////////////////////
+    let tcp_server_loop_task = actix_web::rt::spawn(tcp_server_loop(
+        application_configuration.clone(),
+        uds_configuration.clone(),
+    ));
 
-    log::info!("starting HTTP server at unix:{}", &UNIX_DOMAIN_SOCKET_FILE);
+    // Wrapper for the Unix Domain Socket server to get same result type as `tcp_server_loop_task`.
+    let uds_server_task =
+        actix_web::rt::spawn(uds_server(application_configuration, uds_configuration));
 
-    // Unix domain socket listening for commands
-    // from the Unix system where we run at.
-    let uds_server = HttpServer::new(move || {
-        App::new()
-            .wrap(middleware::Logger::new("%a %{User-Agent}i %r %U"))
-            // clone of the application configuration
-            .app_data(web::Data::new(uds_configuration.clone()))
-            .service(web::resource("/reload-cert").to(uds_reload_cert))
-            .default_service(web::to(uds_unknown_request))
-    })
-    .workers(1)
-    .bind_uds(UNIX_DOMAIN_SOCKET_FILE)?
-    .run();
-    // store the uds server handle, so that the tcp/https-server control thread can stop it.
-    let uds_server_handle = uds_server.handle();
-    {
-        let mut uds_server_handle_rwlock = application_configuration.uds_server_handle.write().unwrap();
-        *uds_server_handle_rwlock = Some(uds_server_handle);
-    }
-
-    futures::future::try_join(tcp_server, uds_server).await?;
+    // Start both servers and wait from them to stop.
+    let _res = futures::future::try_join(tcp_server_loop_task, uds_server_task).await?;
     Ok(())
 }
