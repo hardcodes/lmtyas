@@ -23,7 +23,7 @@ type AuthConfiguration = OidcConfiguration;
 #[cfg(debug_assertions)]
 pub const UNIX_DOMAIN_SOCKET_FILE: &str = "/tmp/lmtyas-uds.socket";
 #[cfg(not(debug_assertions))]
-pub const BUILD_TYPE: &str = "socket/lmtyas-uds.socket";
+pub const UNIX_DOMAIN_SOCKET_FILE: &str = "socket/lmtyas-uds.socket";
 
 /// Status of the tls certificate of the tcp/https server
 #[derive(PartialEq, Eq)]
