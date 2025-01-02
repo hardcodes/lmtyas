@@ -56,7 +56,7 @@ impl UdsConfiguration {
     }
 }
 
-/// Loop that restarts the ctp/https server after certificate reload.
+/// Loop that restarts the tcp/https server after certificate reload.
 /// Needed because there are no async closures in Rust yet.
 pub async fn tcp_server_loop(
     application_configuration: ApplicationConfiguration,
@@ -87,7 +87,7 @@ pub async fn tcp_server_loop(
             "style-src 'self';",
         );
         info!(
-            "{} webservice {} ({}) will bind to {}",
+            "{} {} webservice ({}) will bind to {}",
             &crate::PROGRAM_NAME,
             &crate::PROGRAM_VERSION,
             &crate::BUILD_TYPE,
@@ -152,7 +152,7 @@ pub async fn uds_server(
     let socket_file = env::current_dir()?.join("socket").join(UNIX_DOMAIN_SOCKET_FILE);
 
     info!(
-        "{} control socket {} ({}) will bind to unix:{}",
+        "{} {} control socket ({}) will bind to unix:{}",
         &crate::PROGRAM_NAME,
         &crate::PROGRAM_VERSION,
         &crate::BUILD_TYPE,
