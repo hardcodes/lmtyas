@@ -466,7 +466,7 @@ received reload cert request!
 **production build**
 
 ```bash
-curl --unix-socket /opt/lmtyas/socket/actix-uds.socket http://localhost/reload-cert
+curl --unix-socket /opt/lmtyas/socket/lmtyas-uds.socket http://localhost/reload-cert
 received reload cert request!
 ```
 
