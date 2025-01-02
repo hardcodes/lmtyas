@@ -13,6 +13,10 @@ use actix_files::Files;
 use actix_web::dev::ServerHandle;
 use actix_web::{guard, middleware, web, App, HttpRequest, HttpResponse, HttpServer};
 use log::{debug, info, warn};
+#[cfg(not(debug_assertions))]
+use std::env;
+#[cfg(debug_assertions)]
+use std::path::Path;
 use std::sync::{Arc, RwLock};
 
 #[cfg(feature = "ldap-auth")]
@@ -20,10 +24,7 @@ type AuthConfiguration = LdapCommonConfiguration;
 #[cfg(feature = "oidc-auth-ldap")]
 type AuthConfiguration = OidcConfiguration;
 
-#[cfg(debug_assertions)]
-pub const UNIX_DOMAIN_SOCKET_FILE: &str = "/tmp/lmtyas-uds.socket";
-#[cfg(not(debug_assertions))]
-pub const UNIX_DOMAIN_SOCKET_FILE: &str = "socket/lmtyas-uds.socket";
+pub const UNIX_DOMAIN_SOCKET_FILE: &str = "lmtyas-uds.socket";
 
 /// Status of the tls certificate of the tcp/https server
 #[derive(PartialEq, Eq)]
@@ -86,7 +87,7 @@ pub async fn tcp_server_loop(
             "style-src 'self';",
         );
         info!(
-            "{} {} ({}) will bind to {}",
+            "{} webservice {} ({}) will bind to {}",
             &crate::PROGRAM_NAME,
             &crate::PROGRAM_VERSION,
             &crate::BUILD_TYPE,
@@ -145,7 +146,18 @@ pub async fn uds_server(
 ) -> std::io::Result<()> {
     // Unix domain socket listening for commands
     // from the Unix system where we run at.
-    log::info!("starting HTTP server at unix:{}", &UNIX_DOMAIN_SOCKET_FILE);
+    #[cfg(debug_assertions)]
+    let socket_file = Path::new("/tmp").join(UNIX_DOMAIN_SOCKET_FILE);
+    #[cfg(not(debug_assertions))]
+    let socket_file = env::current_dir()?.join("socket").join(UNIX_DOMAIN_SOCKET_FILE);
+
+    info!(
+        "{} control socket {} ({}) will bind to unix:{}",
+        &crate::PROGRAM_NAME,
+        &crate::PROGRAM_VERSION,
+        &crate::BUILD_TYPE,
+        &socket_file.to_string_lossy()
+    );
     let uds_server = HttpServer::new(move || {
         App::new()
             .wrap(middleware::Logger::new("%a %{User-Agent}i %r %U"))
@@ -155,7 +167,7 @@ pub async fn uds_server(
             .default_service(web::to(uds_unknown_request))
     })
     .workers(1)
-    .bind_uds(UNIX_DOMAIN_SOCKET_FILE)?
+    .bind_uds(socket_file)?
     .run();
     // store the uds server handle, so that the tcp/https-server control thread can stop it.
     let uds_server_handle = uds_server.handle();
