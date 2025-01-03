@@ -13,7 +13,7 @@ use std::path::Path;
 const MIN_RSA_MODULUS_SIZE: u32 = 256;
 // bits used to generate a random RSA key pair
 const RSA_KEY_BITS: u32 = 4096;
-// error messge is often used
+// error message is often used
 const RSA_PRIVATE_NOT_SET: &str = "RSA public key is not set!";
 
 /// Holds the RSA private and public key for
@@ -211,12 +211,9 @@ impl RsaKeys {
             .unwrap();
 
         let base64_encrypted_key_iv = buf.to_base64_encoded();
-
         let cipher = Cipher::aes_256_cbc();
-
         let ciphertext =
             encrypt(cipher, &aes_key, Some(&aes_iv), plaintext_data.as_bytes()).unwrap();
-
         let payload = ciphertext.to_base64_encoded();
 
         return Ok(format_args!("v1.{base64_encrypted_key_iv}.{payload}").to_string());
