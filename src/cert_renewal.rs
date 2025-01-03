@@ -139,7 +139,7 @@ pub async fn tcp_server_loop(
 
 /// Wrapper that starts the Unix Domain Socket server that
 /// waits for a command to reload the certificate files.
-/// Hack to provide the same resturn type as `tcp_server_loop`.
+/// Hack to provide the same return type as `tcp_server_loop`.
 pub async fn uds_server(
     application_configuration: ApplicationConfiguration,
     uds_configuration: UdsConfiguration,
