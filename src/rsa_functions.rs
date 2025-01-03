@@ -13,6 +13,8 @@ use std::path::Path;
 const MIN_RSA_MODULUS_SIZE: u32 = 256;
 // bits used to generate a random RSA key pair
 const RSA_KEY_BITS: u32 = 4096;
+// error messge is often used
+const RSA_PRIVATE_NOT_SET: &str = "RSA public key is not set!";
 
 /// Holds the RSA private and public key for
 /// encryption and decryption
@@ -80,9 +82,7 @@ impl RsaKeys {
             Ok(p) => p,
             Err(e) => {
                 warn!("cannot load rsa private key: {}", e);
-                const RSA_CANNOT_LOAD_KEY: &str = "Cannot load rsa keys!";
-                let boxed_error = Box::<dyn Error + Send + Sync>::from(RSA_CANNOT_LOAD_KEY);
-                return Err(boxed_error);
+                return Err("Cannot load rsa keys!".into());
             }
         };
         let rsa_public_key_pem = rsa_private_key.public_key_to_pem()?;
@@ -90,9 +90,7 @@ impl RsaKeys {
         debug!("rsa_public_key.size() = {}", &rsa_public_key.size());
         if rsa_public_key.size() < MIN_RSA_MODULUS_SIZE {
             warn!("modulus is < {} bytes", MIN_RSA_MODULUS_SIZE);
-            const RSA_MIN_MODULUS_ERR: &str = "RSA key size too small";
-            let boxed_error = Box::<dyn Error + Send + Sync>::from(RSA_MIN_MODULUS_ERR);
-            return Err(boxed_error);
+            return Err("RSA key size too small".into());
         }
         self.rsa_private_key = Some(rsa_private_key);
         self.rsa_public_key = Some(rsa_public_key);
@@ -110,17 +108,14 @@ impl RsaKeys {
         plaintext_data: &str,
     ) -> Result<String, Box<dyn Error>> {
         if self.rsa_public_key.is_none() {
-            let box_err: Box<dyn Error> = "RSA public key is not set!".to_string().into();
-            return Err(box_err);
+            return Err(RSA_PRIVATE_NOT_SET.into());
         }
         let public_key = self.rsa_public_key.as_ref().unwrap();
         let mut buf: Vec<u8> = vec![0; public_key.size() as usize];
         match public_key.public_encrypt(plaintext_data.as_bytes(), &mut buf, Padding::PKCS1) {
             Err(e) => {
                 info!("Could not rsa encrypt (public key) given value: {}", &e);
-                let box_err: Box<dyn Error> =
-                    "Could not rsa encrypt given value".to_string().into();
-                Err(box_err)
+                Err("Could not rsa encrypt given value".into())
             }
             Ok(_) => {
                 let base64_encrypted = buf.to_base64_encoded();
@@ -142,60 +137,45 @@ impl RsaKeys {
         signature_b64: &str,
     ) -> Result<(), Box<dyn Error>> {
         if self.rsa_public_key.is_none() {
-            let box_err: Box<dyn Error> = "RSA public key is not set!".to_string().into();
-            return Err(box_err);
+            return Err(RSA_PRIVATE_NOT_SET.into());
         }
         let signature_bytes = match Vec::from_base64_encoded(signature_b64) {
             Ok(bytes) => bytes,
             Err(e) => {
-                let box_err: Box<dyn Error> = format!("Could not base64 decode signature: {}", &e)
-                    .to_string()
-                    .into();
-                return Err(box_err);
+                return Err(format!("Could not base64 decode signature: {}", &e).into());
             }
         };
         let public_key = self.rsa_public_key.as_ref().unwrap();
         let pkey = match PKey::from_rsa(public_key.clone()) {
             Ok(pkey) => pkey,
             Err(e) => {
-                let box_err: Box<dyn Error> =
-                    format!("Could not build pkey: {}", &e).to_string().into();
-                return Err(box_err);
+                return Err(format!("Could not build pkey: {}", &e).into());
             }
         };
         let mut verifier = match Verifier::new(MessageDigest::sha512(), &pkey) {
             Ok(verifier) => verifier,
             Err(e) => {
-                let box_err: Box<dyn Error> = format!("Could not build verifier: {}", &e)
-                    .to_string()
-                    .into();
-                return Err(box_err);
+                return Err(format!("Could not build verifier: {}", &e).into());
             }
         };
         let update_result = verifier.update(signed_data.as_bytes());
         if update_result.is_err() {
-            let box_err: Box<dyn Error> = format!(
+            return Err(format!(
                 "Could not add signed data to verifier: {}",
                 &update_result.unwrap_err()
             )
-            .to_string()
-            .into();
-            return Err(box_err);
+            .into());
         }
         let validation_result = match verifier.verify(&signature_bytes) {
             Ok(validation_result) => validation_result,
             Err(e) => {
-                let box_err: Box<dyn Error> = format!("Could not verify signature: {}", &e)
-                    .to_string()
-                    .into();
-                return Err(box_err);
+                return Err(format!("Could not verify signature: {}", &e).into());
             }
         };
         if validation_result {
             return Ok(());
         }
-        let box_err: Box<dyn Error> = "invalid signature".to_string().into();
-        Err(box_err)
+        Err("invalid signature".into())
     }
 
     /// Encrypt a String slice with stored RSA public key. The encryption is
@@ -208,8 +188,7 @@ impl RsaKeys {
     /// - `plaintext_data`: a String slice with data to encrypt
     pub fn hybrid_encrypt_str(&self, plaintext_data: &str) -> Result<String, Box<dyn Error>> {
         if self.rsa_public_key.is_none() {
-            let box_err: Box<dyn Error> = "RSA public key is not set!".to_string().into();
-            return Err(box_err);
+            return Err(RSA_PRIVATE_NOT_SET.into());
         }
 
         // AES Keys to encrypt the payload - the keysize of 256bit can be
@@ -251,27 +230,18 @@ impl RsaKeys {
     /// - `encrypted_data`: a String slice with data to decrypt
     pub fn hybrid_decrypt_str(&self, encrypted_data: &str) -> Result<String, Box<dyn Error>> {
         if self.rsa_private_key.is_none() {
-            let box_err: Box<dyn Error> = "RSA private key is not set!".to_string().into();
-            return Err(box_err);
+            return Err(RSA_PRIVATE_NOT_SET.into());
         }
 
         let elements: Vec<&str> = encrypted_data.split('.').collect();
 
         if elements.len() != 3 {
-            let box_err: Box<dyn Error> =
-                format_args!("Expected {} parts, but found  {}", 3, elements.len())
-                    .to_string()
-                    .into();
-            return Err(box_err);
+            return Err(format!("Expected {} parts, but found  {}", 3, elements.len()).into());
         }
         // we can access the elements since we checked the length first.
         let encryption_scheme = elements.first().unwrap();
         if "v1" != *encryption_scheme {
-            let box_err: Box<dyn Error> =
-                format_args!("Unsupported encryption scheme: {}", encryption_scheme)
-                    .to_string()
-                    .into();
-            return Err(box_err);
+            return Err(format!("Unsupported encryption scheme: {}", encryption_scheme).into());
         }
 
         let encrypted_key_iv = Vec::from_base64_encoded(elements.get(1).unwrap())?;
@@ -308,7 +278,7 @@ impl RsaKeys {
         encrypted_data: &str,
     ) -> Result<String, Box<dyn Error>> {
         if self.rsa_private_key.is_none() {
-            return Err("RSA private key is not set!".into());
+            return Err(RSA_PRIVATE_NOT_SET.into());
         }
         let raw_data = match Vec::from_base64_encoded(encrypted_data) {
             Ok(b) => b,
@@ -317,9 +287,7 @@ impl RsaKeys {
                     "decrypt_str() => could not base64 decode given value: {}",
                     &e
                 );
-                let box_err: Box<dyn Error> =
-                    "Could not base64 decode given value".to_string().into();
-                return Err(box_err);
+                return Err("Could not base64 decode given value".into());
             }
         };
 
