@@ -58,15 +58,6 @@ impl RsaKeys {
     /// Loads RSA private key from the given path. To load the
     /// RSA privte key, the passphrase is needed.
     /// The RSA public key is derived from the RSA private key.
-    ///
-    /// # Arguments
-    ///
-    /// - rsa_private_key_path: Path
-    /// - secure_passphrase:    SecStr
-    ///
-    /// # Returns
-    ///
-    /// - Result<RsaKeys, Box<dyn Error>>
     #[inline(always)]
     pub fn read_from_files<P: AsRef<Path>>(
         &mut self,
