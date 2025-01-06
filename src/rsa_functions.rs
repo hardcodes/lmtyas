@@ -45,8 +45,7 @@ impl RsaKeys {
             rsa_public_key: None,
         }
     }
-    /// Build a new RSA key pair with a random password for the
-    /// private key. Used for cookie encryption
+    /// Build a new random RSA key pair, used for cookie encryption.
     pub fn generate_random_rsa_keys() -> Result<RsaKeys, Box<dyn Error>> {
         let rsa = Rsa::generate(RSA_KEY_BITS)?;
         let rsa_public_key = Rsa::public_key_from_pem(&rsa.public_key_to_pem()?)?;
