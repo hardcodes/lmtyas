@@ -159,8 +159,8 @@ fn get_access_token_payload(req: &HttpRequest) -> Result<ValidatedAccessTokenPay
             );
             return Err(ErrorForbidden("Invalid access token!"));
         };
-        // Only try to read the access token file after validation that the `jti` value AKA signature
-        // was successfully verified. So that changing the UUID (a.k.a. `sub` value) in the presented
+        // Only try to read the access token file after the `jti` value AKA signature has been
+        // successfully verified. So that changing the UUID (a.k.a. `sub` value) in the presented
         // access token cannot be used to sniff out possible files.
         let path = Path::new(
             &application_configuration
