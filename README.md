@@ -338,7 +338,7 @@ If the service is (re-)started, a valid administrator (see `admin_accounts` in s
 ## Security - Data Encryption
 
 The web service uses a combination of RSA public key encryption and AES symmetric encryption to secure
-the data. Only encryted data is stored on the disk.
+the data. Only encrypted data is stored on the disk.
 
 For security reasons the password for the RSA private key is not stored in the configuration file. It must be entered by the administrator every time the web service gets started. The password only lives in the service for the short time it is needed to load the private RSA key.
 
