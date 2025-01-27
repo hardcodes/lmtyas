@@ -6,6 +6,7 @@ use std::fs::File;
 use std::path::Path;
 use uuid::v1::{Context, Timestamp};
 use uuid::Uuid;
+use zeroize::Zeroize;
 
 /// Used to build unique uuids, created with `openssl rand -hex 6`
 const SECRET_ID: &[u8; 6] = &[0x99, 0xa8, 0xdb, 0x5c, 0x43, 0x85];
@@ -69,6 +70,21 @@ pub struct Secret {
     pub secret: String,
     #[serde(rename = "CsrfToken", skip_serializing_if = "Option::is_none")]
     pub csrf_token: Option<String>,
+}
+
+impl Drop for Secret {
+    fn drop(&mut self) {
+        self.from_email.zeroize();
+        self.from_display_name.zeroize();
+        self.to_email.zeroize();
+        self.to_display_name.zeroize();
+        self.context.zeroize();
+        self.secret.zeroize();
+        match &mut self.csrf_token {
+            None => (),
+            Some(c) => c.zeroize(),
+        }
+    }
 }
 
 impl Secret {

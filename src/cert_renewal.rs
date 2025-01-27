@@ -149,7 +149,9 @@ pub async fn uds_server(
     #[cfg(debug_assertions)]
     let socket_file = Path::new("/tmp").join(UNIX_DOMAIN_SOCKET_FILE);
     #[cfg(not(debug_assertions))]
-    let socket_file = env::current_dir()?.join("socket").join(UNIX_DOMAIN_SOCKET_FILE);
+    let socket_file = env::current_dir()?
+        .join("socket")
+        .join(UNIX_DOMAIN_SOCKET_FILE);
 
     info!(
         "{} {} control socket ({}) will bind to unix:{}",
