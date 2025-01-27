@@ -67,7 +67,7 @@ pub struct Secret {
     pub context: String,
     #[serde(rename = "Secret")]
     pub secret: String,
-    #[serde(rename = "CsrfToken")]
+    #[serde(rename = "CsrfToken", skip_serializing_if = "Option::is_none")]
     pub csrf_token: Option<String>,
 }
 
