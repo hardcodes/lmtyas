@@ -705,7 +705,7 @@ pub async fn get_authenticated_user_details(user: AuthenticatedUser) -> HttpResp
     debug!("get_authenticated_user_details()");
     let user_details = UserDetails {
         display_name: user.display_name(),
-        mail: user.mail,
+        mail: user.mail.clone(),
     };
     match serde_json::to_string(&user_details) {
         Err(e) => {

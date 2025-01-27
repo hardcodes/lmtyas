@@ -15,6 +15,7 @@ use std::fmt;
 use std::future::Future;
 use std::pin::Pin;
 use std::sync::{Arc, RwLock};
+use zeroize::Zeroize;
 
 /// Maximum number of authenticated users that are stored in the
 /// hashmap to prevent server overload or contain a DOS attack.
@@ -45,6 +46,17 @@ pub struct AuthenticatedUser {
     pub peer_ip: String,
     pub cookie_update_lifetime_counter: u16,
     pub csrf_token: String,
+}
+
+impl Drop for AuthenticatedUser{
+    fn drop(&mut self) {
+        self.user_name.zeroize();
+        self.first_name.zeroize();
+        self.last_name.zeroize();
+        self.mail.zeroize();
+        self.peer_ip.zeroize();
+        self.csrf_token.zeroize();
+    }
 }
 
 /// custom formatter to suppress first name, last name and mail address
