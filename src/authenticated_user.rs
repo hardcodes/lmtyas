@@ -48,7 +48,7 @@ pub struct AuthenticatedUser {
     pub csrf_token: String,
 }
 
-impl Drop for AuthenticatedUser{
+impl Drop for AuthenticatedUser {
     fn drop(&mut self) {
         self.user_name.zeroize();
         self.first_name.zeroize();

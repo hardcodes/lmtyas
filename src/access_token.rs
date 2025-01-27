@@ -56,7 +56,7 @@ impl fmt::Display for AccessTokenPayload {
     }
 }
 
-impl Drop for AccessTokenPayload{
+impl Drop for AccessTokenPayload {
     fn drop(&mut self) {
         self.iss.zeroize();
         self.aud.zeroize();
@@ -65,7 +65,6 @@ impl Drop for AccessTokenPayload{
         self.jti.zeroize();
         let mut sub_bytes = self.sub.into_bytes();
         sub_bytes.zeroize();
-
     }
 }
 
@@ -314,7 +313,7 @@ pub struct AccessTokenFile {
     pub aud: Option<String>,
 }
 
-impl Drop for AccessTokenFile{
+impl Drop for AccessTokenFile {
     fn drop(&mut self) {
         self.ip_adresses.zeroize();
         self.nbf.zeroize();
