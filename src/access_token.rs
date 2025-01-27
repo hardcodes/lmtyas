@@ -17,6 +17,7 @@ use std::future::Future;
 use std::path::Path;
 use std::pin::Pin;
 use uuid::Uuid;
+use zeroize::Zeroize;
 
 /// Payload of an access token, that can be used for scripting.
 ///
@@ -52,6 +53,19 @@ pub struct AccessTokenPayload {
 impl fmt::Display for AccessTokenPayload {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "(sub={}, nbf={}, exp={})", self.sub, self.nbf, self.exp)
+    }
+}
+
+impl Drop for AccessTokenPayload{
+    fn drop(&mut self) {
+        self.iss.zeroize();
+        self.aud.zeroize();
+        self.nbf.zeroize();
+        self.exp.zeroize();
+        self.jti.zeroize();
+        let mut sub_bytes = self.sub.into_bytes();
+        sub_bytes.zeroize();
+
     }
 }
 
@@ -197,14 +211,14 @@ fn get_access_token_payload(req: &HttpRequest) -> Result<ValidatedAccessTokenPay
             &ip_address, &bearer_token
         );
         return Ok(ValidatedAccessTokenPayload {
-            iss: bearer_token.iss,
+            iss: bearer_token.iss.clone(),
             sub: bearer_token.sub.to_string(),
-            aud: bearer_token.aud,
+            aud: bearer_token.aud.clone(),
             nbf: bearer_token.nbf,
             exp: bearer_token.exp,
-            from_email: access_token_file.from_email,
-            from_display_name: access_token_file.from_display_name,
-            mail_template_file: access_token_file.mail_template_file,
+            from_email: access_token_file.from_email.clone(),
+            from_display_name: access_token_file.from_display_name.clone(),
+            mail_template_file: access_token_file.mail_template_file.clone(),
             ip_address,
         });
     }
@@ -298,6 +312,19 @@ pub struct AccessTokenFile {
     pub iss: Option<String>,
     /// Optional information for the access token user
     pub aud: Option<String>,
+}
+
+impl Drop for AccessTokenFile{
+    fn drop(&mut self) {
+        self.ip_adresses.zeroize();
+        self.nbf.zeroize();
+        self.from_email.zeroize();
+        self.from_display_name.zeroize();
+        self.exp.zeroize();
+        self.mail_template_file.zeroize();
+        self.iss.zeroize();
+        self.aud.zeroize();
+    }
 }
 
 impl AccessTokenFile {
