@@ -456,10 +456,13 @@ async fn encrypt_store_send_secret(
             return Err("ERROR: could not aes encrypt data!".into());
         }
     };
-    // store aes encrypted secret instead of plaintext secret
-    parsed_form_data
-        .secret
-        .clone_from(&aes_encryption_result.encrypted_data);
+    // replace plaintext secret with the aes encrypted secret
+    // before writing to disk.
+    let mut plaintext_secret = std::mem::replace(
+        &mut parsed_form_data.secret,
+        aes_encryption_result.encrypted_data,
+    );
+    plaintext_secret.zeroize();
     // rsa encrypt all data
     let encrypted_form_data = match parsed_form_data.to_encrypted(
         &application_configuration
