@@ -64,7 +64,7 @@ pub async fn still_alive(
     {
         HttpResponse::Ok().body("Yes sir, I can boogie!")
     } else {
-        HttpResponse::Ok().body("System not ready!")
+        HttpResponse::Ok().body("System alive but not ready!")
     }
 }
 

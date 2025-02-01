@@ -297,7 +297,7 @@ async fn with_setup() {
     let result = test::call_and_read_body(&test_service, request).await;
     assert_eq!(
         result,
-        "System not ready!".as_bytes(),
+        "System alive but not ready!".as_bytes(),
         "service should not boogie!"
     );
 
