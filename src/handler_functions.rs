@@ -460,7 +460,7 @@ async fn encrypt_store_send_secret(
     // before writing to disk.
     let mut plaintext_secret = std::mem::replace(
         &mut parsed_form_data.secret,
-        aes_encryption_result.encrypted_data,
+        aes_encryption_result.encrypted_data.clone(),
     );
     plaintext_secret.zeroize();
     // rsa encrypt all data

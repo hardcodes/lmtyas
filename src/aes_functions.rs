@@ -4,6 +4,7 @@ use openssl::rand::rand_bytes;
 use openssl::symm::{decrypt, encrypt, Cipher};
 use std::error::Error;
 use std::fmt;
+use zeroize::Zeroize;
 
 const KEY_LENGTH: usize = 32;
 const IV_LENGTH: usize = 16;
@@ -13,6 +14,14 @@ pub struct AesEncryptionData {
     pub encrypted_data: String,
     pub encryption_key: String,
     pub encryption_iv: String,
+}
+
+impl Drop for AesEncryptionData {
+    fn drop(&mut self) {
+        self.encryption_key.zeroize();
+        self.encryption_iv.zeroize();
+        self.encrypted_data.zeroize();
+    }
 }
 
 /// This trait is used to AES encrypt a `String`
@@ -81,6 +90,8 @@ impl EncryptAes for String {
                     encryption_key: base64_key,
                     encryption_iv: base64_iv,
                 };
+                key_buf.zeroize();
+                iv_buf.zeroize();
                 Ok(aes_encryption_result)
             }
         }
