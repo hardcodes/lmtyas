@@ -1,4 +1,3 @@
-use crate::rsa_functions::RsaKeys;
 use actix_web::{
     cookie::time::Duration, cookie::time::OffsetDateTime, cookie::Cookie, http, http::StatusCode,
     HttpResponse,
@@ -6,6 +5,9 @@ use actix_web::{
 use log::{debug, warn};
 use std::fmt;
 use std::str::FromStr;
+#[cfg(feature = "hacaoi-openssl")]
+type CookieRsaKeys = hacaoi::openssl::rsa::RsaKeys;
+use hacaoi::rsa::RsaKeysFunctions;
 
 /// Name of the cookie that is sent to an authenticated user browser
 pub const COOKIE_NAME: &str = env!("CARGO_PKG_NAME");
@@ -99,12 +101,13 @@ pub fn build_new_encrypted_authentication_cookie(
     plaintext_cookie_value: &str,
     max_age_seconds: i64,
     domain: &str,
-    rsa: &RsaKeys,
+    rsa: &CookieRsaKeys,
 ) -> Cookie<'static> {
-    let encrypted_cookie_value = match rsa.rsa_public_key_encrypt_str(plaintext_cookie_value) {
-        Err(_) => String::from("invalid_rsa_cookie"),
-        Ok(value) => value,
-    };
+    let encrypted_cookie_value =
+        match rsa.encrypt_str_pkcs1v15_padding_to_b64(plaintext_cookie_value) {
+            Err(_) => String::from("invalid_rsa_cookie"),
+            Ok(value) => value,
+        };
     #[cfg(feature = "ldap-auth")]
     let same_site = actix_web::cookie::SameSite::Strict;
     #[cfg(feature = "oidc-auth-ldap")]
@@ -165,10 +168,10 @@ pub fn build_redirect_to_resource_url_response(cookie: &Cookie, location: String
 /// - `rsa`:                rsa keys to decrypt the cookie
 pub fn get_decrypted_cookie_data(
     encrypted_cookie_value: &str,
-    rsa: &RsaKeys,
+    rsa: &CookieRsaKeys,
 ) -> Result<CookieData, CookieDataError> {
     let decrypted_cookie_value = rsa
-        .rsa_private_key_decrypt_str(encrypted_cookie_value)
+        .decrypt_b64_pkcs1v15_padding_to_string(encrypted_cookie_value)
         .unwrap_or_else(|_| -> String { "invalid_rsa_cookie_value".to_string() });
     debug!("decrypted_cookie_value = {}", &decrypted_cookie_value);
     CookieData::from_str(&decrypted_cookie_value)

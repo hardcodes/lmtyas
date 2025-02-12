@@ -25,6 +25,8 @@ clap = "4.5.29"
 env_logger = "0.11.6"
 futures = "0.3"
 futures-util = "0.3"
+# hacaoi, version = "0.1.9"
+hacaoi = { git = "https://github.com/hardcodes/hacaoi.git", rev = "4653a6f8b2800db85544659aa496dccaf90ddc24", default-features = false, optional = true }
 ldap3 = "0.11"
 lettre = "0.11"
 log = "0.4"
@@ -43,7 +45,7 @@ uuid = { version = "1", features = ["v1", "serde"] }
 zeroize = "1.5.7"
 
 [features]
-default = ["oidc-auth-ldap", "mail-noauth-notls", "api-access-token"]
+default = ["oidc-auth-ldap", "mail-noauth-notls", "api-access-token", "hacaoi-openssl"]
 ldap-auth = ["ldap-common", "get-userdata-ldap"]
 ldap-common = []
 oidc-auth-ldap = ["authentication-oidc", "oidc-ldap", "ldap-common", "get-userdata-ldap"]
@@ -53,12 +55,14 @@ get-userdata-ldap = []
 mail-noauth-notls = []
 no-userdata-backend = []
 api-access-token = []
+hacaoi-openssl = ["dep:hacaoi","hacaoi/openssl","hacaoi/b64"]
 
 [dev-dependencies]
 actix-rt = "*"
 async-mutex = "1.4.0"
 lazy_static = "1.5.0"
 tokio = { version = "1", features = ["full"] }
+# stay on 0.8, dependency to rust crypto rsa
 rand = "0.8"
 reqwest = "0.12"
 

@@ -1,5 +1,6 @@
 #[cfg(feature = "api-access-token")]
 use crate::access_token::AccessTokenConfiguration;
+use crate::authenticated_user::SharedAuthenticatedUsersHashMap;
 use crate::authentication_middleware::SharedRequestData;
 #[cfg(feature = "authentication-oidc")]
 use crate::authentication_oidc::{OidcConfiguration, SharedOidcVerificationDataHashMap};
@@ -13,7 +14,6 @@ use crate::login_user_trait::Login;
 use crate::mail_configuration::SendEMailConfiguration;
 use crate::rsa_functions::RsaKeys;
 use crate::secret_functions::SharedSecretData;
-use crate::{authenticated_user::SharedAuthenticatedUsersHashMap, rsa_functions};
 use actix_web::dev::ServerHandle;
 use log::info;
 #[cfg(feature = "authentication-oidc")]
@@ -30,6 +30,9 @@ use std::fs::File;
 use std::io::BufReader;
 use std::path::Path;
 use std::sync::{Arc, RwLock};
+#[cfg(feature = "hacaoi-openssl")]
+type CookieRsaKeys = hacaoi::openssl::rsa::RsaKeys;
+use hacaoi::rsa::RsaKeysFunctions;
 
 /// Holds the deserialized entries of the json file
 /// that is passed to the program
@@ -139,7 +142,7 @@ pub struct ApplicationConfiguration {
     // RSA keys for secret encryption/decryption
     pub rsa_keys_for_secrets: Arc<RwLock<RsaKeys>>,
     // RSA keys for cookie encryption/decryption
-    pub rsa_keys_for_cookies: Arc<RsaKeys>,
+    pub rsa_keys_for_cookies: Arc<CookieRsaKeys>,
     // SharedSecret (context for creating uuids)
     pub shared_secret: Arc<RwLock<SharedSecretData>>,
     /// stores authenticated users
@@ -219,7 +222,7 @@ impl ApplicationConfiguration {
             .set_redirect_uri(redirect_url)
         };
 
-        let rsa_keys_for_cookies = match rsa_functions::RsaKeys::generate_random_rsa_keys() {
+        let rsa_keys_for_cookies = match CookieRsaKeys::random(hacaoi::rsa::KeySize::Bit2048) {
             Err(e) => {
                 return Err(format!("Cannot generate random RSA keys for cookies: {}", &e).into());
             }

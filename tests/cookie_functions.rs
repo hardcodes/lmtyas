@@ -3,7 +3,9 @@ use lmtyas::cookie_functions::{
     build_new_cookie_response, build_new_encrypted_authentication_cookie,
     get_decrypted_cookie_data, COOKIE_PATH,
 };
-use lmtyas::rsa_functions::RsaKeys;
+#[cfg(feature = "hacaoi-openssl")]
+type CookieRsaKeys = hacaoi::openssl::rsa::RsaKeys;
+use hacaoi::rsa::RsaKeysFunctions;
 
 #[cfg(not(feature = "oidc-auth-ldap"))]
 const INVALID_RSA_COOKIE: &str =
@@ -16,7 +18,7 @@ const INVALID_RSA_COOKIE: &str =
 fn cookie_functions() {
     const COOKIE_VALUE: &str = "777f036a-0e58-4990-9e34-83570999fa42;0";
 
-    let rsa_keys = RsaKeys::generate_random_rsa_keys().unwrap();
+    let rsa_keys = CookieRsaKeys::random(hacaoi::rsa::KeySize::Bit2048).unwrap();
 
     let valid_rsa_cookie =
         build_new_encrypted_authentication_cookie(COOKIE_VALUE, 90, COOKIE_PATH, &rsa_keys);
