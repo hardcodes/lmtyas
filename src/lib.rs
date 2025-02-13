@@ -1,7 +1,7 @@
 // tell the rust compiler which modules we have in extra files
 #[cfg(feature = "api-access-token")]
 pub mod access_token;
-pub mod aes_functions;
+pub mod aes_trait;
 pub mod app_macro;
 pub mod authenticated_user;
 pub mod authentication_functions;

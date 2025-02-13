@@ -2,7 +2,7 @@
 extern crate env_logger;
 #[cfg(feature = "api-access-token")]
 use crate::access_token::ValidatedAccessTokenPayload;
-use crate::aes_functions::DecryptAes;
+use crate::aes_trait::DecryptAes;
 use crate::authenticated_user::{AccessScope, AuthenticatedAdministrator, AuthenticatedUser};
 use crate::authentication_functions::update_authenticated_user_cookie_lifetime;
 use crate::configuration::ApplicationConfiguration;
