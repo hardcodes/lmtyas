@@ -1,33 +1,8 @@
-use crate::base64_trait::{Base64StringConversions, Base64VecU8Conversions};
+use crate::base64_trait::Base64VecU8Conversions;
 use openssl::error::ErrorStack;
-use openssl::rand::rand_bytes;
-use openssl::symm::{decrypt, encrypt, Cipher};
+use openssl::symm::{decrypt, Cipher};
 use std::error::Error;
 use std::fmt;
-use zeroize::Zeroize;
-
-const KEY_LENGTH: usize = 32;
-const IV_LENGTH: usize = 16;
-
-/// Used to return AES encrypted data
-pub struct AesEncryptionData {
-    pub encrypted_data: String,
-    pub encryption_key: String,
-    pub encryption_iv: String,
-}
-
-impl Drop for AesEncryptionData {
-    fn drop(&mut self) {
-        self.encryption_key.zeroize();
-        self.encryption_iv.zeroize();
-        self.encrypted_data.zeroize();
-    }
-}
-
-/// This trait is used to AES encrypt a `String`
-pub trait EncryptAes {
-    fn to_aes_enrypted_b64(&self) -> Result<AesEncryptionData, AesEncryptionError>;
-}
 
 /// custom error type to carry on the OpenSSL `ErrorStack`
 #[derive(Debug, Clone)]
@@ -62,39 +37,6 @@ impl Error for AesEncryptionError {
 impl From<ErrorStack> for AesEncryptionError {
     fn from(err: ErrorStack) -> Self {
         AesEncryptionError::new(format!("{:?}", err))
-    }
-}
-
-impl EncryptAes for String {
-    /// AES encrypt a `String`with randomly chosen key and iv.
-    ///
-    /// The encryted `String`, key and iv are returned as base64 encoded values
-    ///
-    /// # Returns
-    ///
-    /// - `AesEncryptionData`
-    fn to_aes_enrypted_b64(&self) -> Result<AesEncryptionData, AesEncryptionError> {
-        let cipher = Cipher::aes_256_cbc();
-        let mut key_buf = [0; KEY_LENGTH];
-        rand_bytes(&mut key_buf).unwrap();
-        let mut iv_buf = [0; IV_LENGTH];
-        rand_bytes(&mut iv_buf).unwrap();
-        match encrypt(cipher, &key_buf, Some(&iv_buf), self.as_bytes()) {
-            Err(e) => Err(AesEncryptionError::from(e)),
-            Ok(encrypted_data) => {
-                let base64_encrypted_data = encrypted_data.to_base64_urlsafe_encoded();
-                let base64_key = key_buf.to_base64_urlsafe_encoded();
-                let base64_iv = iv_buf.to_base64_urlsafe_encoded();
-                let aes_encryption_result = AesEncryptionData {
-                    encrypted_data: base64_encrypted_data,
-                    encryption_key: base64_key,
-                    encryption_iv: base64_iv,
-                };
-                key_buf.zeroize();
-                iv_buf.zeroize();
-                Ok(aes_encryption_result)
-            }
-        }
     }
 }
 
