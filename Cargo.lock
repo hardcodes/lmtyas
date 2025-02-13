@@ -1384,8 +1384,8 @@ dependencies = [
 
 [[package]]
 name = "hacaoi"
-version = "0.1.9"
-source = "git+https://github.com/hardcodes/hacaoi.git?rev=4653a6f8b2800db85544659aa496dccaf90ddc24#4653a6f8b2800db85544659aa496dccaf90ddc24"
+version = "0.1.10"
+source = "git+https://github.com/hardcodes/hacaoi.git?rev=0209821a736104802f725d5bfb06df7835d41738#0209821a736104802f725d5bfb06df7835d41738"
 dependencies = [
  "base64 0.22.1",
  "openssl",

@@ -2,10 +2,9 @@
 extern crate env_logger;
 #[cfg(feature = "api-access-token")]
 use crate::access_token::ValidatedAccessTokenPayload;
-use crate::aes_functions::{DecryptAes, EncryptAes};
+use crate::aes_functions::DecryptAes;
 use crate::authenticated_user::{AccessScope, AuthenticatedAdministrator, AuthenticatedUser};
 use crate::authentication_functions::update_authenticated_user_cookie_lifetime;
-use crate::base64_trait::Base64VecU8Conversions;
 use crate::configuration::ApplicationConfiguration;
 use crate::csrf_html_template::{inject_csrf_token, CsrfTemplateFile, ValidateCsrfToken};
 #[cfg(feature = "get-userdata-ldap")]
@@ -22,6 +21,7 @@ use crate::{MAX_FORM_BYTES_LEN, MAX_FORM_INPUT_LEN};
 use actix_files::NamedFile;
 use actix_web::web::Bytes;
 use actix_web::{http::header, http::StatusCode, web, HttpRequest, HttpResponse, Responder};
+use hacaoi::base64_trait::{Base64StringConversions, Base64VecU8Conversions};
 use log::{debug, info, warn};
 use percent_encoding::{percent_decode_str, utf8_percent_encode, AsciiSet, CONTROLS};
 use serde::{Deserialize, Serialize};
@@ -35,6 +35,10 @@ use zeroize::Zeroize;
 type UserDataImpl = NoUserDataBackend;
 #[cfg(feature = "get-userdata-ldap")]
 type UserDataImpl = GetUserDataLdapBackend;
+
+#[cfg(feature = "hacaoi-openssl")]
+type SecretAes256Cbc = hacaoi::aes::Aes256Cbc<hacaoi::aes::AesOpenSslScope>;
+use hacaoi::aes::Aes256CbcFunctions;
 
 /// Characters that will be percent encoded
 /// https://url.spec.whatwg.org/#fragment-percent-encode-set
@@ -449,19 +453,19 @@ async fn encrypt_store_send_secret(
     mail_template_file_option: Option<String>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     // aes encrypt the secret before rsa or hybrid rsa/aes encryption
-    let aes_encryption_result = match parsed_form_data.secret.to_aes_enrypted_b64() {
-        Ok(aes_encryption_result) => aes_encryption_result,
+    let aes = SecretAes256Cbc::random();
+    let aes_encrypted_secret = match aes.encrypt_str_to_b64(&parsed_form_data.secret) {
+        Ok(encrypted) => encrypted,
         Err(e) => {
             warn!("could not aes encrypt data: {}", &e);
             return Err("ERROR: could not aes encrypt data!".into());
         }
     };
+
     // replace plaintext secret with the aes encrypted secret
     // before writing to disk.
-    let mut plaintext_secret = std::mem::replace(
-        &mut parsed_form_data.secret,
-        aes_encryption_result.encrypted_data.clone(),
-    );
+    let mut plaintext_secret =
+        std::mem::replace(&mut parsed_form_data.secret, aes_encrypted_secret);
     plaintext_secret.zeroize();
     // rsa encrypt all data
     let encrypted_form_data = match parsed_form_data.to_encrypted(
@@ -501,8 +505,8 @@ async fn encrypt_store_send_secret(
     let url_payload = format!(
         "{};{};{}",
         &uuid.to_string(),
-        &aes_encryption_result.encryption_iv,
-        aes_encryption_result.encryption_key
+        &aes.iv().to_base64_urlsafe_encoded(),
+        &aes.key().to_base64_urlsafe_encoded()
     );
     debug!("url_payload = {}", &url_payload);
     // rsa encrypt url payload
