@@ -632,8 +632,8 @@ pub async fn reveal_secret(
     )
     .join(uuid);
     info!("reading secret from file {}", &path.display());
-    let encrypted_secret = match Secret::read_from_disk(&path).await {
-        Ok(encrypted_secret) => encrypted_secret,
+    let hybrid_encrypted_secret = match Secret::read_from_disk(&path).await {
+        Ok(hybrid_encrypted_secret) => hybrid_encrypted_secret,
         Err(e) => {
             info!(
                 "secret file {} cannot be read from user {}: {}",
@@ -647,28 +647,33 @@ pub async fn reveal_secret(
         }
     };
     info!("success, file {} read", &path.display());
-    // rsa decrypt the stored values
+    // Decrypt the stored values that are either
+    // - rsa enrypted only or
+    // - hybrid encrypted
     let rsa_read_lock = application_configuration
         .rsa_keys_for_secrets
         .read()
         .unwrap();
-    let mut aes_encrypted = match encrypted_secret.to_decrypted(&rsa_read_lock) {
+    let mut aes_encrypted_secret = match hybrid_encrypted_secret.to_decrypted(&rsa_read_lock) {
         Err(e) => {
             return HttpResponse::err_text_response(format!("ERROR: {}", &e));
         }
         Ok(aes_encrypted) => aes_encrypted,
     };
-    debug!("aes_encrypted = {}", &aes_encrypted.secret);
+    debug!("aes_encrypted = {}", &aes_encrypted_secret.secret);
 
     // check if user is entitled to reveal this secret
-    if aes_encrypted.to_email.to_lowercase() != user.mail.to_lowercase() {
+    if aes_encrypted_secret.to_email.to_lowercase() != user.mail.to_lowercase() {
         warn!(
             "user {} (mail = {}) wants unjustified access to secret {} (entitled to_email = {})",
-            &user.user_name, &user.mail, &uuid, &aes_encrypted.to_email
+            &user.user_name, &user.mail, &uuid, &aes_encrypted_secret.to_email
         );
         return HttpResponse::err_text_response("ERROR: access to secret not permitted!");
     }
-    let decrypted_secret = match aes_encrypted.secret.decrypt_b64_aes(key_base64, iv_base64) {
+    let decrypted_secret = match aes_encrypted_secret
+        .secret
+        .decrypt_b64_aes(key_base64, iv_base64)
+    {
         Ok(decrypted_secret) => decrypted_secret,
         Err(e) => {
             info!("could not aes decrypt data: {}", &e);
@@ -676,8 +681,8 @@ pub async fn reveal_secret(
         }
     };
     // put the plaintext secret into the struct
-    aes_encrypted.secret = decrypted_secret;
-    let json_response = match serde_json::to_string(&aes_encrypted) {
+    aes_encrypted_secret.secret = decrypted_secret;
+    let json_response = match serde_json::to_string(&aes_encrypted_secret) {
         Err(e) => {
             warn!("could not build decrypted json struct: {}", &e);
             return HttpResponse::err_text_response(format!("ERROR: {}", &e));
