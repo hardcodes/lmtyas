@@ -32,6 +32,7 @@ use std::path::Path;
 use std::sync::{Arc, RwLock};
 #[cfg(feature = "hacaoi-openssl")]
 type CookieRsaKeys = hacaoi::openssl::rsa::RsaKeys;
+// the trait RsaKeysFunctions is needed for OpenSSL and Rust-Crypto rsa
 use hacaoi::rsa::RsaKeysFunctions;
 
 /// Holds the deserialized entries of the json file

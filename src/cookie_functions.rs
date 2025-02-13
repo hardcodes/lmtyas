@@ -7,6 +7,7 @@ use std::fmt;
 use std::str::FromStr;
 #[cfg(feature = "hacaoi-openssl")]
 type CookieRsaKeys = hacaoi::openssl::rsa::RsaKeys;
+// the trait RsaKeysFunctions is needed for OpenSSL and Rust-Crypto rsa
 use hacaoi::rsa::RsaKeysFunctions;
 
 /// Name of the cookie that is sent to an authenticated user browser
