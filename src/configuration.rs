@@ -97,8 +97,9 @@ impl ConfigurationFile {
             )
             .into());
         }
-        // Check if the `rsa_private_key_file` exists because it is are loaded later on,
-        // when the password is entered by the administator.
+        // Check if the `rsa_private_key_file` exists because it is loaded
+        // later on during runtime, when the password is entered by the
+        // administator.
         // The server must not start if such a key component is missing.
         if !Path::new(&parsed_config.rsa_private_key_file).exists() {
             return Err(format!(

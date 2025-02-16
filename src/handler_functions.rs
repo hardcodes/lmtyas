@@ -452,7 +452,8 @@ async fn encrypt_store_send_secret(
     application_configuration: &web::Data<ApplicationConfiguration>,
     mail_template_file_option: Option<String>,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    // aes encrypt the secret before rsa or hybrid rsa/aes encryption
+    // aes encrypt the secret itself before rsa or hybrid rsa/aes encryption
+    // of the whole `Secret` struct with meta data.
     let aes = SecretAes256Cbc::random();
     let aes_encrypted_secret = match aes.encrypt_str_to_b64(&parsed_form_data.secret) {
         Ok(encrypted) => encrypted,
