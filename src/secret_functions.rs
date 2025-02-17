@@ -1,5 +1,6 @@
 use crate::rsa_functions::RsaKeys;
 use chrono::Utc;
+use hacaoi::error::HacaoiError;
 use serde::{Deserialize, Serialize};
 use std::error::Error;
 use std::fs::File;
@@ -7,6 +8,10 @@ use std::path::Path;
 use uuid::v1::{Context, Timestamp};
 use uuid::Uuid;
 use zeroize::Zeroize;
+
+#[cfg(feature = "hacaoi-openssl")]
+type HybridCrypto = hacaoi::openssl::hybrid_crypto::HybridCrypto;
+use hacaoi::hybrid_crypto::HybridCryptoFunctions;
 
 /// Used to build unique uuids, created with `openssl rand -hex 6`
 const SECRET_ID: &[u8; 6] = &[0x99, 0xa8, 0xdb, 0x5c, 0x43, 0x85];
@@ -126,23 +131,35 @@ impl Secret {
     /// - the AES key and IV are then encrypted using the RSA keypair,
     /// - the result is encoded as
     ///   `<VERSION-ID>.<BASE64ENCODED_KEY_IV>.<BASE64ENCODED_PAYLOAD>`
-    pub fn to_encrypted(&self, rsa_keys: &RsaKeys) -> Result<Secret, Box<dyn Error>> {
-        let encrypted_from_email = rsa_keys.hybrid_encrypt_str(&self.from_email)?;
-        let encrypted_from_display_name = rsa_keys.hybrid_encrypt_str(&self.from_display_name)?;
-        let encrypted_to_email = rsa_keys.hybrid_encrypt_str(&self.to_email)?;
-        let encrypted_to_display_name = rsa_keys.hybrid_encrypt_str(&self.to_display_name)?;
-        let encrypted_context = rsa_keys.hybrid_encrypt_str(&self.context)?;
-        let encrypted_secret = rsa_keys.hybrid_encrypt_str(&self.secret)?;
-        let secret = Secret {
-            from_email: encrypted_from_email,
-            from_display_name: encrypted_from_display_name,
-            to_email: encrypted_to_email,
-            to_display_name: encrypted_to_display_name,
-            context: encrypted_context,
-            secret: encrypted_secret,
-            csrf_token: None,
-        };
-        Ok(secret)
+    pub fn to_encrypted(
+        &self,
+        hybrid_crypto: &Option<HybridCrypto>,
+    ) -> Result<Secret, HacaoiError> {
+        match hybrid_crypto {
+            None => {
+                return Err(HacaoiError::StringError("RSA keys not set".into()));
+            }
+            Some(hybrid_crypto) => {
+                let encrypted_from_email = hybrid_crypto.hybrid_encrypt_str(&self.from_email)?;
+                let encrypted_from_display_name =
+                    hybrid_crypto.hybrid_encrypt_str(&self.from_display_name)?;
+                let encrypted_to_email = hybrid_crypto.hybrid_encrypt_str(&self.to_email)?;
+                let encrypted_to_display_name =
+                    hybrid_crypto.hybrid_encrypt_str(&self.to_display_name)?;
+                let encrypted_context = hybrid_crypto.hybrid_encrypt_str(&self.context)?;
+                let encrypted_secret = hybrid_crypto.hybrid_encrypt_str(&self.secret)?;
+                let secret = Secret {
+                    from_email: encrypted_from_email,
+                    from_display_name: encrypted_from_display_name,
+                    to_email: encrypted_to_email,
+                    to_display_name: encrypted_to_display_name,
+                    context: encrypted_context,
+                    secret: encrypted_secret,
+                    csrf_token: None,
+                };
+                return Ok(secret);
+            }
+        }
     }
 
     /// Creates a new instance of `Secret` with decrypted data.

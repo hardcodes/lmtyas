@@ -12,7 +12,6 @@ use crate::ldap_common::LdapCommonConfiguration;
 #[cfg(any(feature = "ldap-auth", feature = "authentication-oidc"))]
 use crate::login_user_trait::Login;
 use crate::mail_configuration::SendEMailConfiguration;
-use crate::rsa_functions::RsaKeys;
 use crate::secret_functions::SharedSecretData;
 use actix_web::dev::ServerHandle;
 use log::info;
@@ -33,7 +32,12 @@ use std::sync::{Arc, RwLock};
 #[cfg(feature = "hacaoi-openssl")]
 type CookieRsaKeys = hacaoi::openssl::rsa::RsaKeys;
 // the trait RsaKeysFunctions is needed for OpenSSL and Rust-Crypto rsa
-use hacaoi::rsa::RsaKeysFunctions;
+use hacaoi::{
+    error::HacaoiError, rsa::RsaKeysFunctions,
+};
+#[cfg(feature = "hacaoi-openssl")]
+type HybridCrypto = hacaoi::openssl::hybrid_crypto::HybridCrypto;
+use hacaoi::hybrid_crypto::HybridCryptoFunctions;
 
 /// Holds the deserialized entries of the json file
 /// that is passed to the program
@@ -141,8 +145,8 @@ impl ConfigurationFile {
 #[derive(Clone)]
 pub struct ApplicationConfiguration {
     pub configuration_file: ConfigurationFile,
-    // RSA keys for secret encryption/decryption
-    pub rsa_keys_for_secrets: Arc<RwLock<RsaKeys>>,
+    // HybridCrytpo/RSA keys for secret encryption/decryption
+    pub hybrid_crypto_for_secrets: Arc<RwLock<Option<HybridCrypto>>>,
     // RSA keys for cookie encryption/decryption
     pub rsa_keys_for_cookies: Arc<CookieRsaKeys>,
     // SharedSecret (context for creating uuids)
@@ -242,7 +246,7 @@ impl ApplicationConfiguration {
         };
         Ok(ApplicationConfiguration {
             configuration_file: config_file.clone(),
-            rsa_keys_for_secrets: Arc::new(RwLock::new(RsaKeys::new())),
+            hybrid_crypto_for_secrets: Arc::new(RwLock::new(None)),
             rsa_keys_for_cookies: Arc::new(rsa_keys_for_cookies),
             shared_secret: Arc::new(RwLock::new(SharedSecretData::new())),
             shared_authenticated_users: Arc::new(RwLock::new(
@@ -265,8 +269,8 @@ impl ApplicationConfiguration {
     ///
     /// If the files are not to be found or cannot be unlocked, the function will
     /// return a boxed error.
-    pub fn load_rsa_keys(&self, rsa_private_key_password: &str) -> Result<(), Box<dyn Error>> {
-        self.rsa_keys_for_secrets.write().unwrap().read_from_files(
+    pub fn load_rsa_keys(&self, rsa_private_key_password: &str) -> Result<HybridCrypto, HacaoiError> {
+        HybridCrypto::from_file(
             &self.configuration_file.rsa_private_key_file,
             rsa_private_key_password,
         )

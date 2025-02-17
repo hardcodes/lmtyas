@@ -99,7 +99,7 @@ fn get_access_token_payload(req: &HttpRequest) -> Result<ValidatedAccessTokenPay
     let application_configuration = app_data.unwrap();
     // Don't accept access tokens when the RSA private key is unavailable.
     if application_configuration
-        .rsa_keys_for_secrets
+        .hybrid_crypto_for_secrets
         .read()
         .unwrap()
         .rsa_private_key
@@ -160,7 +160,7 @@ fn get_access_token_payload(req: &HttpRequest) -> Result<ValidatedAccessTokenPay
         let sub = bearer_token.sub.to_string();
 
         let rsa_read_lock = application_configuration
-            .rsa_keys_for_secrets
+            .hybrid_crypto_for_secrets
             .read()
             .unwrap();
         if let Err(e) =

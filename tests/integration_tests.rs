@@ -576,7 +576,7 @@ async fn with_setup() {
 
     {
         let rsa_keys_read_lock = application_configuration
-            .rsa_keys_for_secrets
+            .hybrid_crypto_for_secrets
             .read()
             .unwrap();
         if rsa_keys_read_lock.rsa_private_key.is_some() {
@@ -625,7 +625,7 @@ async fn with_setup() {
     const RSA_PASSPHRASE: &str = "12345678901234";
     {
         let mut rsa_keys_write_lock = application_configuration
-            .rsa_keys_for_secrets
+            .hybrid_crypto_for_secrets
             .write()
             .unwrap();
         if let Err(e) = rsa_keys_write_lock.read_from_files(
@@ -1016,7 +1016,7 @@ async fn with_setup() {
         );
         {
             let rsa_keys_read_lock = application_configuration
-                .rsa_keys_for_secrets
+                .hybrid_crypto_for_secrets
                 .read()
                 .unwrap();
             if rsa_keys_read_lock.rsa_private_key.is_none() {
@@ -1167,7 +1167,7 @@ async fn with_setup() {
     // setup fake cookie
     let encrypted_cookie_value = {
         let rsa_read_lock = &application_configuration
-            .rsa_keys_for_secrets
+            .hybrid_crypto_for_secrets
             .read()
             .unwrap();
         // de1bf8ab-a9f3-4af6-9183-56f6d7b17ec7 is a random value generated with uuidgen

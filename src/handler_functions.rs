@@ -40,6 +40,10 @@ type UserDataImpl = GetUserDataLdapBackend;
 type SecretAes256Cbc = hacaoi::aes::Aes256Cbc<hacaoi::aes::AesOpenSslScope>;
 use hacaoi::aes::Aes256CbcFunctions;
 
+#[cfg(feature = "hacaoi-openssl")]
+type HybridCrypto = hacaoi::openssl::hybrid_crypto::HybridCrypto;
+use hacaoi::hybrid_crypto::HybridCryptoFunctions;
+
 /// Characters that will be percent encoded
 /// https://url.spec.whatwg.org/#fragment-percent-encode-set
 const FRAGMENT: &AsciiSet = &CONTROLS.add(b'/').add(b'=');
@@ -60,10 +64,9 @@ pub async fn still_alive(
     application_configuration: web::Data<ApplicationConfiguration>,
 ) -> impl Responder {
     if application_configuration
-        .rsa_keys_for_secrets
+        .hybrid_crypto_for_secrets
         .read()
         .unwrap()
-        .rsa_private_key
         .is_some()
     {
         HttpResponse::Ok().body("Yes sir, I can boogie!")
@@ -197,10 +200,9 @@ pub async fn is_server_ready(
     application_configuration: web::Data<ApplicationConfiguration>,
 ) -> HttpResponse {
     if application_configuration
-        .rsa_keys_for_secrets
+        .hybrid_crypto_for_secrets
         .read()
         .unwrap()
-        .rsa_private_key
         .is_some()
     {
         HttpResponse::ok_json_response("{\"isReady\": true}")
@@ -262,20 +264,23 @@ pub async fn set_password_for_rsa_rivate_key(
         }
     };
     info!("password has been set, loading rsa keys... {}", &admin);
-    match application_configuration.load_rsa_keys(&decoded_password) {
+    let hybrid_crypto = match application_configuration.load_rsa_keys(&decoded_password) {
         Err(e) => {
             // loading the rsa keys did not work, throw the password away
             decoded_password.zeroize();
-            warn!("error loading rsa private key: {:?}, {}", e, admin);
+            warn!("error loading rsa private key: {}, {}", e, admin);
             HttpResponse::err_text_response("ERROR: could not load rsa private key!")
-        }
-        Ok(_) => {
-            info!("rsa keys have been loaded successfully {}", &admin);
+        },
+        Ok(hybrid_crypto) => {
             // Clear the password now, since the rsa keys have been loaded.
             decoded_password.zeroize();
-            HttpResponse::ok_text_response("OK")
-        }
-    }
+            info!("rsa keys have been loaded successfully {}", &admin);
+            hybrid_crypto
+        },
+    };
+    let rwlockguard = application_configuration.hybrid_crypto_for_secrets.write().unwrap();
+    *rwlockguard = Some(hybrid_crypto);
+    HttpResponse::ok_text_response("OK")
 }
 
 /// Stores a secret and its meta date as encrypted file on disk.
@@ -471,7 +476,7 @@ async fn encrypt_store_send_secret(
     // rsa encrypt all data
     let encrypted_form_data = match parsed_form_data.to_encrypted(
         &application_configuration
-            .rsa_keys_for_secrets
+            .hybrid_crypto_for_secrets
             .read()
             .unwrap(),
     ) {
@@ -512,7 +517,7 @@ async fn encrypt_store_send_secret(
     debug!("url_payload = {}", &url_payload);
     // rsa encrypt url payload
     let encrypted_url_payload = match application_configuration
-        .rsa_keys_for_secrets
+        .hybrid_crypto_for_secrets
         .read()
         .unwrap()
         .rsa_public_key_encrypt_str(&url_payload)
@@ -608,7 +613,7 @@ pub async fn reveal_secret(
         percent_decode_str(&encrypted_percent_encoded_url_payload).decode_utf8_lossy();
     // rsa decrypt all data
     let url_payload = match application_configuration
-        .rsa_keys_for_secrets
+        .hybrid_crypto_for_secrets
         .read()
         .unwrap()
         .rsa_private_key_decrypt_str(&encrypted_url_payload)
@@ -652,7 +657,7 @@ pub async fn reveal_secret(
     // - rsa enrypted only or
     // - hybrid encrypted
     let rsa_read_lock = application_configuration
-        .rsa_keys_for_secrets
+        .hybrid_crypto_for_secrets
         .read()
         .unwrap();
     let mut aes_encrypted_secret = match hybrid_encrypted_secret.to_decrypted(&rsa_read_lock) {
