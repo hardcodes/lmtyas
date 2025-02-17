@@ -9,6 +9,7 @@ use actix_web::{
     http, web, Error, FromRequest, HttpRequest,
 };
 use chrono::DateTime;
+use hacaoi::rsa::RsaKeysFunctions;
 use log::{debug, info, warn};
 use serde::{Deserialize, Serialize};
 use std::fmt;
@@ -18,6 +19,9 @@ use std::path::Path;
 use std::pin::Pin;
 use uuid::Uuid;
 use zeroize::Zeroize;
+
+#[cfg(feature = "hacaoi-openssl")]
+type HybridCrypto = hacaoi::openssl::hybrid_crypto::HybridCrypto;
 
 /// Payload of an access token, that can be used for scripting.
 ///
@@ -102,7 +106,6 @@ fn get_access_token_payload(req: &HttpRequest) -> Result<ValidatedAccessTokenPay
         .hybrid_crypto_for_secrets
         .read()
         .unwrap()
-        .rsa_private_key
         .is_none()
     {
         info!("RSA private key has not been loaded, cannot accept access token.");
@@ -159,12 +162,14 @@ fn get_access_token_payload(req: &HttpRequest) -> Result<ValidatedAccessTokenPay
         debug!("bearer_token = {}", &bearer_token);
         let sub = bearer_token.sub.to_string();
 
-        let rsa_read_lock = application_configuration
+        // We checked before and can unwrap the option here.
+        let hybrid_crypto = &application_configuration
             .hybrid_crypto_for_secrets
             .read()
+            .unwrap()
             .unwrap();
-        if let Err(e) =
-            rsa_read_lock.rsa_public_key_validate_sha512_signature(&sub, &bearer_token.jti)
+        if let Err(e) = hybrid_crypto
+            .validate_sha512_bytes_signature(&sub, &bearer_token.jti.as_bytes())
         {
             warn!(
                 "could not verify signature (jti value) from access token: {}",

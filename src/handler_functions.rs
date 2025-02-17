@@ -22,6 +22,7 @@ use actix_files::NamedFile;
 use actix_web::web::Bytes;
 use actix_web::{http::header, http::StatusCode, web, HttpRequest, HttpResponse, Responder};
 use hacaoi::base64_trait::{Base64StringConversions, Base64VecU8Conversions};
+use hacaoi::rsa::RsaKeysFunctions;
 use log::{debug, info, warn};
 use percent_encoding::{percent_decode_str, utf8_percent_encode, AsciiSet, CONTROLS};
 use serde::{Deserialize, Serialize};
@@ -269,16 +270,19 @@ pub async fn set_password_for_rsa_rivate_key(
             // loading the rsa keys did not work, throw the password away
             decoded_password.zeroize();
             warn!("error loading rsa private key: {}, {}", e, admin);
-            HttpResponse::err_text_response("ERROR: could not load rsa private key!")
-        },
+            return HttpResponse::err_text_response("ERROR: could not load rsa private key!");
+        }
         Ok(hybrid_crypto) => {
             // Clear the password now, since the rsa keys have been loaded.
             decoded_password.zeroize();
             info!("rsa keys have been loaded successfully {}", &admin);
             hybrid_crypto
-        },
+        }
     };
-    let rwlockguard = application_configuration.hybrid_crypto_for_secrets.write().unwrap();
+    let mut rwlockguard = application_configuration
+        .hybrid_crypto_for_secrets
+        .write()
+        .unwrap();
     *rwlockguard = Some(hybrid_crypto);
     HttpResponse::ok_text_response("OK")
 }
@@ -520,7 +524,8 @@ async fn encrypt_store_send_secret(
         .hybrid_crypto_for_secrets
         .read()
         .unwrap()
-        .rsa_public_key_encrypt_str(&url_payload)
+        .unwrap()
+        .encrypt_str_pkcs1v15_padding_to_b64(&url_payload)
     {
         Ok(encrypted_url_payload) => encrypted_url_payload,
         Err(e) => {
@@ -609,14 +614,25 @@ pub async fn reveal_secret(
         "reveal_secret(), encrypted_percent_encoded_url_payload {}",
         &encrypted_percent_encoded_url_payload
     );
+    // Don't accept access tokens when the RSA private key is unavailable.
+    if application_configuration
+        .hybrid_crypto_for_secrets
+        .read()
+        .unwrap()
+        .is_none()
+    {
+        info!("RSA private key has not been loaded, cannot reveal secret.");
+        return HttpResponse::err_text_response("System not ready for decryption!");
+    }
     let encrypted_url_payload =
         percent_decode_str(&encrypted_percent_encoded_url_payload).decode_utf8_lossy();
-    // rsa decrypt all data
+    // rsa decrypt all data, unwrap() is safe, since we checked before.
     let url_payload = match application_configuration
         .hybrid_crypto_for_secrets
         .read()
         .unwrap()
-        .rsa_private_key_decrypt_str(&encrypted_url_payload)
+        .unwrap()
+        .decrypt_b64_pkcs1v15_padding_to_string(&encrypted_url_payload)
     {
         Err(e) => {
             warn!("could not rsa decrypt url payload: {}", &e);
@@ -656,16 +672,18 @@ pub async fn reveal_secret(
     // Decrypt the stored values that are either
     // - rsa enrypted only or
     // - hybrid encrypted
-    let rsa_read_lock = application_configuration
+    let hybrid_crypto_read_lock = application_configuration
         .hybrid_crypto_for_secrets
         .read()
+        .unwrap()
         .unwrap();
-    let mut aes_encrypted_secret = match hybrid_encrypted_secret.to_decrypted(&rsa_read_lock) {
-        Err(e) => {
-            return HttpResponse::err_text_response(format!("ERROR: {}", &e));
-        }
-        Ok(aes_encrypted) => aes_encrypted,
-    };
+    let mut aes_encrypted_secret =
+        match hybrid_encrypted_secret.to_decrypted(&hybrid_crypto_read_lock) {
+            Err(e) => {
+                return HttpResponse::err_text_response(format!("ERROR: {}", &e));
+            }
+            Ok(aes_encrypted) => aes_encrypted,
+        };
     debug!("aes_encrypted = {}", &aes_encrypted_secret.secret);
 
     // check if user is entitled to reveal this secret

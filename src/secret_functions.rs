@@ -173,13 +173,13 @@ impl Secret {
     /// encrypted with a generated AES key and IV using AES in CBC mode.
     ///
     /// Else we fall back to RSA only and call `rsa_decrypt_str` for backwards compatibilty.
-    pub fn to_decrypted(&self, rsa_keys: &RsaKeys) -> Result<Secret, Box<dyn Error>> {
-        let decrypted_from_email = rsa_keys.decrypt_str(&self.from_email)?;
-        let decrypted_from_display_name = rsa_keys.decrypt_str(&self.from_display_name)?;
-        let decrypted_to_email = rsa_keys.decrypt_str(&self.to_email)?;
-        let decrypted_to_display_name = rsa_keys.decrypt_str(&self.to_display_name)?;
-        let decrypted_context = rsa_keys.decrypt_str(&self.context)?;
-        let decrypted_secret = rsa_keys.decrypt_str(&self.secret)?;
+    pub fn to_decrypted(&self, hybrid_crypto: &HybridCrypto) -> Result<Secret, HacaoiError> {
+        let decrypted_from_email = hybrid_crypto.decrypt_str(&self.from_email)?;
+        let decrypted_from_display_name = hybrid_crypto.decrypt_str(&self.from_display_name)?;
+        let decrypted_to_email = hybrid_crypto.decrypt_str(&self.to_email)?;
+        let decrypted_to_display_name = hybrid_crypto.decrypt_str(&self.to_display_name)?;
+        let decrypted_context = hybrid_crypto.decrypt_str(&self.context)?;
+        let decrypted_secret = hybrid_crypto.decrypt_str(&self.secret)?;
         let secret = Secret {
             from_email: decrypted_from_email,
             from_display_name: decrypted_from_display_name,
