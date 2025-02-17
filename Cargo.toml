@@ -26,7 +26,7 @@ env_logger = "0.11.6"
 futures = "0.3"
 futures-util = "0.3"
 # hacaoi, version = "0.1.10"
-hacaoi = { git = "https://github.com/hardcodes/hacaoi.git", rev = "0209821a736104802f725d5bfb06df7835d41738", default-features = false, optional = true }
+hacaoi = { git = "https://github.com/hardcodes/hacaoi.git", rev = "db220c2bffa1c4f61199a3077632332cf9812eb9", default-features = false, optional = true }
 ldap3 = "0.11"
 lettre = "0.11"
 log = "0.4"
