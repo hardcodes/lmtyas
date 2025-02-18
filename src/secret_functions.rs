@@ -10,6 +10,8 @@ use zeroize::Zeroize;
 
 #[cfg(feature = "hacaoi-openssl")]
 type HybridCrypto = hacaoi::openssl::hybrid_crypto::HybridCrypto;
+#[cfg(feature = "hacaoi-rust-crypto")]
+type HybridCrypto = hacaoi::rust_crypto::hybrid_crypto::HybridCrypto;
 use hacaoi::hybrid_crypto::HybridCryptoFunctions;
 
 /// Used to build unique uuids, created with `openssl rand -hex 6`

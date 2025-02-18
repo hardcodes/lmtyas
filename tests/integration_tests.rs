@@ -6,7 +6,10 @@ use actix_web::body::MessageBody;
 use actix_web::{guard, http::header, middleware, test, web, App, HttpResponse};
 use common::SETUP_SINGLETON;
 use hacaoi::hybrid_crypto::HybridCryptoFunctions;
-use hacaoi::openssl::hybrid_crypto::HybridCrypto;
+#[cfg(feature = "hacaoi-openssl")]
+type HybridCrypto = hacaoi::openssl::hybrid_crypto::HybridCrypto;
+#[cfg(feature = "hacaoi-rust-crypto")]
+type HybridCrypto = hacaoi::rust_crypto::hybrid_crypto::HybridCrypto;
 use hacaoi::rsa::RsaKeysFunctions;
 #[cfg(feature = "ldap-auth")]
 use lmtyas::authentication_ldap::LdapCommonConfiguration;
@@ -46,6 +49,9 @@ type AuthConfiguration = OidcConfiguration;
 const WORKSPACE_DIR: &str = env!("CARGO_MANIFEST_DIR");
 const COOKIE_PATH: &str = "/";
 
+const RSA_PRIVATE_KEY_FILE: &str = "resources/tests/rsa/lmtyas_rsa_private.pkcs8.key";
+const LMTYAS_CONFIG_FILE: &str = "resources/config/lmtyas-config.json";
+
 /// testing the functions that need external services in one go.
 #[actix_web::test]
 async fn with_setup() {
@@ -68,7 +74,7 @@ async fn with_setup() {
 
     // load configuration file with the ldap server connection details
     let application_configuration = ApplicationConfiguration::read_from_file(
-        Path::new(common::WORKSPACE_DIR).join("resources/config/lmtyas-config.json"),
+        Path::new(common::WORKSPACE_DIR).join(LMTYAS_CONFIG_FILE),
     )
     .await
     .unwrap();
@@ -628,7 +634,7 @@ async fn with_setup() {
 
     const RSA_PASSPHRASE: &str = "12345678901234";
     let hybrid_crypto = match HybridCrypto::from_file(
-        Path::new(WORKSPACE_DIR).join("resources/tests/rsa/lmtyas_rsa_private.key"),
+        Path::new(WORKSPACE_DIR).join(RSA_PRIVATE_KEY_FILE),
         RSA_PASSPHRASE,
     ) {
         Err(e) => {

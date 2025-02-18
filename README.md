@@ -34,7 +34,7 @@ See [lmtyas-config.json](resources/config/lmtyas-config.json) for an example con
 | "web_bind_address"               | ip address and port to bind to, e.g. `"127.0.0.1:8844"`                                                   |
 | "ssl_private_key_file"           | path/filename of the SSL private key, e.g. `"resources/tests/ssl/lmtyas/lmtyas-selfsigned.key"`           |
 | "ssl_certificate_chain_file"     | path/filename of the SSL certificate chain, e.g. `"resources/tests/ssl/lmtyas-selfsigned-cert.pem"`       |
-| "rsa_private_key_file"           | path/filename of the RSA private key file, e.g. `"resources/tests/rsa/lmtyas_rsa_private.key"`            |
+| "rsa_private_key_file"           | path/filename of the RSA private key file, e.g. `"resources/tests/rsa/lmtyas_rsa_private.pkcs8.key"`            |
 | "secret_directory"               | path to store the secret files, e.g. `"output/secrets"`                                                   |
 | "email_configuration" : {        | ==> object with email configuration details                                                               |
 |     "mail_server_address"        | name or ip address of mail server, e.g.`"127.0.0.1"`                                                      |
@@ -101,7 +101,7 @@ You need a SSL certificate and its unencrypted key in pem format. Create your ow
 
 ## External dependencies - libaries
 
-An installed `openssl` library is needed on the server side, the header files are needed on your development machine.
+An installed `openssl` library is needed on the server side when using the feature *hacaoi-openssl*, the header files are needed on your development machine.
 
 
 ## External dependencies - services
@@ -115,7 +115,7 @@ The following services need to be available for `lmtyas` to work properly:
 
 # Compile and install
 
-Compiling probably works on any system that has a Rust compiler and recent OpenSSL packages including header files available.
+Compiling probably works on any system that has a Rust compiler available. When using the feature *hacaoi-openssl*, recent OpenSSL packages including header files must be present.
 
 Here is an example that works for Ubutu 20.04 LTS , Ubuntu 22.04 LTS and CentOS7. Probably any recent Linux distro with Systemd will work. Every distro without Systemd or Unix system will probably also work with some modifications for the startup process (you might want to look into [deamonize](https://software.clapper.org/daemonize/)).
 
@@ -126,7 +126,7 @@ Head over to [www.rust-lang.org](https://www.rust-lang.org/tools/install) and fo
 sudo apt update
 sudo apt upgrade
 # install the only dependency:
-sudo apt install openssl
+sudo apt install openssl # feature *hacaoi-openssl* only
 sudo apt install libssl-dev # only needed on dev machine
 # clone and compile the code
 git clone git@github.com:hardcodes/lmtyas.git
@@ -228,7 +228,7 @@ sudo systemctl start lmtyas.service
 
 Also see [Cargo.toml](./Cargo.toml), section `[features]`.
 
-- Default: **oidc-auth-ldap**, **mail-noauth-notls**, **api-access-token** (users are authenticated with an external oidc server: Authorization Code Flow with Proof Key for Code Exchange (PKCE). The only scope used is `email`, user details are queried from an external ldap server and emails are sent through a smtp server with no authentication and no encryption. Sending secrets via access token is enabled.)
+- Default: **oidc-auth-ldap**, **mail-noauth-notls**, **api-access-token**, **hacaoi-openssl** (users are authenticated with an external oidc server: Authorization Code Flow with Proof Key for Code Exchange (PKCE). The only scope used is `email`, user details are queried from an external ldap server and emails are sent through a smtp server with no authentication and no encryption. Sending secrets via access token is enabled. OpenSSL is used for encryption and decryption.)
 
   You may ask why we need oidc when we have a ldap server, we use to query user details: when an oidc server is available, your users know the look and feel of the login page. This way they may be more confidend to enter their credentials. Maybe you even use 2FA for your oidc solution, so why not benefit?
 
@@ -256,7 +256,9 @@ Also see [Cargo.toml](./Cargo.toml), section `[features]`.
 - **get-userdata-ldap**: query userdata (first and last name by email address of secret receiver) from a ldap server.
 - **no-userdata-backend**: use this, when there is no backend (like e.g., a ldap server) to query userdata.
 - **api-access-token**: useful for scripted sending of secrets authenicated with an access token, see section [Security - API Token](#security---api-token).
-
+- **hacaoi-openssl**: use OpenSSL crate and library for encryption and decryption (via hacaoi library crate).
+- **hacaoi-rust-crypto**: use Rust-Crypto crates for encryption and decryption (via hacaoi library crate).
+- 
 So far these combinations make sense:
 
 - `default = ["oidc-auth-ldap", "mail-noauth-notls", "api-access-token"]`

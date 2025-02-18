@@ -3,6 +3,8 @@ use hacaoi::error::HacaoiError;
 
 #[cfg(feature = "hacaoi-openssl")]
 type SecretAes256Cbc = hacaoi::aes::Aes256Cbc<hacaoi::aes::AesOpenSslScope>;
+#[cfg(feature = "hacaoi-rust-crypto")]
+type SecretAes256Cbc = hacaoi::aes::Aes256Cbc<hacaoi::aes::AesRustCryptoScope>;
 use hacaoi::aes::Aes256CbcFunctions;
 
 /// This trait is used to AES decrypt a `String`.
