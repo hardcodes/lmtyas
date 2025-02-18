@@ -27,6 +27,6 @@ impl DecryptAes for String {
             Vec::from_base64_urlsafe_encoded(key_base64.trim_matches(char::from(0)))?;
         aes_key_iv.append(&mut iv);
         let aes = SecretAes256Cbc::from_vec(aes_key_iv)?;
-        Ok(aes.decrypt_b64_to_string(&self)?)
+        aes.decrypt_b64_to_string(self)
     }
 }

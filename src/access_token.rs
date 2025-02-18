@@ -20,9 +20,6 @@ use std::pin::Pin;
 use uuid::Uuid;
 use zeroize::Zeroize;
 
-#[cfg(feature = "hacaoi-openssl")]
-type HybridCrypto = hacaoi::openssl::hybrid_crypto::HybridCrypto;
-
 /// Payload of an access token, that can be used for scripting.
 ///
 /// It resembles a JWT but it is reduced to our purpose.
@@ -162,21 +159,28 @@ fn get_access_token_payload(req: &HttpRequest) -> Result<ValidatedAccessTokenPay
         debug!("bearer_token = {}", &bearer_token);
         let sub = bearer_token.sub.to_string();
 
-        // We checked before and can unwrap the option here.
-        let hybrid_crypto = &application_configuration
+        let mut hybrid_crypto_rwlock = application_configuration
             .hybrid_crypto_for_secrets
-            .read()
-            .unwrap()
+            .write()
             .unwrap();
-        if let Err(e) = hybrid_crypto
-            .validate_sha512_bytes_signature(&sub, &bearer_token.jti.as_bytes())
-        {
+        // Take the `Option<HybridCrypto>`, so that we can work with it. As long as the write lock exists,
+        // nobody else will notice. This code path must not panic (we shouln't anyway inside a thread)!
+        // Really ugly hack, there must be a better way!
+        let hybrid_crypto_option = hybrid_crypto_rwlock.take();
+        // Safe, we checked before.
+        let hybrid_crypto = hybrid_crypto_option.unwrap();
+        if let Err(e) = hybrid_crypto.validate_sha512_b64_signature(&sub, &bearer_token.jti) {
+            // Put back the `Option<HybridCrypto>`
+            *hybrid_crypto_rwlock = Some(hybrid_crypto);
             warn!(
                 "could not verify signature (jti value) from access token: {}",
                 e
             );
             return Err(ErrorForbidden("Invalid access token!"));
         };
+        // Put back the `Option<HybridCrypto>`
+        *hybrid_crypto_rwlock = Some(hybrid_crypto);
+        drop(hybrid_crypto_rwlock);
         // Only try to read the access token file after the `jti` value AKA signature has been
         // successfully verified. So that changing the UUID (a.k.a. `sub` value) in the presented
         // access token cannot be used to sniff out possible files.

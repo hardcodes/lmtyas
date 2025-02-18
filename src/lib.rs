@@ -33,7 +33,6 @@ pub mod mail_configuration;
 pub mod mail_noauth_notls;
 #[cfg(feature = "oidc-ldap")]
 pub mod oidc_ldap;
-pub mod rsa_functions;
 pub mod secret_functions;
 pub mod string_trait;
 pub mod unsecure_string;

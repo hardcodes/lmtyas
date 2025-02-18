@@ -1384,8 +1384,8 @@ dependencies = [
 
 [[package]]
 name = "hacaoi"
-version = "0.1.12"
-source = "git+https://github.com/hardcodes/hacaoi.git?rev=db220c2bffa1c4f61199a3077632332cf9812eb9#db220c2bffa1c4f61199a3077632332cf9812eb9"
+version = "0.1.13"
+source = "git+https://github.com/hardcodes/hacaoi.git?rev=7212bc1eb212a8ece58dcf9f0bfca56592179369#7212bc1eb212a8ece58dcf9f0bfca56592179369"
 dependencies = [
  "base64 0.22.1",
  "openssl",
@@ -2016,7 +2016,7 @@ checksum = "4ee93343901ab17bd981295f2cf0026d4ad018c7c31ba84549a4ddbb47a45104"
 
 [[package]]
 name = "lmtyas"
-version = "3.0.12"
+version = "3.0.13"
 dependencies = [
  "actix-files",
  "actix-http",
@@ -2038,7 +2038,6 @@ dependencies = [
  "lettre",
  "log",
  "openidconnect",
- "openssl",
  "percent-encoding",
  "rand",
  "regex",

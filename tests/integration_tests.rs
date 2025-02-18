@@ -5,6 +5,9 @@ use actix_http::StatusCode;
 use actix_web::body::MessageBody;
 use actix_web::{guard, http::header, middleware, test, web, App, HttpResponse};
 use common::SETUP_SINGLETON;
+use hacaoi::hybrid_crypto::HybridCryptoFunctions;
+use hacaoi::openssl::hybrid_crypto::HybridCrypto;
+use hacaoi::rsa::RsaKeysFunctions;
 #[cfg(feature = "ldap-auth")]
 use lmtyas::authentication_ldap::LdapCommonConfiguration;
 #[cfg(feature = "ldap-auth")]
@@ -575,11 +578,12 @@ async fn with_setup() {
     ///////////////////////////////////////////////////////////////////////////
 
     {
-        let rsa_keys_read_lock = application_configuration
+        if application_configuration
             .hybrid_crypto_for_secrets
             .read()
-            .unwrap();
-        if rsa_keys_read_lock.rsa_private_key.is_some() {
+            .unwrap()
+            .is_some()
+        {
             panic!("rsa private key should not have been loaded at this point!");
         }
     }
@@ -623,18 +627,22 @@ async fn with_setup() {
     );
 
     const RSA_PASSPHRASE: &str = "12345678901234";
-    {
-        let mut rsa_keys_write_lock = application_configuration
-            .hybrid_crypto_for_secrets
-            .write()
-            .unwrap();
-        if let Err(e) = rsa_keys_write_lock.read_from_files(
-            Path::new(WORKSPACE_DIR).join("resources/tests/rsa/lmtyas_rsa_private.key"),
-            RSA_PASSPHRASE,
-        ) {
+    let hybrid_crypto = match HybridCrypto::from_file(
+        Path::new(WORKSPACE_DIR).join("resources/tests/rsa/lmtyas_rsa_private.key"),
+        RSA_PASSPHRASE,
+    ) {
+        Err(e) => {
             panic!("cannot load rsa keys! {}", &e);
-        };
-    }
+        }
+        Ok(hybrid_crypto) => hybrid_crypto,
+    };
+
+    let mut rwlockguard = application_configuration
+        .hybrid_crypto_for_secrets
+        .write()
+        .unwrap();
+    *rwlockguard = Some(hybrid_crypto);
+    drop(rwlockguard);
 
     let request = test::TestRequest::post()
         .uri("/api/v1/secret")
@@ -648,7 +656,8 @@ async fn with_setup() {
         StatusCode::OK,
         "/api/v1/secret should work now!"
     );
-
+    let body = test::read_body(result).await;
+    assert_eq!(body.try_into_bytes().unwrap(), "OK".as_bytes());
     // try with no Authorization Bearer token header at all
     let request = test::TestRequest::post()
         .uri("/api/v1/secret")
@@ -1015,11 +1024,12 @@ async fn with_setup() {
             "/authenticated/sysop/set_password_for_rsa_rivate_key should work!"
         );
         {
-            let rsa_keys_read_lock = application_configuration
+            if application_configuration
                 .hybrid_crypto_for_secrets
                 .read()
-                .unwrap();
-            if rsa_keys_read_lock.rsa_private_key.is_none() {
+                .unwrap()
+                .is_none()
+            {
                 panic!("rsa private key should have been loaded at this point!");
             }
         }
@@ -1166,17 +1176,28 @@ async fn with_setup() {
 
     // setup fake cookie
     let encrypted_cookie_value = {
-        let rsa_read_lock = &application_configuration
+        let mut hybrid_crypto_rwlock = application_configuration
             .hybrid_crypto_for_secrets
-            .read()
+            .write()
             .unwrap();
+        // Take the `Option<HybridCrypto>`, so that we can work with it. As long as the write lock exists,
+        // nobody else will notice. This code path must not panic (we shouln't anyway inside a thread)!
+        // Really ugly hack, there must be a better way!
+        let hybrid_crypto_option = hybrid_crypto_rwlock.take();
+        // Safe, we checked before.
+        let hybrid_crypto = hybrid_crypto_option.unwrap();
         // de1bf8ab-a9f3-4af6-9183-56f6d7b17ec7 is a random value generated with uuidgen
-        rsa_read_lock.rsa_public_key_encrypt_str("de1bf8ab-a9f3-4af6-9183-56f6d7b17ec7;0")
+        let encrypted_cookie_value = hybrid_crypto
+            .encrypt_str_pkcs1v15_padding_to_b64("de1bf8ab-a9f3-4af6-9183-56f6d7b17ec7;0")
+            .unwrap();
+        // Put back the `Option<HybridCrypto>`
+        *hybrid_crypto_rwlock = Some(hybrid_crypto);
+        encrypted_cookie_value
     };
     let fake_cookie = format!(
         "{}={}",
         &lmtyas::cookie_functions::COOKIE_NAME,
-        &encrypted_cookie_value.unwrap()
+        &encrypted_cookie_value
     );
     let request = test::TestRequest::get()
         .uri("/authenticated/keep_session_alive")

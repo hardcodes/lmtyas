@@ -32,9 +32,7 @@ use std::sync::{Arc, RwLock};
 #[cfg(feature = "hacaoi-openssl")]
 type CookieRsaKeys = hacaoi::openssl::rsa::RsaKeys;
 // the trait RsaKeysFunctions is needed for OpenSSL and Rust-Crypto rsa
-use hacaoi::{
-    error::HacaoiError, rsa::RsaKeysFunctions,
-};
+use hacaoi::{error::HacaoiError, rsa::RsaKeysFunctions};
 #[cfg(feature = "hacaoi-openssl")]
 type HybridCrypto = hacaoi::openssl::hybrid_crypto::HybridCrypto;
 use hacaoi::hybrid_crypto::HybridCryptoFunctions;
@@ -269,7 +267,10 @@ impl ApplicationConfiguration {
     ///
     /// If the files are not to be found or cannot be unlocked, the function will
     /// return a boxed error.
-    pub fn load_rsa_keys(&self, rsa_private_key_password: &str) -> Result<HybridCrypto, HacaoiError> {
+    pub fn load_rsa_keys(
+        &self,
+        rsa_private_key_password: &str,
+    ) -> Result<HybridCrypto, HacaoiError> {
         HybridCrypto::from_file(
             &self.configuration_file.rsa_private_key_file,
             rsa_private_key_password,

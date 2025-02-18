@@ -1,4 +1,3 @@
-use crate::rsa_functions::RsaKeys;
 use chrono::Utc;
 use hacaoi::error::HacaoiError;
 use serde::{Deserialize, Serialize};
@@ -136,9 +135,7 @@ impl Secret {
         hybrid_crypto: &Option<HybridCrypto>,
     ) -> Result<Secret, HacaoiError> {
         match hybrid_crypto {
-            None => {
-                return Err(HacaoiError::StringError("RSA keys not set".into()));
-            }
+            None => Err(HacaoiError::StringError("RSA keys not set".into())),
             Some(hybrid_crypto) => {
                 let encrypted_from_email = hybrid_crypto.hybrid_encrypt_str(&self.from_email)?;
                 let encrypted_from_display_name =
@@ -157,7 +154,7 @@ impl Secret {
                     secret: encrypted_secret,
                     csrf_token: None,
                 };
-                return Ok(secret);
+                Ok(secret)
             }
         }
     }

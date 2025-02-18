@@ -41,10 +41,6 @@ type UserDataImpl = GetUserDataLdapBackend;
 type SecretAes256Cbc = hacaoi::aes::Aes256Cbc<hacaoi::aes::AesOpenSslScope>;
 use hacaoi::aes::Aes256CbcFunctions;
 
-#[cfg(feature = "hacaoi-openssl")]
-type HybridCrypto = hacaoi::openssl::hybrid_crypto::HybridCrypto;
-use hacaoi::hybrid_crypto::HybridCryptoFunctions;
-
 /// Characters that will be percent encoded
 /// https://url.spec.whatwg.org/#fragment-percent-encode-set
 const FRAGMENT: &AsciiSet = &CONTROLS.add(b'/').add(b'=');
@@ -461,6 +457,17 @@ async fn encrypt_store_send_secret(
     application_configuration: &web::Data<ApplicationConfiguration>,
     mail_template_file_option: Option<String>,
 ) -> Result<(), Box<dyn std::error::Error>> {
+    // Cannot store secrets when the RSA private key is unavailable.
+    if application_configuration
+        .hybrid_crypto_for_secrets
+        .read()
+        .unwrap()
+        .is_none()
+    {
+        info!("RSA private key has not been loaded, cannot store secret.");
+        return Err("System not ready for encryption!".into());
+    }
+
     // aes encrypt the secret itself before rsa or hybrid rsa/aes encryption
     // of the whole `Secret` struct with meta data.
     let aes = SecretAes256Cbc::random();
@@ -520,19 +527,30 @@ async fn encrypt_store_send_secret(
     );
     debug!("url_payload = {}", &url_payload);
     // rsa encrypt url payload
-    let encrypted_url_payload = match application_configuration
+    let mut hybrid_crypto_rwlock = application_configuration
         .hybrid_crypto_for_secrets
-        .read()
-        .unwrap()
-        .unwrap()
-        .encrypt_str_pkcs1v15_padding_to_b64(&url_payload)
-    {
-        Ok(encrypted_url_payload) => encrypted_url_payload,
-        Err(e) => {
-            warn!("could not rsa encrypt url payload: {}", &e);
-            return Err(format!("ERROR: {}", &e).into());
-        }
-    };
+        .write()
+        .unwrap();
+    // Take the `Option<HybridCrypto>`, so that we can work with it. As long as the write lock exists,
+    // nobody else will notice. This code path must not panic (we shouln't anyway inside a thread)!
+    // Really ugly hack, there must be a better way!
+    let hybrid_crypto_option = hybrid_crypto_rwlock.take();
+    // Safe, we checked before.
+    let hybrid_crypto = hybrid_crypto_option.unwrap();
+    let encrypted_url_payload =
+        match hybrid_crypto.encrypt_str_pkcs1v15_padding_to_b64(&url_payload) {
+            Ok(encrypted_url_payload) => encrypted_url_payload,
+            Err(e) => {
+                // Put back the `Option<HybridCrypto>`
+                *hybrid_crypto_rwlock = Some(hybrid_crypto);
+                drop(hybrid_crypto_rwlock);
+                warn!("could not rsa encrypt url payload: {}", &e);
+                return Err(format!("ERROR: {}", &e).into());
+            }
+        };
+    // Put back the `Option<HybridCrypto>`
+    *hybrid_crypto_rwlock = Some(hybrid_crypto);
+    drop(hybrid_crypto_rwlock);
     let encrypted_percent_encoded_url_payload =
         utf8_percent_encode(&encrypted_url_payload, FRAGMENT);
     debug!(
@@ -614,7 +632,7 @@ pub async fn reveal_secret(
         "reveal_secret(), encrypted_percent_encoded_url_payload {}",
         &encrypted_percent_encoded_url_payload
     );
-    // Don't accept access tokens when the RSA private key is unavailable.
+    // Cannot reveal secrets when the RSA private key is unavailable.
     if application_configuration
         .hybrid_crypto_for_secrets
         .read()
@@ -626,20 +644,30 @@ pub async fn reveal_secret(
     }
     let encrypted_url_payload =
         percent_decode_str(&encrypted_percent_encoded_url_payload).decode_utf8_lossy();
-    // rsa decrypt all data, unwrap() is safe, since we checked before.
-    let url_payload = match application_configuration
+    let mut hybrid_crypto_rwlock = application_configuration
         .hybrid_crypto_for_secrets
-        .read()
-        .unwrap()
-        .unwrap()
-        .decrypt_b64_pkcs1v15_padding_to_string(&encrypted_url_payload)
-    {
-        Err(e) => {
-            warn!("could not rsa decrypt url payload: {}", &e);
-            return HttpResponse::err_text_response(format!("ERROR: {}", &e));
-        }
-        Ok(url_payload) => url_payload,
-    };
+        .write()
+        .unwrap();
+    // Take the `Option<HybridCrypto>`, so that we can work with it. As long as the write lock exists,
+    // nobody else will notice. This code path must not panic (we shouln't anyway inside a thread)!
+    // Really ugly hack, there must be a better way!
+    let hybrid_crypto_option = hybrid_crypto_rwlock.take();
+    // Safe, we checked before.
+    let hybrid_crypto = hybrid_crypto_option.unwrap();
+    let url_payload =
+        match hybrid_crypto.decrypt_b64_pkcs1v15_padding_to_string(&encrypted_url_payload) {
+            Err(e) => {
+                // Put back the `Option<HybridCrypto>`
+                *hybrid_crypto_rwlock = Some(hybrid_crypto);
+                drop(hybrid_crypto_rwlock);
+                warn!("could not rsa decrypt url payload: {}", &e);
+                return HttpResponse::err_text_response(format!("ERROR: {}", &e));
+            }
+            Ok(url_payload) => url_payload,
+        };
+    // Put back the `Option<HybridCrypto>`
+    *hybrid_crypto_rwlock = Some(hybrid_crypto);
+    drop(hybrid_crypto_rwlock);
     debug!("url_payload = {}", &url_payload);
     // get details from the payload
     let mut split_iter = url_payload.split(';');
@@ -654,6 +682,7 @@ pub async fn reveal_secret(
     )
     .join(uuid);
     info!("reading secret from file {}", &path.display());
+    // cargo clippy is unhappy here, but we `drop`ed hybrid_crypto_rwlock.
     let hybrid_encrypted_secret = match Secret::read_from_disk(&path).await {
         Ok(hybrid_encrypted_secret) => hybrid_encrypted_secret,
         Err(e) => {
@@ -672,18 +701,28 @@ pub async fn reveal_secret(
     // Decrypt the stored values that are either
     // - rsa enrypted only or
     // - hybrid encrypted
-    let hybrid_crypto_read_lock = application_configuration
+    let mut hybrid_crypto_rwlock = application_configuration
         .hybrid_crypto_for_secrets
-        .read()
-        .unwrap()
+        .write()
         .unwrap();
-    let mut aes_encrypted_secret =
-        match hybrid_encrypted_secret.to_decrypted(&hybrid_crypto_read_lock) {
-            Err(e) => {
-                return HttpResponse::err_text_response(format!("ERROR: {}", &e));
-            }
-            Ok(aes_encrypted) => aes_encrypted,
-        };
+    // Take the `Option<HybridCrypto>`, so that we can work with it. As long as the write lock exists,
+    // nobody else will notice. This code path must not panic (we shouln't anyway inside a thread)!
+    // Really ugly hack, there must be a better way!
+    let hybrid_crypto_option = hybrid_crypto_rwlock.take();
+    // Safe, we checked before.
+    let hybrid_crypto = hybrid_crypto_option.unwrap();
+    let mut aes_encrypted_secret = match hybrid_encrypted_secret.to_decrypted(&hybrid_crypto) {
+        Err(e) => {
+            // Put back the `Option<HybridCrypto>`
+            *hybrid_crypto_rwlock = Some(hybrid_crypto);
+            drop(hybrid_crypto_rwlock);
+            return HttpResponse::err_text_response(format!("ERROR: {}", &e));
+        }
+        Ok(aes_encrypted) => aes_encrypted,
+    };
+    // Put back the `Option<HybridCrypto>`
+    *hybrid_crypto_rwlock = Some(hybrid_crypto);
+    drop(hybrid_crypto_rwlock);
     debug!("aes_encrypted = {}", &aes_encrypted_secret.secret);
 
     // check if user is entitled to reveal this secret

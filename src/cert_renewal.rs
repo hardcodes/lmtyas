@@ -130,6 +130,7 @@ pub async fn tcp_server_loop(
             debug!("got uds server handle");
             drop(uds_server_handle_rlock);
             info!("stopping uds server");
+            // cargo clippy is unhappy here, but we `drop`ed uds_server_handle_rlock.
             handle.stop(true).await;
             break;
         }
@@ -214,6 +215,7 @@ pub async fn uds_reload_cert(uds_configuration: web::Data<UdsConfiguration>) -> 
     debug!("got https server handle");
     drop(tcp_server_handle_rlock);
     info!("stopping https server");
+    // cargo clippy is unhappy here, but we `drop`ed tcp_server_handle_rlock.
     handle.stop(true).await;
 
     OK_MESSAGE
