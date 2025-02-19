@@ -159,27 +159,19 @@ fn get_access_token_payload(req: &HttpRequest) -> Result<ValidatedAccessTokenPay
         debug!("bearer_token = {}", &bearer_token);
         let sub = bearer_token.sub.to_string();
 
-        let mut hybrid_crypto_rwlock = application_configuration
+        let hybrid_crypto_rwlock = application_configuration
             .hybrid_crypto_for_secrets
             .write()
             .unwrap();
-        // Take the `Option<HybridCrypto>`, so that we can work with it. As long as the write lock exists,
-        // nobody else will notice. This code path must not panic (we shouln't anyway inside a thread)!
-        // Really ugly hack, there must be a better way!
-        let hybrid_crypto_option = hybrid_crypto_rwlock.take();
-        // Safe, we checked before.
-        let hybrid_crypto = hybrid_crypto_option.unwrap();
-        if let Err(e) = hybrid_crypto.validate_sha512_b64_signature(&sub, &bearer_token.jti) {
-            // Put back the `Option<HybridCrypto>`
-            *hybrid_crypto_rwlock = Some(hybrid_crypto);
-            warn!(
-                "could not verify signature (jti value) from access token: {}",
-                e
-            );
-            return Err(ErrorForbidden("Invalid access token!"));
-        };
-        // Put back the `Option<HybridCrypto>`
-        *hybrid_crypto_rwlock = Some(hybrid_crypto);
+        if let Some(rsa_keys) = hybrid_crypto_rwlock.as_deref() {
+            if let Err(e) = rsa_keys.validate_sha512_b64_signature(&sub, &bearer_token.jti) {
+                warn!(
+                    "could not verify signature (jti value) from access token: {}",
+                    e
+                );
+                return Err(ErrorForbidden("Invalid access token!"));
+            }
+        }
         drop(hybrid_crypto_rwlock);
         // Only try to read the access token file after the `jti` value AKA signature has been
         // successfully verified. So that changing the UUID (a.k.a. `sub` value) in the presented
