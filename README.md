@@ -101,7 +101,7 @@ You need a SSL certificate and its unencrypted key in pem format. Create your ow
 
 ## External dependencies - libaries
 
-An installed `openssl` library is needed on the server side when using the feature *hacaoi-openssl*, the header files are needed on your development machine.
+When using the feature *hacaoi-openssl*, an installed `openssl` library is needed on the server side and the header files are needed on your development machine.
 
 
 ## External dependencies - services
@@ -228,7 +228,12 @@ sudo systemctl start lmtyas.service
 
 Also see [Cargo.toml](./Cargo.toml), section `[features]`.
 
-- Default: **oidc-auth-ldap**, **mail-noauth-notls**, **api-access-token**, **hacaoi-openssl** (users are authenticated with an external oidc server: Authorization Code Flow with Proof Key for Code Exchange (PKCE). The only scope used is `email`, user details are queried from an external ldap server and emails are sent through a smtp server with no authentication and no encryption. Sending secrets via access token is enabled. OpenSSL is used for encryption and decryption.)
+- Default: **oidc-auth-ldap**, **mail-noauth-notls**, **api-access-token**, **hacaoi-openssl**
+  - Users are authenticated with an external oidc server: Authorization Code Flow with Proof Key for Code Exchange (PKCE). The only scope used is `email`,
+  - user details are queried from an external ldap server and
+  - emails are sent through a smtp server with no authentication and no encryption.
+  - Sending secrets via access token is enabled.
+  - OpenSSL is used for encryption and decryption.
 
   You may ask why we need oidc when we have a ldap server, we use to query user details: when an oidc server is available, your users know the look and feel of the login page. This way they may be more confidend to enter their credentials. Maybe you even use 2FA for your oidc solution, so why not benefit?
 
@@ -261,28 +266,28 @@ Also see [Cargo.toml](./Cargo.toml), section `[features]`.
 - 
 So far these combinations make sense:
 
-- `default = ["oidc-auth-ldap", "mail-noauth-notls", "api-access-token"]`
+- `default = ["oidc-auth-ldap", "mail-noauth-notls", "api-access-token", "hacaoi-openssl"]`
   
   ```bash
   # compile with
   cargo build --release
   ```
-- `"oidc-auth-ldap", "mail-noauth-notls"`
+- `"oidc-auth-ldap", "mail-noauth-notls", "hacaoi-openssl"`
   
   ```bash
   # compile with
-  cargo build --release --no-default-features --features oidc-auth-ldap,mail-noauth-notls
+  cargo build --release --no-default-features --features oidc-auth-ldap,mail-noauth-notls,hacaoi-openssl
   ```
-- `"ldap-auth", "mail-noauth-notls", "api-access-token"`
+- `"ldap-auth", "mail-noauth-notls", "api-access-token", "hacaoi-openssl"`
   
   ```bash
   # compile with
-  cargo build --release --no-default-features --features ldap-auth,mail-noauth-notls,api-access-token
-- `"ldap-auth", "mail-noauth-notls"`
+  cargo build --release --no-default-features --features ldap-auth,mail-noauth-notls,api-access-token,hacaoi-openssl
+- `"ldap-auth", "mail-noauth-notls", "hacaoi-openssl"`
   
   ```bash
   # compile with
-  cargo build --release --no-default-features --features ldap-auth,mail-noauth-notls
+  cargo build --release --no-default-features --features ldap-auth,mail-noauth-notls,hacaoi-openssl
   ```
 
 
@@ -321,7 +326,7 @@ To add a custom `privacy.html` page create a folder `local/html` and put a `priv
 
 # Set RSA password
 
-If the service is (re-)started, a valid administrator (see `admin_accounts` in section *[Configuration file](#configuration-file)*) must set the password of the RSA private key first. The rsa private key is loaded afterwards. Therefore open the URL
+If the service is (re-)started, a valid administrator (see `admin_accounts` in section *[Configuration file](#configuration-file)*) must set the password of the RSA private key first. Afterwards the rsa private key is loaded and the RSA public key is derived from the RSA private key. Therefore open the URL
 
 `https://<dns name or ip address>:<port number>/authenticated/sysop/sysop.html`
 
@@ -449,9 +454,9 @@ Email Address []:rainer.zufall@lmtyas.home.arpa
 
 Since version 3.0.0 `lmtyas` opens a Unix Domain Socket to listen for a command to reload the certificate and private key that are used for TLS encryption of the HTTPS server.
 
-When request was received,
+When request to reload the certificate and private key was received,
 - the https server will be stopped,
-- the certficate files will be reread and
+- the to reload the certificate and private key will be re-read from disk and
 - the server started again with the running config. No need to [set RSA password](#set-rsa-password).
   
 A debug build will use the file `/tmp/lmtyas-uds.socket`, a production build the file `<work directory>/socket/lmtyas-uds.socket`, e.g. `/opt/lmtyas/socket/lmtyas-uds.socket`.
@@ -462,17 +467,17 @@ E.g. use `curl` for requesting a reload of the certifcate:
 
 ```bash
 curl --unix-socket /tmp/lmtyas-uds.socket http://localhost/reload-cert
-received reload cert request!
+# received reload cert request!
 ```
 
 **production build**
 
 ```bash
 curl --unix-socket /opt/lmtyas/socket/lmtyas-uds.socket http://localhost/reload-cert
-received reload cert request!
+# received reload cert request!
 ```
 
-**NOTE**: the curl command may block for a while until the tcp/https server has been stopped. You may want to add the `--max-time <seconds>` parameter when calling `curl` in a batch script to prevent the script from blocking too long. Make sure that `<seconds>` is big enough though. `300` is a good starting point and really should give the server enough time to stop and respond.
+**NOTE**: the curl command could block for a while until the tcp/https server has been stopped. You may want to add the `--max-time <seconds>` parameter when calling `curl` in a batch script to prevent the script from blocking too long. Make sure that `<seconds>` is big enough though. `300` is a good starting point and really should give the server enough time to stop and respond.
 
 This way you can renew your certificates via [ACME-protocol](https://de.wikipedia.org/wiki/Automatic_Certificate_Management_Environment), e.g. using [certbot](https://certbot.eff.org/) and inform the server afterwards.
 
