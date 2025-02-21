@@ -481,6 +481,8 @@ curl --unix-socket /opt/lmtyas/socket/lmtyas-uds.socket http://localhost/reload-
 
 This way you can renew your certificates via [ACME-protocol](https://de.wikipedia.org/wiki/Automatic_Certificate_Management_Environment), e.g. using [certbot](https://certbot.eff.org/) and inform the server afterwards.
 
+See [acme-example](./resources/doc/acme-example.md) for a possible implementation with DNS proof.
+
 
 ## Security - API Token
 
