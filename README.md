@@ -535,7 +535,7 @@ Two files need to be created for each access token to work:
     - **NOTE3**: You optionally may add an extra attribute `mail_template_file` with a path/filename of a mail template file. This will be used instead of the default mail template, e.g.
   
       ```
-      "mail_template_file": "resources/tests/config/mailtemplateaccess-token.txt"
+      "mail_template_file": "resources/tests/config/mailtemplate-access-token.txt"
       ```
 
       See also Note1 in section *[configuration file](#configuration-file)*.
@@ -566,7 +566,7 @@ Two files need to be created for each access token to work:
     __EOF__
     ```
 
-    The values for `iss` and `aud` do technically not really matter, they are just meant for the user of the access token. so that they know, what the token is used for.
+    The values for `iss` and `aud` do not really matter technically, they are just meant for the user of the access token. so that they know, what the token is used for.
 
     - **NOTE1**: `iss` and `aud` will be validated if present in the access token file on the server side!
     - **NOTE2**: Change `127.0.0.1:8844` to a valid DNS name/ip address/port combination that makes sense in your environment and matches the server data.
