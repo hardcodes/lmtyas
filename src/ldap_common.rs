@@ -42,7 +42,7 @@ impl LdapCommonConfiguration {
     ) -> Result<String, Box<dyn Error>> {
         let (conn, mut ldap) = LdapConnAsync::new(&self.url).await?;
         ldap3::drive!(conn);
-        debug!("Connected to {}", &&self.url);
+        debug!("connected to {}", &&self.url);
         // the password is stored in a secure string,
         // so that a 3rd party can not scan the memory
         // to gather the precious data.

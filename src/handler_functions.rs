@@ -755,7 +755,7 @@ pub async fn get_authenticated_user_details(user: AuthenticatedUser) -> HttpResp
     };
     match serde_json::to_string(&user_details) {
         Err(e) => {
-            warn!("Cannot get user details: {}", &e);
+            warn!("cannot get user details: {}", &e);
             HttpResponse::err_text_response("ERROR: cannot get user details!")
         }
         Ok(json) => HttpResponse::ok_json_response(json),

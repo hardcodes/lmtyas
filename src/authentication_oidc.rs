@@ -420,7 +420,7 @@ impl Login for OidcConfiguration {
         {
             Ok(d) => d,
             Err(e) => {
-                warn!("Cannot get user details for email {}: {}", &email, &e);
+                warn!("cannot get user details for email {}: {}", &email, &e);
                 return login_fail_redirect;
             }
         };

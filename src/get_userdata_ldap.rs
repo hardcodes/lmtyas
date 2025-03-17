@@ -48,7 +48,7 @@ impl GetUserData for GetUserDataLdapBackend {
         {
             Err(e) => {
                 let error_message = format!(
-                    "can not serde_json::from_str({}): {}",
+                    "cannot serde_json::from_str({}): {}",
                     &ldap_search_result, &e
                 );
                 return Err(error_message);
@@ -95,7 +95,7 @@ impl GetUserData for GetUserDataLdapBackend {
         {
             Err(e) => {
                 let error_message = format!(
-                    "can not serde_json::from_str({}): {}",
+                    "cannot serde_json::from_str({}): {}",
                     &ldap_search_result, &e
                 );
                 return Err(error_message);

@@ -28,7 +28,7 @@ async fn main() -> std::io::Result<()> {
     let application_configuration =
         match ApplicationConfiguration::read_from_file(Path::new(&config_file)).await {
             Err(e) => {
-                warn!("Cannot load application configuration: {}", &e);
+                warn!("cannot load application configuration: {}", &e);
                 std::process::exit(1);
             }
             Ok(a) => a,
@@ -41,7 +41,7 @@ async fn main() -> std::io::Result<()> {
     match rustls::crypto::aws_lc_rs::default_provider().install_default() {
         Ok(r) => r,
         Err(_) => {
-            warn!("Cannot install rusttls crypto provider.");
+            warn!("cannot install rusttls crypto provider.");
             std::process::exit(1);
         }
     };

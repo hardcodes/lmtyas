@@ -214,7 +214,7 @@ impl ApplicationConfiguration {
                 &config_file.fqdn, AUTH_ROUTE
             )) {
                 Err(e) => {
-                    return Err(format!("Invalid redirect URL {}", e).into());
+                    return Err(format!("invalid redirect URL {}", e).into());
                 }
                 Ok(r) => r,
             };
@@ -232,7 +232,7 @@ impl ApplicationConfiguration {
 
         let rsa_keys_for_cookies = match CookieRsaKeys::random(hacaoi::rsa::KeySize::Bit2048) {
             Err(e) => {
-                return Err(format!("Cannot generate random RSA keys for cookies: {}", &e).into());
+                return Err(format!("cannot generate random RSA keys for cookies: {}", &e).into());
             }
             Ok(rsa_keys) => rsa_keys,
         };
@@ -240,7 +240,7 @@ impl ApplicationConfiguration {
         let email_regex = match Regex::new(crate::EMAIL_REGEX) {
             Err(_) => {
                 return Err(
-                    "Cannot build generic email regex, see pub const EMAIL_REGEX in file lib.rs!"
+                    "cannot build generic email regex, see pub const EMAIL_REGEX in file lib.rs!"
                         .into(),
                 );
             }

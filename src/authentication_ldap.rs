@@ -54,7 +54,7 @@ impl LdapLogin for LdapCommonConfiguration {
     async fn ldap_login(&self, user_name: &str, password: &str) -> Result<(), Box<dyn Error>> {
         let (conn, mut ldap) = LdapConnAsync::new(&self.url).await?;
         ldap3::drive!(conn);
-        debug!("Connected to {}", &&self.url);
+        debug!("connected to {}", &&self.url);
         ldap.simple_bind(
             &self
                 .authentication
@@ -232,7 +232,7 @@ impl Login for LdapCommonConfiguration {
         {
             Err(e) => {
                 warn!(
-                    "can not serde_json::from_str({}): {}",
+                    "cannot serde_json::from_str({}): {}",
                     &ldap_search_result, &e
                 );
                 return HttpResponse::err_text_response("ERROR: login failed");
@@ -263,7 +263,7 @@ impl Login for LdapCommonConfiguration {
                 Ok(v) => v,
                 Err(e) => {
                     warn!(
-                        "Cannot decode base64 password from user {}: {}",
+                        "cannot decode base64 password from user {}: {}",
                         &parsed_form_data.login_name, &e
                     );
                     return HttpResponse::err_text_response("ERROR: login failed");
