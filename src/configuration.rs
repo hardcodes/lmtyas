@@ -267,10 +267,7 @@ impl ApplicationConfiguration {
         })
     }
 
-    /// Reads the RSA key files which are referenced in the configuration file
-    ///
-    /// If the files are not to be found or cannot be unlocked, the function will
-    /// return a boxed error.
+    /// Reads the RSA key files which are referenced in the configuration file.
     pub fn load_rsa_keys(
         &self,
         rsa_private_key_password: &str,
