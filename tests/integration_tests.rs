@@ -21,7 +21,7 @@ use lmtyas::authentication_oidc::OidcConfiguration;
 #[cfg(feature = "oidc-auth-ldap")]
 use lmtyas::authentication_oidc::OidcUserDetails;
 use lmtyas::authentication_url;
-use lmtyas::base64_trait::{Base64StringConversions, Base64VecU8Conversions};
+use hacaoi::base64_trait::{Base64StringConversions, Base64VecU8Conversions};
 use lmtyas::configuration::ApplicationConfiguration;
 use lmtyas::cookie_functions::build_new_encrypted_authentication_cookie;
 use lmtyas::handler_functions::*;

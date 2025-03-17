@@ -1,4 +1,4 @@
-use crate::base64_trait::Base64VecU8Conversions;
+use hacaoi::base64_trait::Base64VecU8Conversions;
 use crate::configuration::ApplicationConfiguration;
 use crate::header_value_trait::HeaderValueExctractor;
 use crate::ip_address::IpAdressString;

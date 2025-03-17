@@ -1,4 +1,4 @@
-use lmtyas::base64_trait::{Base64StringConversions, Base64VecU8Conversions};
+use hacaoi::base64_trait::{Base64StringConversions, Base64VecU8Conversions};
 
 const PLAINTEXT: &str = r#"PASS^°§$%&/()=?ß\´`+*~'#"-_.:,;<>{}[]öäüÜÄÖáàãÁÀâåæÂÅéèêëÉÈÊËçœŒ|WORD"#;
 const B64: &str = r#"UEFTU17CsMKnJCUmLygpPT/Dn1zCtGArKn4nIyItXy46LDs8Pnt9W13DtsOkw7zDnMOEw5bDocOgw6PDgcOAw6LDpcOmw4LDhcOpw6jDqsOrw4nDiMOKw4vDp8WTxZJ8V09SRA=="#;
