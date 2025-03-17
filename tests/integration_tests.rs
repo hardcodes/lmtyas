@@ -10,6 +10,7 @@ use hacaoi::hybrid_crypto::HybridCryptoFunctions;
 type HybridCrypto = hacaoi::openssl::hybrid_crypto::HybridCrypto;
 #[cfg(feature = "hacaoi-rust-crypto")]
 type HybridCrypto = hacaoi::rust_crypto::hybrid_crypto::HybridCrypto;
+use hacaoi::base64_trait::{Base64StringConversions, Base64VecU8Conversions};
 use hacaoi::rsa::RsaKeysFunctions;
 #[cfg(feature = "ldap-auth")]
 use lmtyas::authentication_ldap::LdapCommonConfiguration;
@@ -21,7 +22,6 @@ use lmtyas::authentication_oidc::OidcConfiguration;
 #[cfg(feature = "oidc-auth-ldap")]
 use lmtyas::authentication_oidc::OidcUserDetails;
 use lmtyas::authentication_url;
-use hacaoi::base64_trait::{Base64StringConversions, Base64VecU8Conversions};
 use lmtyas::configuration::ApplicationConfiguration;
 use lmtyas::cookie_functions::build_new_encrypted_authentication_cookie;
 use lmtyas::handler_functions::*;
