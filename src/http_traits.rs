@@ -92,54 +92,54 @@ impl CustomHttpResponse for HttpResponse {
     where
         B: MessageBody + 'static,
     {
-        return HttpResponse::Ok()
+        HttpResponse::Ok()
             .content_type("application/text; charset=UTF-8")
             .append_header(("X-Content-Type-Options", "nosniff"))
-            .body(body);
+            .body(body)
     }
 
     fn ok_text_response_with_cookie<B>(body: B, cookie: Cookie) -> actix_web::HttpResponse
     where
         B: MessageBody + 'static,
     {
-        return HttpResponse::Ok()
+        HttpResponse::Ok()
             .content_type("application/text; charset=UTF-8")
             .append_header(("X-Content-Type-Options", "nosniff"))
             .append_header((http::header::SET_COOKIE, cookie.to_string()))
-            .body(body);
+            .body(body)
     }
 
     fn ok_text_response_with_empty_unix_epoch_cookie<B>(body: B) -> actix_web::HttpResponse
     where
         B: MessageBody + 'static,
     {
-        return HttpResponse::Ok()
+        HttpResponse::Ok()
             .content_type("application/text; charset=UTF-8")
             .append_header(("X-Content-Type-Options", "nosniff"))
             .append_header((
                 http::header::SET_COOKIE,
                 empty_unix_epoch_cookie().to_string(),
             ))
-            .body(body);
+            .body(body)
     }
 
     fn ok_json_response<B>(body: B) -> actix_web::HttpResponse
     where
         B: MessageBody + 'static,
     {
-        return HttpResponse::Ok()
+        HttpResponse::Ok()
             .content_type("application/json; charset=UTF-8")
             .append_header(("X-Content-Type-Options", "nosniff"))
-            .body(body);
+            .body(body)
     }
 
     fn err_text_response<B>(body: B) -> actix_web::HttpResponse
     where
         B: MessageBody + 'static,
     {
-        return HttpResponse::BadRequest()
+        HttpResponse::BadRequest()
             .content_type("application/text; charset=UTF-8")
             .append_header(("X-Content-Type-Options", "nosniff"))
-            .body(body);
+            .body(body)
     }
 }
