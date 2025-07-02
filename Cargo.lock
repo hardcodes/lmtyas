@@ -1447,8 +1447,8 @@ dependencies = [
 
 [[package]]
 name = "hacaoi"
-version = "0.1.13"
-source = "git+https://github.com/hardcodes/hacaoi.git?rev=7212bc1eb212a8ece58dcf9f0bfca56592179369#7212bc1eb212a8ece58dcf9f0bfca56592179369"
+version = "0.1.14"
+source = "git+https://github.com/hardcodes/hacaoi.git?rev=9d87907eacc684f16a5a5ad1520e2cc232b93ece#9d87907eacc684f16a5a5ad1520e2cc232b93ece"
 dependencies = [
  "aes",
  "base64 0.22.1",
@@ -2113,7 +2113,7 @@ checksum = "241eaef5fd12c88705a01fc1066c48c4b36e0dd4377dcdc7ec3942cea7a69956"
 
 [[package]]
 name = "lmtyas"
-version = "4.0.0"
+version = "4.0.1"
 dependencies = [
  "actix-files",
  "actix-http",
