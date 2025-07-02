@@ -202,6 +202,7 @@ __EOF__
 
 # fix owner and acl
 sudo chown -R lmtyas:lmtyas /opt/lmtyas/
+sudo chown root:lmtyas /opt/lmtyas/
 sudo find /opt/lmtyas/ -type f -exec chmod 640 {} \;
 sudo find /opt/lmtyas/web-content -type f -exec chmod 440 {} \;
 sudo find /opt/lmtyas/ -type d -exec chmod 550 {} \;
