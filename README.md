@@ -166,9 +166,10 @@ Type=simple
 Restart=always
 User=lmtyas
 Group=lmtyas
+UMask=007
 WorkingDirectory=/opt/lmtyas
 ExecStart=/opt/lmtyas/lmtyas --config-file \${lmtyasCFGFILE}
-# the settings from here on may not work with older versions of systemd!
+# the settings from here on may not work with really old versions of systemd!
 NoNewPrivileges=true
 PrivateTmp=yes
 RestrictNamespaces=uts ipc pid user cgroup
@@ -187,7 +188,8 @@ ProtectProc=invisible
 PrivateUsers=yes
 InaccessibleDirectories=/home /root
 CapabilityBoundingSet=CAP_NET_BIND_SERVICE
-ReadWritePaths=/opt/lmtyas/output
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+ReadWritePaths=/opt/lmtyas/output /opt/lmtyas/socket
 MemoryDenyWriteExecute=yes
 DevicePolicy=closed
 LockPersonality=yes
