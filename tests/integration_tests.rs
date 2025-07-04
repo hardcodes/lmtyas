@@ -1217,6 +1217,13 @@ async fn with_setup() {
         "/authenticated/keep_session_alive should not work with a fake cookie!"
     );
 
+    // Create a random secret that is 8000 chars long (max. length in form)
+    let random_secret: String = thread_rng()
+        .sample_iter(&Alphanumeric)
+        .take(8000)
+        .map(char::from)
+        .collect();
+
     ///////////////////////////////////////////////////////////////////////////
     // Tell secret
     ///////////////////////////////////////////////////////////////////////////
@@ -1267,7 +1274,7 @@ async fn with_setup() {
         );
 
         // build and send secret
-        let base64_secret = SECRET_PLAINTEXT.to_base64_encoded();
+        let base64_secret = random_secret.to_base64_encoded();
         let secret = lmtyas::secret_functions::Secret {
             from_email: "bob@acme.local".to_string(),
             from_display_name: "Bob Sanders".to_string(),
@@ -1536,10 +1543,7 @@ async fn with_setup() {
     assert_eq!(secret.context, random_context, "Context does not match!");
     let plain_u8 = Vec::from_base64_encoded(&secret.secret).unwrap();
     let decoded_plaintext = String::from_utf8(plain_u8).unwrap();
-    assert_eq!(
-        decoded_plaintext, SECRET_PLAINTEXT,
-        "secret does not match!"
-    );
+    assert_eq!(decoded_plaintext, random_secret, "secret does not match!");
 
     // get secret 2nd time
     let request = test::TestRequest::get()
