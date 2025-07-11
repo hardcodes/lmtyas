@@ -1,5 +1,8 @@
 const toEmailAddress = document.getElementById("ToEmail");
-const to_email_regex_pattern = new RegExp(toEmailAddress.attributes['pattern'].value);
+const email_regex = toEmailAddress.attributes['pattern'].value;
+const to_email_regex_pattern = new RegExp('^' + email_regex + '$');
+const forgiving_email_regex = '^.*?<(?<cap_email>' + email_regex + ')>.*?$';
+const forgiving_email_regex_pattern = new RegExp(forgiving_email_regex);
 const emailValidiationStates = {
     Unkown: 'The email address status is unkown',
     Invalid: 'Please enter a valid receiver email address',
@@ -16,17 +19,14 @@ toEmailAddress.addEventListener(
     false
 );
 
-function isToEmailRegexValid() {
-    let mail = toEmailAddress.value.toLowerCase();
-    console.log(mail);
-    if (to_email_regex_pattern.test(mail)) {
-        return true;
-    }
-    return false;
-}
-
 function validateToEmailRegex() {
-    if (isToEmailRegexValid()) {
+    let mail = toEmailAddress.value.toLowerCase();
+    if (forgiving_email_regex_pattern.test(mail)) {
+        console.log("extracting email address from input");
+	    mail = mail.replace(forgiving_email_regex_pattern, "$<cap_email>");
+        toEmailAddress.value = mail;
+    }
+    if (to_email_regex_pattern.test(mail)) {
         toEmailStatus = emailValidiationStates.QueryStarted;
         if (typeof validateEmailTimer !== 'undefined') {
             clearTimeout(validateEmailTimer);
