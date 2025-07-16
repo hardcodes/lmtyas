@@ -39,6 +39,7 @@ use hacaoi::{error::HacaoiError, rsa::RsaKeysFunctions};
 type HybridCrypto = hacaoi::openssl::hybrid_crypto::HybridCrypto;
 #[cfg(feature = "hacaoi-rust-crypto")]
 type HybridCrypto = hacaoi::rust_crypto::hybrid_crypto::HybridCrypto;
+use crate::error::LmtyasError;
 use hacaoi::hybrid_crypto::HybridCryptoFunctions;
 
 /// Holds the deserialized entries of the json file
@@ -82,63 +83,60 @@ impl ConfigurationFile {
 /// instance of ConfigurationFile
 impl ConfigurationFile {
     /// Read the web service configuration from a json file.
-    pub fn read_from_file<P: AsRef<Path>>(path: P) -> Result<Self, Box<dyn Error>> {
-        // Open the file in read-only mode with buffer.
+    pub fn read_from_file<P: AsRef<Path>>(path: P) -> Result<Self, LmtyasError> {
         let file = File::open(path)?;
         let reader = BufReader::new(file);
-        // Read the JSON contents of the file as an instance of `ConfigurationFile`.
         let mut parsed_config: ConfigurationFile = serde_json::from_reader(reader)?;
-        // Check if the file for TLS exist, the service cannot start without them.
-        if !Path::new(&parsed_config.ssl_private_key_file).exists() {
+        parsed_config.pre_flight_check()?;
+        Ok(parsed_config)
+    }
+
+    /// Make some pre flight checks after the configuration file has been loaded
+    /// and before the service is started.
+    fn pre_flight_check(&mut self) -> Result<(), LmtyasError> {
+        // Check if the files for TLS exist, the service cannot start without them.
+        if !Path::new(&self.ssl_private_key_file).exists() {
             return Err(format!(
                 "ssl_private_key_file {} does not exist!",
-                &parsed_config.rsa_private_key_file
+                &self.rsa_private_key_file
             )
             .into());
         }
-        if !Path::new(&parsed_config.ssl_certificate_chain_file).exists() {
+        if !Path::new(&self.ssl_certificate_chain_file).exists() {
             return Err(format!(
                 "ssl_certificate_chain_file {} does not exist!",
-                &parsed_config.rsa_private_key_file
+                &self.rsa_private_key_file
             )
             .into());
         }
-        // Check if the `rsa_private_key_file` exists because it is loaded
-        // later on during runtime, when the password is entered by the
-        // administator.
+        // Check if the `rsa_private_key_file` for encrypting and decrypting
+        // the secretes exists because it is loaded later on during runtime,
+        // when the password is entered by the administator.
         // The server must not start if such a key component is missing.
-        if !Path::new(&parsed_config.rsa_private_key_file).exists() {
+        if !Path::new(&self.rsa_private_key_file).exists() {
             return Err(format!(
                 "rsa_private_key_file {} does not exist!",
-                &parsed_config.rsa_private_key_file
+                &self.rsa_private_key_file
             )
             .into());
         }
         // Check for mail template.
-        if !Path::new(
-            &parsed_config
-                .email_configuration
-                .mail_template_file
-                .as_os_str(),
-        )
-        .exists()
-        {
+        if !Path::new(&self.email_configuration.mail_template_file.as_os_str()).exists() {
             return Err(format!(
                 "mail template does not exist: {:?}",
-                &parsed_config
-                    .email_configuration
-                    .mail_template_file
-                    .as_ref()
+                &self.email_configuration.mail_template_file.as_ref()
             )
             .into());
         }
+        // Call function of the `Login` trait to build the regex
+        // that validates a well formed user/account name.
         #[cfg(feature = "ldap-auth")]
         parsed_config
             .ldap_common_configuration
             .build_valid_user_regex()?;
         #[cfg(feature = "oidc-auth-ldap")]
-        parsed_config.oidc_configuration.build_valid_user_regex()?;
-        Ok(parsed_config)
+        self.oidc_configuration.build_valid_user_regex()?;
+        Ok(())
     }
 }
 
@@ -176,13 +174,8 @@ impl ApplicationConfiguration {
     /// Reads the configuration file
     pub async fn read_from_file<P: AsRef<Path>>(
         configuration_file_path: P,
-    ) -> Result<ApplicationConfiguration, Box<dyn Error>> {
-        let config_file = match ConfigurationFile::read_from_file(configuration_file_path) {
-            Err(e) => {
-                return Err(e);
-            }
-            Ok(c) => c,
-        };
+    ) -> Result<ApplicationConfiguration, LmtyasError> {
+        let config_file = ConfigurationFile::read_from_file(configuration_file_path)?;
 
         #[cfg(feature = "authentication-oidc")]
         let provider_metadata = {
@@ -239,10 +232,10 @@ impl ApplicationConfiguration {
         info!("created random RSA key pair for cookie encryption/decryption");
         let email_regex = match Regex::new(crate::EMAIL_REGEX) {
             Err(_) => {
-                return Err(
+                return Err(LmtyasError::StringError(
                     "cannot build generic email regex, see pub const EMAIL_REGEX in file lib.rs!"
                         .into(),
-                );
+                ));
             }
             Ok(r) => r,
         };

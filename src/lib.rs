@@ -17,6 +17,7 @@ pub mod cli_parser;
 pub mod configuration;
 pub mod cookie_functions;
 pub mod csrf_html_template;
+pub mod error;
 #[cfg(feature = "get-userdata-ldap")]
 pub mod get_userdata_ldap;
 pub mod get_userdata_trait;

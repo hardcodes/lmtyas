@@ -1,14 +1,15 @@
 extern crate env_logger;
 use crate::authentication_middleware::AuthenticationRedirect;
-use crate::base64_trait::Base64VecU8Conversions;
 use crate::configuration::ApplicationConfiguration;
 use crate::cookie_functions::{build_new_encrypted_authentication_cookie, empty_unix_epoch_cookie};
+use crate::error::LmtyasError;
 use crate::http_traits::CustomHttpResponse;
 use crate::ip_address::IpAdressString;
 pub use crate::ldap_common::{LdapCommonConfiguration, LdapSearchResult};
 pub use crate::login_user_trait::Login;
 use actix_web::{http, http::Method, http::StatusCode, web, web::Bytes, HttpRequest, HttpResponse};
 use async_trait::async_trait;
+use hacaoi::base64_trait::Base64VecU8Conversions;
 use ldap3::{ldap_escape, LdapConnAsync};
 use log::{debug, info, warn};
 use regex::Regex;
@@ -349,7 +350,7 @@ impl Login for LdapCommonConfiguration {
         }
     }
 
-    fn build_valid_user_regex(&mut self) -> Result<(), Box<dyn Error>> {
+    fn build_valid_user_regex(&mut self) -> Result<(), LmtyasError> {
         let user_regex = Regex::new(&self.authentication.valid_user_regex)?;
         self.authentication.user_regex = Some(user_regex);
         Ok(())

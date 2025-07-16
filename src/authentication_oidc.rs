@@ -6,6 +6,7 @@ use crate::cookie_functions::{
     build_new_encrypted_authentication_cookie, build_redirect_to_resource_url_response,
     empty_unix_epoch_cookie,
 };
+use crate::error::LmtyasError;
 use crate::http_traits::CustomHttpResponse;
 use crate::ip_address::IpAdressString;
 pub use crate::login_user_trait::Login;
@@ -463,7 +464,7 @@ impl Login for OidcConfiguration {
 
     /// This function is called once the confguration file has been read
     /// so that the `Regex` must only be built once.
-    fn build_valid_user_regex(&mut self) -> Result<(), Box<dyn Error>> {
+    fn build_valid_user_regex(&mut self) -> Result<(), LmtyasError> {
         let user_regex = Regex::new(&self.valid_user_regex)?;
         self.user_regex = Some(user_regex);
         Ok(())

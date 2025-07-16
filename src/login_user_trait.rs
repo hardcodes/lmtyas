@@ -1,5 +1,6 @@
 extern crate env_logger;
 use crate::configuration::ApplicationConfiguration;
+use crate::error::LmtyasError;
 use crate::http_traits::CustomHttpResponse;
 #[cfg(feature = "mail-noauth-notls")]
 pub use crate::mail_noauth_notls::SendEMail;
@@ -50,5 +51,5 @@ pub trait Login {
     /// This function will be called when the application configuration
     /// has been loaded.
     /// No default implementation, so you are forced to build a regex.
-    fn build_valid_user_regex(&mut self) -> Result<(), Box<dyn Error>>;
+    fn build_valid_user_regex(&mut self) -> Result<(), LmtyasError>;
 }
