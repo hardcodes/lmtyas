@@ -16,11 +16,7 @@ use crate::secret_functions::SharedSecretData;
 use actix_web::dev::ServerHandle;
 use log::info;
 #[cfg(feature = "authentication-oidc")]
-use openidconnect::{
-    core::{CoreClient, CoreProviderMetadata},
-    reqwest::async_http_client,
-    ClientId, ClientSecret, IssuerUrl, RedirectUrl,
-};
+use openidconnect::core::CoreClient;
 use regex::Regex;
 use rustls::pki_types::{pem::PemObject, CertificateDer, PrivateKeyDer};
 use serde::{Deserialize, Serialize};
@@ -178,50 +174,10 @@ impl ApplicationConfiguration {
         let config_file = ConfigurationFile::read_from_file(configuration_file_path)?;
 
         #[cfg(feature = "authentication-oidc")]
-        let provider_metadata = {
-            info!(
-                "getting provider metadata from {}",
-                &config_file.oidc_configuration.provider_metadata_url
-            );
-            let issuer_url = match IssuerUrl::new(
-                config_file.oidc_configuration.provider_metadata_url.clone(),
-            ) {
-                Err(e) => {
-                    return Err(format!("cannot build issuer_url: {}", e).into());
-                }
-                Ok(i) => i,
-            };
-            // this call does not time out!
-            match CoreProviderMetadata::discover_async(issuer_url, async_http_client).await {
-                Err(e) => {
-                    return Err(format!("cannot load oidc provider metadata: {}", e).into());
-                }
-                Ok(p) => p,
-            }
-        };
-
-        #[cfg(feature = "authentication-oidc")]
-        let oidc_client = {
-            let redirect_url = match RedirectUrl::new(format!(
-                "https://{}/authentication{}",
-                &config_file.fqdn, AUTH_ROUTE
-            )) {
-                Err(e) => {
-                    return Err(format!("invalid redirect URL {}", e).into());
-                }
-                Ok(r) => r,
-            };
-
-            CoreClient::from_provider_metadata(
-                provider_metadata,
-                ClientId::new(config_file.oidc_configuration.client_id.clone()),
-                Some(ClientSecret::new(
-                    config_file.oidc_configuration.client_secret.clone(),
-                )),
-            )
-            // Set the URL the user will be redirected to after the authorization process.
-            .set_redirect_uri(redirect_url)
-        };
+        let oidc_client = config_file
+            .oidc_configuration
+            .discover_metadata_and_build_oidc_client(&config_file.fqdn, AUTH_ROUTE)
+            .await?;
 
         let rsa_keys_for_cookies = match CookieRsaKeys::random(hacaoi::rsa::KeySize::Bit2048) {
             Err(e) => {

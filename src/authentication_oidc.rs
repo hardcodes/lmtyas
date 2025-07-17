@@ -21,8 +21,11 @@ use chrono::Duration;
 use chrono::{DateTime, Utc};
 use log::{debug, info, warn};
 use openidconnect::{
-    core::CoreAuthenticationFlow, reqwest::async_http_client, AuthorizationCode, CsrfToken, Nonce,
-    PkceCodeChallenge, PkceCodeVerifier, Scope, TokenResponse,
+    core::CoreAuthenticationFlow,
+    core::{CoreClient, CoreProviderMetadata},
+    reqwest::async_http_client,
+    AuthorizationCode, ClientId, ClientSecret, CsrfToken, IssuerUrl, Nonce, PkceCodeChallenge,
+    PkceCodeVerifier, RedirectUrl, Scope, TokenResponse,
 };
 use regex::Regex;
 use serde::Deserialize;
@@ -42,6 +45,50 @@ pub struct OidcConfiguration {
     pub valid_user_regex: String,
     #[serde(skip_deserializing)]
     pub user_regex: Option<Regex>,
+}
+
+impl OidcConfiguration {
+    pub async fn discover_metadata_and_build_oidc_client(
+        &self,
+        fqdn: &str,
+        auth_route: &str,
+    ) -> Result<openidconnect::core::CoreClient, LmtyasError> {
+        let provider_metadata = {
+            info!(
+                "getting provider metadata from {}",
+                self.provider_metadata_url
+            );
+            let issuer_url = match IssuerUrl::new(self.provider_metadata_url.clone()) {
+                Err(e) => {
+                    return Err(format!("cannot build issuer_url: {}", e).into());
+                }
+                Ok(i) => i,
+            };
+            // this call does not time out!
+            match CoreProviderMetadata::discover_async(issuer_url, async_http_client).await {
+                Err(e) => {
+                    return Err(format!("cannot load oidc provider metadata: {}", e).into());
+                }
+                Ok(p) => p,
+            }
+        };
+
+        let redirect_url =
+            match RedirectUrl::new(format!("https://{}/authentication{}", fqdn, auth_route)) {
+                Err(e) => {
+                    return Err(format!("invalid redirect URL {}", e).into());
+                }
+                Ok(r) => r,
+            };
+
+        Ok(CoreClient::from_provider_metadata(
+            provider_metadata,
+            ClientId::new(self.client_id.clone()),
+            Some(ClientSecret::new(self.client_secret.clone())),
+        )
+        // Set the URL the user will be redirected to after the authorization process.
+        .set_redirect_uri(redirect_url))
+    }
 }
 
 /// Stores the information that is needed
