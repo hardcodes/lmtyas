@@ -188,7 +188,7 @@ impl ApplicationConfiguration {
         info!("created random RSA key pair for cookie encryption/decryption");
         let email_regex = match Regex::new(crate::EMAIL_REGEX) {
             Err(_) => {
-                return Err(LmtyasError::StringError(
+                return Err(LmtyasError::FromStringError(
                     "cannot build generic email regex, see pub const EMAIL_REGEX in file lib.rs!"
                         .into(),
                 ));

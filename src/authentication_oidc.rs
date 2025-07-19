@@ -20,12 +20,17 @@ use async_trait::async_trait;
 use chrono::Duration;
 use chrono::{DateTime, Utc};
 use log::{debug, info, warn};
+use openidconnect::reqwest;
 use openidconnect::{
-    core::CoreAuthenticationFlow,
-    core::{CoreClient, CoreProviderMetadata},
-    reqwest::async_http_client,
     AuthorizationCode, ClientId, ClientSecret, CsrfToken, IssuerUrl, Nonce, PkceCodeChallenge,
-    PkceCodeVerifier, RedirectUrl, Scope, TokenResponse,
+    PkceCodeVerifier, RedirectUrl, Scope, TokenResponse, ProviderMetadata, 
+    EmptyAdditionalProviderMetadata
+};
+use openidconnect::core::{
+    CoreAuthDisplay, CoreClaimName, CoreClaimType, CoreClient, CoreClientAuthMethod, CoreGrantType,
+    CoreIdTokenClaims, CoreIdTokenVerifier, CoreJsonWebKey, CoreJweContentEncryptionAlgorithm,
+    CoreJweKeyManagementAlgorithm, CoreResponseMode, CoreResponseType, CoreRevocableToken,
+    CoreSubjectIdentifierType, CoreProviderMetadata, CoreAuthenticationFlow
 };
 use regex::Regex;
 use serde::Deserialize;
@@ -34,6 +39,22 @@ use std::error::Error;
 use std::fmt;
 use std::sync::{Arc, RwLock};
 use uuid::Uuid;
+
+
+type IdentityProviderMetadata = ProviderMetadata<
+    EmptyAdditionalProviderMetadata,
+    CoreAuthDisplay,
+    CoreClientAuthMethod,
+    CoreClaimName,
+    CoreClaimType,
+    CoreGrantType,
+    CoreJweContentEncryptionAlgorithm,
+    CoreJweKeyManagementAlgorithm,
+    CoreJsonWebKey,
+    CoreResponseMode,
+    CoreResponseType,
+    CoreSubjectIdentifierType,
+>;
 
 /// Holds the configuration to access an oidc server
 /// for user authentication
@@ -53,26 +74,34 @@ impl OidcConfiguration {
         fqdn: &str,
         auth_route: &str,
     ) -> Result<openidconnect::core::CoreClient, LmtyasError> {
-        let provider_metadata = {
-            info!(
+        info!(
                 "getting provider metadata from {}",
                 self.provider_metadata_url
-            );
-            let issuer_url = match IssuerUrl::new(self.provider_metadata_url.clone()) {
+        );
+        let issuer_url = match IssuerUrl::new(self.provider_metadata_url.clone()) {
                 Err(e) => {
                     return Err(format!("cannot build issuer_url: {}", e).into());
                 }
                 Ok(i) => i,
-            };
-            // this call does not time out!
-            match CoreProviderMetadata::discover_async(issuer_url, async_http_client).await {
+        };
+        let http_client = match reqwest::ClientBuilder::new()
+        // Following redirects opens the client up to SSRF vulnerabilities.
+        .redirect(reqwest::redirect::Policy::none())
+        .build() {
+            Err(e) => {
+                return Err(format!("cannot build http client to discover provider metadata: {}", e).into());
+            }
+            Ok(h) => h,
+        };
+        let provider_metadata = 
+            // For version 3.x.x this call did not time out, we will se how it behaves with 4.x.x.
+            match IdentityProviderMetadata::discover_async(issuer_url, &http_client).await {
                 Err(e) => {
                     return Err(format!("cannot load oidc provider metadata: {}", e).into());
                 }
                 Ok(p) => p,
-            }
+            
         };
-
         let redirect_url =
             match RedirectUrl::new(format!("https://{}/authentication{}", fqdn, auth_route)) {
                 Err(e) => {
@@ -364,11 +393,21 @@ impl Login for OidcConfiguration {
         }
         let pkce_verifier = PkceCodeVerifier::new(pkce_verifier_secret);
         info!("PKCE: getting ID token for request_id {}", &request_id);
+        let http_client = match reqwest::ClientBuilder::new()
+        // Following redirects opens the client up to SSRF vulnerabilities.
+        .redirect(reqwest::redirect::Policy::none())
+        .build() {
+            Err(e) => {
+                warn!("cannot build http client to get ID token: {}", e);
+                return login_fail_redirect;
+            }
+            Ok(h) => h,
+        };
         let token_response = match application_configuration
             .oidc_client
             .exchange_code(code)
             .set_pkce_verifier(pkce_verifier)
-            .request_async(async_http_client)
+            .request_async(http_client)
             .await
         {
             Ok(t) => t,
