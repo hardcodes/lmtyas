@@ -35,8 +35,8 @@ pub use lmtyas::mail_noauth_notls::SendEMail;
 use lmtyas::oidc_ldap::OidcUserLdapUserDetails;
 use lmtyas::MAX_BEARER_TOKEN_LEN;
 use lmtyas::MAX_FORM_BYTES_LEN;
-use rand::distributions::Alphanumeric;
-use rand::{thread_rng, Rng};
+use rand::distr::Alphanumeric;
+use rand::{rng, Rng};
 use std::fs::File;
 use std::io::BufReader;
 use std::path::Path;
@@ -722,7 +722,7 @@ async fn with_setup() {
     );
 
     // not base64 encoded but enough for size checking
-    let oversized_bearer_token: String = thread_rng()
+    let oversized_bearer_token: String = rng()
         .sample_iter(&Alphanumeric)
         .take(MAX_BEARER_TOKEN_LEN + 1)
         .map(char::from)
@@ -1218,7 +1218,7 @@ async fn with_setup() {
     );
 
     // Create a random secret that is 8000 chars long (max. length in form)
-    let random_secret: String = thread_rng()
+    let random_secret: String = rng()
         .sample_iter(&Alphanumeric)
         .take(8000)
         .map(char::from)
@@ -1228,7 +1228,7 @@ async fn with_setup() {
     // Tell secret
     ///////////////////////////////////////////////////////////////////////////
     // build a random context that we can search for later on.
-    let random_context: String = thread_rng()
+    let random_context: String = rng()
         .sample_iter(&Alphanumeric)
         .take(16)
         .map(char::from)

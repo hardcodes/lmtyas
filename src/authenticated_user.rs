@@ -9,8 +9,8 @@ use crate::cookie_functions::CookieData;
 use crate::MAX_COOKIE_AGE_SECONDS;
 use actix_web::{dev::Payload, error::ErrorUnauthorized, Error, FromRequest, HttpRequest};
 use chrono::Duration;
-use rand::distributions::Alphanumeric;
-use rand::{thread_rng, Rng};
+use rand::distr::Alphanumeric;
+use rand::{rng, Rng};
 use std::fmt;
 use std::future::Future;
 use std::pin::Pin;
@@ -103,7 +103,7 @@ impl AuthenticatedUser {
             peer_ip: peer_ip.into(),
             utc_date_time: Utc::now(),
             cookie_update_lifetime_counter: 0,
-            csrf_token: thread_rng()
+            csrf_token: rng()
                 .sample_iter(&Alphanumeric)
                 .take(CSRF_TOKEN_LENGTH)
                 .map(char::from)
