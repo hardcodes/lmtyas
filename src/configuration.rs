@@ -3,6 +3,8 @@ use crate::access_token::AccessTokenConfiguration;
 use crate::authenticated_user::SharedAuthenticatedUsersHashMap;
 use crate::authentication_middleware::SharedRequestData;
 #[cfg(feature = "authentication-oidc")]
+use crate::authentication_oidc::ClientFromProviderMetaData;
+#[cfg(feature = "authentication-oidc")]
 use crate::authentication_oidc::{OidcConfiguration, SharedOidcVerificationDataHashMap};
 #[cfg(feature = "oidc-auth-ldap")]
 use crate::authentication_url::AUTH_ROUTE;
@@ -15,8 +17,6 @@ use crate::mail_configuration::SendEMailConfiguration;
 use crate::secret_functions::SharedSecretData;
 use actix_web::dev::ServerHandle;
 use log::info;
-#[cfg(feature = "authentication-oidc")]
-use openidconnect::core::CoreClient;
 use regex::Regex;
 use rustls::pki_types::{pem::PemObject, CertificateDer, PrivateKeyDer};
 use serde::{Deserialize, Serialize};
@@ -153,7 +153,7 @@ pub struct ApplicationConfiguration {
     pub shared_request_data: Arc<RwLock<SharedRequestData>>,
     /// stores the optional oidc cliet configuration
     #[cfg(feature = "oidc-auth-ldap")]
-    pub oidc_client: Arc<CoreClient>,
+    pub oidc_client: Arc<ClientFromProviderMetaData>,
     /// stores the optional oidc verification data
     #[cfg(feature = "oidc-auth-ldap")]
     pub shared_oidc_verification_data: Arc<RwLock<SharedOidcVerificationDataHashMap>>,

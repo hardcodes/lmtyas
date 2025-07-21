@@ -18,7 +18,7 @@ pub enum LmtyasError {
     FromRegexError(regex::Error),
     FromBoxedStdError(Box<dyn std::error::Error>),
     FromSerdeJsonError(serde_json::Error),
-    FromOpenidReqwestError(openidconnect::reqwest::Error)
+    FromOpenidReqwestError(openidconnect::reqwest::Error),
 }
 
 impl std::fmt::Display for LmtyasError {

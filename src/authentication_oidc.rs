@@ -20,17 +20,17 @@ use async_trait::async_trait;
 use chrono::Duration;
 use chrono::{DateTime, Utc};
 use log::{debug, info, warn};
-use openidconnect::reqwest;
-use openidconnect::{
-    AuthorizationCode, ClientId, ClientSecret, CsrfToken, IssuerUrl, Nonce, PkceCodeChallenge,
-    PkceCodeVerifier, RedirectUrl, Scope, TokenResponse, ProviderMetadata, 
-    EmptyAdditionalProviderMetadata
-};
 use openidconnect::core::{
-    CoreAuthDisplay, CoreClaimName, CoreClaimType, CoreClient, CoreClientAuthMethod, CoreGrantType,
-    CoreIdTokenClaims, CoreIdTokenVerifier, CoreJsonWebKey, CoreJweContentEncryptionAlgorithm,
-    CoreJweKeyManagementAlgorithm, CoreResponseMode, CoreResponseType, CoreRevocableToken,
-    CoreSubjectIdentifierType, CoreProviderMetadata, CoreAuthenticationFlow
+    CoreAuthDisplay, CoreAuthPrompt, CoreAuthenticationFlow, CoreClient, CoreErrorResponseType,
+    CoreGenderClaim, CoreJsonWebKey, CoreJweContentEncryptionAlgorithm, CoreJwsSigningAlgorithm,
+    CoreProviderMetadata, CoreRevocableToken, CoreTokenType,
+};
+use openidconnect::{
+    reqwest, AuthorizationCode, ClientId, ClientSecret, CsrfToken, EmptyAdditionalClaims,
+    EmptyExtraTokenFields, EndpointMaybeSet, EndpointNotSet, EndpointSet, IdTokenFields, IssuerUrl,
+    Nonce, PkceCodeChallenge, PkceCodeVerifier, RedirectUrl, RevocationErrorResponseType, Scope,
+    StandardErrorResponse, StandardTokenIntrospectionResponse, StandardTokenResponse,
+    TokenResponse,
 };
 use regex::Regex;
 use serde::Deserialize;
@@ -40,20 +40,34 @@ use std::fmt;
 use std::sync::{Arc, RwLock};
 use uuid::Uuid;
 
-
-type IdentityProviderMetadata = ProviderMetadata<
-    EmptyAdditionalProviderMetadata,
+/// Annotated custom `Client` that gets returned by calling `CoreProviderMetadata::discover_async`.
+pub type ClientFromProviderMetaData = openidconnect::Client<
+    EmptyAdditionalClaims,
     CoreAuthDisplay,
-    CoreClientAuthMethod,
-    CoreClaimName,
-    CoreClaimType,
-    CoreGrantType,
+    CoreGenderClaim,
     CoreJweContentEncryptionAlgorithm,
-    CoreJweKeyManagementAlgorithm,
     CoreJsonWebKey,
-    CoreResponseMode,
-    CoreResponseType,
-    CoreSubjectIdentifierType,
+    CoreAuthPrompt,
+    StandardErrorResponse<CoreErrorResponseType>,
+    StandardTokenResponse<
+        IdTokenFields<
+            EmptyAdditionalClaims,
+            EmptyExtraTokenFields,
+            CoreGenderClaim,
+            CoreJweContentEncryptionAlgorithm,
+            CoreJwsSigningAlgorithm,
+        >,
+        CoreTokenType,
+    >,
+    StandardTokenIntrospectionResponse<EmptyExtraTokenFields, CoreTokenType>,
+    CoreRevocableToken,
+    StandardErrorResponse<RevocationErrorResponseType>,
+    EndpointSet,
+    EndpointNotSet,
+    EndpointNotSet,
+    EndpointNotSet,
+    EndpointMaybeSet,
+    EndpointMaybeSet,
 >;
 
 /// Holds the configuration to access an oidc server
@@ -73,35 +87,43 @@ impl OidcConfiguration {
         &self,
         fqdn: &str,
         auth_route: &str,
-    ) -> Result<openidconnect::core::CoreClient, LmtyasError> {
+    ) -> Result<ClientFromProviderMetaData, LmtyasError> {
         info!(
-                "getting provider metadata from {}",
-                self.provider_metadata_url
+            "getting provider metadata from {}",
+            self.provider_metadata_url
         );
         let issuer_url = match IssuerUrl::new(self.provider_metadata_url.clone()) {
-                Err(e) => {
-                    return Err(format!("cannot build issuer_url: {}", e).into());
-                }
-                Ok(i) => i,
+            Err(e) => {
+                return Err(format!("cannot build issuer_url: {}", e).into());
+            }
+            Ok(i) => i,
         };
         let http_client = match reqwest::ClientBuilder::new()
-        // Following redirects opens the client up to SSRF vulnerabilities.
-        .redirect(reqwest::redirect::Policy::none())
-        .build() {
+            // Following redirects opens the client up to SSRF vulnerabilities.
+            .redirect(reqwest::redirect::Policy::none())
+            .build()
+        {
             Err(e) => {
-                return Err(format!("cannot build http client to discover provider metadata: {}", e).into());
+                return Err(format!(
+                    "cannot build http client to discover provider metadata: {}",
+                    e
+                )
+                .into());
             }
             Ok(h) => h,
         };
-        let provider_metadata = 
-            // For version 3.x.x this call did not time out, we will se how it behaves with 4.x.x.
-            match IdentityProviderMetadata::discover_async(issuer_url, &http_client).await {
+        // For version 3.x.x this call did not time out, we will se how it behaves with 4.x.x.
+        // According to https://github.com/ramosbugs/openidconnect-rs/blob/main/UPGRADE.md#add-typestate-generic-types-to-client
+        // this could be fixed:
+        // > In 4.0, enabling the (default) reqwest feature also enabled reqwest's blocking feature. To reduce dependencies
+        // > and improve compilation speed, the reqwest feature now only enables reqwest's asynchronous (non-blocking) client.
+        let provider_metadata =
+            match CoreProviderMetadata::discover_async(issuer_url, &http_client).await {
                 Err(e) => {
                     return Err(format!("cannot load oidc provider metadata: {}", e).into());
                 }
                 Ok(p) => p,
-            
-        };
+            };
         let redirect_url =
             match RedirectUrl::new(format!("https://{}/authentication{}", fqdn, auth_route)) {
                 Err(e) => {
@@ -109,7 +131,6 @@ impl OidcConfiguration {
                 }
                 Ok(r) => r,
             };
-
         Ok(CoreClient::from_provider_metadata(
             provider_metadata,
             ClientId::new(self.client_id.clone()),
@@ -391,23 +412,29 @@ impl Login for OidcConfiguration {
             pkce_verifier_secret = oidc_verification_data.pkce_verifier.secret().to_owned();
             nonce = oidc_verification_data.nonce.to_owned();
         }
-        let pkce_verifier = PkceCodeVerifier::new(pkce_verifier_secret);
         info!("PKCE: getting ID token for request_id {}", &request_id);
         let http_client = match reqwest::ClientBuilder::new()
-        // Following redirects opens the client up to SSRF vulnerabilities.
-        .redirect(reqwest::redirect::Policy::none())
-        .build() {
+            // Following redirects opens the client up to SSRF vulnerabilities.
+            .redirect(reqwest::redirect::Policy::none())
+            .build()
+        {
             Err(e) => {
                 warn!("cannot build http client to get ID token: {}", e);
                 return login_fail_redirect;
             }
             Ok(h) => h,
         };
-        let token_response = match application_configuration
-            .oidc_client
-            .exchange_code(code)
+        let code_token_request = match application_configuration.oidc_client.exchange_code(code) {
+            Err(e) => {
+                warn!("cannot build code token requesr to get ID token: {}", e);
+                return login_fail_redirect;
+            }
+            Ok(c) => c,
+        };
+        let pkce_verifier = PkceCodeVerifier::new(pkce_verifier_secret);
+        let token_response = match code_token_request
             .set_pkce_verifier(pkce_verifier)
-            .request_async(http_client)
+            .request_async(&http_client)
             .await
         {
             Ok(t) => t,
@@ -421,8 +448,8 @@ impl Login for OidcConfiguration {
                 return login_fail_redirect;
             }
         };
-
         debug!("token_response = {:?}", &token_response);
+
         // Extract the ID token.
         let id_token = match token_response.id_token() {
             Some(t) => t,
