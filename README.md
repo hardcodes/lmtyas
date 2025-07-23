@@ -982,4 +982,6 @@ Unless you explicitly state otherwise, any contribution intentionally submitted 
 
 # Honorable mention
 
-The javascrpt function `findGetParameterNoDecodeURIComponent()` was heavily inspired by this question on [stackoverflow.com](https://stackoverflow.com/questions/5448545/how-to-retrieve-get-parameters-from-javascript). But keeping it as comment in `lmtyas.js` tripped vulnerability scanners.
+- Thanks to [Matthias Bläsing](https://github.com/matthiasblaesing), who implemented the hybrid encryption functions for `lmtyas`, which were reused and refactored in the [hacaoi](https://github.com/hardcodes/hacaoi) crate.
+- Shout-out to Mathias Orlowski for bringing up some usability ideas.
+- The javascrpt function `findGetParameterNoDecodeURIComponent()` was heavily inspired by this question on [stackoverflow.com](https://stackoverflow.com/questions/5448545/how-to-retrieve-get-parameters-from-javascript). But keeping it as comment in `lmtyas.js` tripped vulnerability scanners.
