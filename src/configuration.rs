@@ -58,8 +58,8 @@ pub struct ConfigurationFile {
     pub oidc_configuration: OidcConfiguration,
     pub login_hint: String,
     pub mail_hint: Option<String>,
-    pub imprint: Imprint,
-    pub privacy: Privacy,
+    pub imprint: Weblink,
+    pub privacy: Weblink,
     #[cfg(feature = "api-access-token")]
     pub access_token_configuration: AccessTokenConfiguration,
 }
@@ -106,7 +106,7 @@ impl ConfigurationFile {
             .into());
         }
         // Check if the `rsa_private_key_file` for encrypting and decrypting
-        // the secretes exists because it is loaded later on during runtime,
+        // the secrets exists because it is loaded later on during runtime,
         // when the password is entered by the administator.
         // The server must not start if such a key component is missing.
         if !Path::new(&self.rsa_private_key_file).exists() {
@@ -181,7 +181,7 @@ impl ApplicationConfiguration {
 
         let rsa_keys_for_cookies = match CookieRsaKeys::random(hacaoi::rsa::KeySize::Bit2048) {
             Err(e) => {
-                return Err(format!("cannot generate random RSA keys for cookies: {}", &e).into());
+                return Err(format!("cannot generate random RSA keys for cookie encryption/decryption: {}", &e).into());
             }
             Ok(rsa_keys) => rsa_keys,
         };
@@ -264,16 +264,10 @@ pub enum Target {
     Top,
 }
 
-/// Link information for the imprint page
+/// Web link information, e.g. for the imprint or privacy statement page.
 #[derive(Clone, Deserialize, Serialize, Debug)]
-pub struct Imprint {
+pub struct Weblink {
     pub href: String,
     pub target: Target,
 }
 
-/// Link information for the privacy statement page
-#[derive(Clone, Deserialize, Serialize, Debug)]
-pub struct Privacy {
-    pub href: String,
-    pub target: Target,
-}
