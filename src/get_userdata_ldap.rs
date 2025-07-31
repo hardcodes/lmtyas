@@ -7,7 +7,7 @@ use log::warn;
 
 pub struct GetUserDataLdapBackend;
 
-/// This trait is used to force one implementation of a get_display_name()
+/// This trait is used to force one implementation of a get_receiver_display_name()
 /// function. The implementation may change depending on the authentication
 /// method used.
 #[async_trait]

@@ -1,4 +1,4 @@
-/// strip of parameters from the request uri/path
+/// Strip off parameters from the request uri/path
 /// so that it does not appear in the log file e.g.
 /// `https://my.server.tld/route/to/hell?param=value` is stripped down to
 /// `https://my.server.tld/route/to/hell`

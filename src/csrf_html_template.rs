@@ -35,8 +35,8 @@ pub enum ValidateCsrfToken {
     No,
 }
 
-/// Loads template file and injects the given CSRF token and returns it
-/// as HttpResult.
+/// Loads a template html file and injects the given CSRF token and
+/// returns it as HttpResult.
 pub async fn inject_csrf_token(
     selected_csrf_template_file: CsrfTemplateFile,
     csrf_token_payload: &str,

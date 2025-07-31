@@ -84,7 +84,7 @@ pub trait SendEMail {
     /// # Arguments
     ///
     /// - `mail_to`:          mail address of the receiver of the secret.
-    /// - `mail_reply_to`:    mail address of the sender of the secret, so that replys will
+    /// - `mail_reply_to`:    mail address of the sender of the secret, so that replies will
     ///                       not go to the technical sender address.
     /// - `mail_subject`:     subject of the mail
     /// - `mail_body`:        body of the mail

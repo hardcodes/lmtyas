@@ -1,16 +1,15 @@
-//#[macro_use]
-extern crate env_logger;
 use crate::configuration::ApplicationConfiguration;
 use actix_web::web;
 use async_trait::async_trait;
 
-/// This trait is used to force one implementation of a get_display_name()
+/// This trait is used to force one implementation of a get_receiver_display_name()
 /// function. The implementation may change depending on the authentication
 /// method and/or backend used.
 #[async_trait]
 pub trait GetUserData {
     /// This function is called when a secret is transmitted
-    /// to get the display name of the receiver. At this
+    /// to get the display name of the receiver, so that the
+    /// receiver can be addressed with full name. At this
     /// point we only know of the email address.
     async fn get_receiver_display_name(
         mail: &str,
@@ -32,8 +31,10 @@ pub struct NoUserDataBackend;
 
 #[async_trait]
 impl GetUserData for NoUserDataBackend {
-    /// Default implementation that returns an empy
+    /// Default implementation that returns an empty
     /// String as display name.
+    /// In this case the mail template should not have placeholders
+    /// for addressing the receiver.
     async fn get_receiver_display_name(
         _mail: &str,
         _application_configuration: &web::Data<ApplicationConfiguration>,
