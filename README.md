@@ -115,7 +115,7 @@ The following services need to be available for `lmtyas` to work properly:
 
 # Compile and install
 
-Compiling probably works on any system that has a Rust compiler available. When using the feature *hacaoi-openssl*, recent OpenSSL packages including header files must be present.
+Compiling probably works on any system that has a Rust compiler available. When using one of the features *hacaoi-openssl*, *oidc-auth-ldap*  or *ldap-auth*, a recent OpenSSL library including header files must be present.
 
 Here is an example that works for Ubutu 20.04 LTS , Ubuntu 22.04 LTS and CentOS7. Probably any recent Linux distro with Systemd will work. Every distro without Systemd or Unix system will probably also work with some modifications for the startup process (you might want to look into [deamonize](https://software.clapper.org/daemonize/)).
 
@@ -260,6 +260,8 @@ Also see [Cargo.toml](./Cargo.toml), section `[features]`.
 - **oidc-auth-ldap**: authenticate users with an external oidc server. Makes use of of the **authentication-oidc**, **oidc-ldap**, **ldap-common** and **get-userdata-ldap** feature. **NOTE**: right now the provider metadata server is only queried when the service is started. If the provider changes the configuration, the web service must be restarted!
 - **authentication-oidc**: holds the oidc implementation.
 - **oidc-ldap**: query user details from an external ldap server.
+ 
+  🚧 This feature creates a dependency to a dynamic linked OpenSSL library which must be installed on a server; the header files are needed for compiling.
 - **mail-noauth-notls**: send mails to user via mail server that does not need authentication and uses no encrypted transport.
 - **get-userdata-ldap**: query userdata (first and last name by email address of secret receiver) from a ldap server.
 - **no-userdata-backend**: use this, when there is no backend (like e.g., a ldap server) to query userdata.
