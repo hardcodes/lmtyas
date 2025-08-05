@@ -231,12 +231,12 @@ sudo systemctl start lmtyas.service
 
 Also see [Cargo.toml](./Cargo.toml), section `[features]`.
 
-- Default: **oidc-auth-ldap**, **mail-noauth-notls**, **api-access-token**, **hacaoi-openssl**
+- Default: **oidc-auth-ldap**, **mail-noauth-notls**, **api-access-token**, **hacaoi-rust-crypto**
   - Users are authenticated with an external oidc server: Authorization Code Flow with Proof Key for Code Exchange (PKCE). The only scope used is `email`,
   - user details are queried from an external ldap server and
   - emails are sent through a smtp server with no authentication and no encryption.
   - Sending secrets via access token is enabled.
-  - OpenSSL is used for encryption and decryption.
+  - RusTLS is used for encryption and decryption.
 
   You may ask why we need oidc when we have a ldap server, we use to query user details: when an oidc server is available, your users know the look and feel of the login page. This way they may be more confidend to enter their credentials. Maybe you even use 2FA for your oidc solution, so why not benefit?
 
