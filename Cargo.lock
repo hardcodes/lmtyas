@@ -21,9 +21,9 @@ dependencies = [
 
 [[package]]
 name = "actix-files"
-version = "0.6.7"
+version = "0.6.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "22c8b5536deb14cd9c3e505bd0e3366e1a12383b659c92f2b4fa4d323d583599"
+checksum = "6c0d87f10d70e2948ad40e8edea79c8e77c6c66e0250a4c1f09b690465199576"
 dependencies = [
  "actix-http",
  "actix-service",
@@ -2051,7 +2051,7 @@ checksum = "241eaef5fd12c88705a01fc1066c48c4b36e0dd4377dcdc7ec3942cea7a69956"
 
 [[package]]
 name = "lmtyas"
-version = "4.1.23"
+version = "4.1.24"
 dependencies = [
  "actix-files",
  "actix-http",
