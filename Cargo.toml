@@ -1,7 +1,7 @@
 [package]
 name = "lmtyas"
 description = "let-me-tell-you-a-secret, a web service that allows an authenticated user to send secrets like passwords to other authenticated users in a secure way."
-version = "4.1.39"
+version = "4.1.40"
 edition = "2021"
 authors = ["Sven Putze <github@hardcodes.de>", "Matthias Bläsing"]
 readme = "README.md"
@@ -21,7 +21,7 @@ async-fs = "2.2.0"
 async-trait = "0.1.89"
 base64 = "0.22.1"
 chrono = "0.4.42"
-clap = "4.5.51"
+clap = "4.5.54"
 env_logger = "0.11.7"
 futures = "0.3"
 futures-util = "0.3"
