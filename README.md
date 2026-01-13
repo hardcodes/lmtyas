@@ -101,7 +101,7 @@ You need a SSL certificate and its unencrypted key in pem format. Create your ow
 
 ## External dependencies - libaries
 
-When using the feature *hacaoi-openssl*, an installed `openssl` library is needed on the server side and the header files are needed on your development machine.
+`openssl` header files are needed on your development machine. The library is used by 3rd party crates to access the certficate store. The final binary has no OpenSSL dependencies when compiled with default features.
 
 
 ## External dependencies - services
