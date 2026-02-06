@@ -94,14 +94,14 @@ impl ConfigurationFile {
         if !Path::new(&self.ssl_private_key_file).exists() {
             return Err(format!(
                 "ssl_private_key_file {} does not exist!",
-                &self.rsa_private_key_file
+                &self.ssl_private_key_file
             )
             .into());
         }
         if !Path::new(&self.ssl_certificate_chain_file).exists() {
             return Err(format!(
                 "ssl_certificate_chain_file {} does not exist!",
-                &self.rsa_private_key_file
+                &self.ssl_certificate_chain_file
             )
             .into());
         }
