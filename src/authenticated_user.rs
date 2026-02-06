@@ -210,7 +210,7 @@ impl SharedAuthenticatedUsersHashMap {
     /// # Arguments
     ///
     /// - `admin_accounts`:  `Vec<String>` containing the user names of
-    ///                       valid administrators.
+    ///   valid administrators.
     pub fn new(admin_accounts: Vec<String>) -> SharedAuthenticatedUsersHashMap {
         SharedAuthenticatedUsersHashMap {
             authenticated_users_hashmap: AuthenticatedUsersHashMap::new(),

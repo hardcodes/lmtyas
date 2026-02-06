@@ -64,8 +64,8 @@ pub async fn still_alive(
 ) -> impl Responder {
     if application_configuration
         .hybrid_crypto_for_secrets
-        .read()
-        .unwrap()
+        .lock()
+        .await
         .is_some()
     {
         HttpResponse::Ok().body("Yes sir, I can boogie!")
@@ -200,8 +200,8 @@ pub async fn is_server_ready(
 ) -> HttpResponse {
     if application_configuration
         .hybrid_crypto_for_secrets
-        .read()
-        .unwrap()
+        .lock()
+        .await
         .is_some()
     {
         HttpResponse::ok_json_response("{\"isReady\": true}")
@@ -277,11 +277,11 @@ pub async fn set_password_for_rsa_rivate_key(
             hybrid_crypto
         }
     };
-    let mut rwlockguard = application_configuration
+    let mut hybrid_crypto_lock = application_configuration
         .hybrid_crypto_for_secrets
-        .write()
-        .unwrap();
-    *rwlockguard = Some(hybrid_crypto);
+        .lock()
+        .await;
+    *hybrid_crypto_lock = Some(hybrid_crypto);
     HttpResponse::ok_text_response("OK")
 }
 
@@ -476,12 +476,11 @@ async fn encrypt_store_send_secret(
         std::mem::replace(&mut parsed_form_data.secret, aes_encrypted_secret);
     plaintext_secret.zeroize();
     // rsa encrypt all data
-    let encrypted_form_data = match parsed_form_data.to_encrypted(
-        &application_configuration
-            .hybrid_crypto_for_secrets
-            .read()
-            .unwrap(),
-    ) {
+    let hybrid_crypto_lock = &application_configuration
+        .hybrid_crypto_for_secrets
+        .lock()
+        .await;
+    let encrypted_form_data = match parsed_form_data.to_encrypted(hybrid_crypto_lock) {
         Ok(encrypted_form_data) => encrypted_form_data,
         Err(e) => {
             warn!("could not create encrypted form data: {}", &e);
@@ -518,12 +517,8 @@ async fn encrypt_store_send_secret(
     );
     debug!("url_payload = {}", &url_payload);
     // rsa encrypt url payload
-    let hybrid_crypto_rwlock = application_configuration
-        .hybrid_crypto_for_secrets
-        .read()
-        .unwrap();
     let encrypted_url_payload;
-    if let Some(rsa_keys) = hybrid_crypto_rwlock.as_deref() {
+    if let Some(rsa_keys) = hybrid_crypto_lock.as_deref() {
         match rsa_keys.encrypt_str_pkcs1v15_padding_to_b64(&url_payload) {
             Ok(encrypted_payload) => {
                 encrypted_url_payload = encrypted_payload;
@@ -537,7 +532,6 @@ async fn encrypt_store_send_secret(
         info!("RSA private key has not been loaded, cannot store secret.");
         return Err("System not ready for encryption!".into());
     }
-    drop(hybrid_crypto_rwlock);
     let encrypted_percent_encoded_url_payload =
         utf8_percent_encode(&encrypted_url_payload, FRAGMENT);
     debug!(
@@ -621,13 +615,13 @@ pub async fn reveal_secret(
     );
     let encrypted_url_payload =
         percent_decode_str(&encrypted_percent_encoded_url_payload).decode_utf8_lossy();
-    let hybrid_crypto_rwlock = application_configuration
+    let hybrid_crypto_lock = application_configuration
         .hybrid_crypto_for_secrets
-        .read()
-        .unwrap();
+        .lock()
+        .await;
 
     let url_payload;
-    if let Some(rsa_keys) = hybrid_crypto_rwlock.as_deref() {
+    if let Some(rsa_keys) = hybrid_crypto_lock.as_deref() {
         match rsa_keys.decrypt_b64_pkcs1v15_padding_to_string(&encrypted_url_payload) {
             Err(e) => {
                 warn!("could not rsa decrypt url payload: {}", &e);
@@ -641,7 +635,7 @@ pub async fn reveal_secret(
         info!("RSA private key has not been loaded, cannot reveal secret.");
         return HttpResponse::err_text_response("System not ready for decryption!");
     }
-    drop(hybrid_crypto_rwlock);
+    drop(hybrid_crypto_lock);
     debug!("url_payload = {}", &url_payload);
     // get details from the payload
     let mut split_iter = url_payload.split(';');
@@ -656,7 +650,6 @@ pub async fn reveal_secret(
     )
     .join(uuid);
     info!("reading secret from file {}", &path.display());
-    // cargo clippy is unhappy here, but we `drop`ed hybrid_crypto_rwlock.
     let hybrid_encrypted_secret_file_content = match Secret::read_from_disk(&path).await {
         Ok(hybrid_encrypted_secret) => hybrid_encrypted_secret,
         Err(e) => {
@@ -675,12 +668,12 @@ pub async fn reveal_secret(
     // Decrypt the stored values that are either
     // - rsa enrypted only or
     // - hybrid encrypted
-    let hybrid_crypto_rwlock = application_configuration
+    let hybrid_crypto = application_configuration
         .hybrid_crypto_for_secrets
-        .read()
-        .unwrap();
+        .lock()
+        .await;
     let mut hybrid_decrypted_file_content;
-    if let Some(hybrid_crypto) = hybrid_crypto_rwlock.as_ref() {
+    if let Some(hybrid_crypto) = hybrid_crypto.as_ref() {
         match hybrid_encrypted_secret_file_content.to_decrypted(hybrid_crypto) {
             Err(e) => {
                 return HttpResponse::err_text_response(format!("ERROR: {}", &e));
@@ -693,7 +686,7 @@ pub async fn reveal_secret(
         info!("RSA private key has not been loaded, cannot reveal secret.");
         return HttpResponse::err_text_response("System not ready for decryption!");
     }
-    drop(hybrid_crypto_rwlock);
+    drop(hybrid_crypto);
     debug!("aes_encrypted = {}", &hybrid_decrypted_file_content.secret);
 
     // check if user is entitled to reveal this secret

@@ -82,12 +82,12 @@ impl FromRequest for ValidatedAccessTokenPayload {
 
     fn from_request(req: &HttpRequest, _payload: &mut Payload) -> Self::Future {
         let req = req.clone();
-        Box::pin(async move { get_access_token_payload(&req) })
+        Box::pin(async move { get_access_token_payload(&req).await })
     }
 }
 
 /// Extracts the access token from the request and validates it.
-fn get_access_token_payload(req: &HttpRequest) -> Result<ValidatedAccessTokenPayload, Error> {
+async fn get_access_token_payload(req: &HttpRequest) -> Result<ValidatedAccessTokenPayload, Error> {
     let app_data: Option<&web::Data<ApplicationConfiguration>> = req.app_data();
     if app_data.is_none() {
         // Should not happen!
@@ -101,8 +101,8 @@ fn get_access_token_payload(req: &HttpRequest) -> Result<ValidatedAccessTokenPay
     // Don't accept access tokens when the RSA private key is unavailable.
     if application_configuration
         .hybrid_crypto_for_secrets
-        .read()
-        .unwrap()
+        .lock()
+        .await
         .is_none()
     {
         info!("RSA private key has not been loaded, cannot accept access token.");
@@ -159,11 +159,11 @@ fn get_access_token_payload(req: &HttpRequest) -> Result<ValidatedAccessTokenPay
         debug!("bearer_token = {}", &bearer_token);
         let sub = bearer_token.sub.to_string();
 
-        let hybrid_crypto_rwlock = application_configuration
+        let hybrid_crypto_lock = application_configuration
             .hybrid_crypto_for_secrets
-            .write()
-            .unwrap();
-        if let Some(rsa_keys) = hybrid_crypto_rwlock.as_deref() {
+            .lock()
+            .await;
+        if let Some(rsa_keys) = hybrid_crypto_lock.as_deref() {
             if let Err(e) = rsa_keys.validate_sha512_b64_signature(&sub, &bearer_token.jti) {
                 warn!(
                     "could not verify signature (jti value) from access token: {}",
@@ -172,7 +172,7 @@ fn get_access_token_payload(req: &HttpRequest) -> Result<ValidatedAccessTokenPay
                 return Err(ErrorForbidden("Invalid access token!"));
             }
         }
-        drop(hybrid_crypto_rwlock);
+        drop(hybrid_crypto_lock);
         // Only try to read the access token file after the `jti` value AKA signature has been
         // successfully verified. So that changing the UUID (a.k.a. `sub` value) in the presented
         // access token cannot be used to sniff out possible files.

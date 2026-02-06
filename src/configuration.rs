@@ -37,6 +37,7 @@ type HybridCrypto = hacaoi::openssl::hybrid_crypto::HybridCrypto;
 type HybridCrypto = hacaoi::rust_crypto::hybrid_crypto::HybridCrypto;
 use crate::error::LmtyasError;
 use hacaoi::hybrid_crypto::HybridCryptoFunctions;
+use tokio::sync::Mutex;
 
 /// Holds the deserialized entries of the json file
 /// that is passed to the program
@@ -142,7 +143,7 @@ impl ConfigurationFile {
 pub struct ApplicationConfiguration {
     pub configuration_file: ConfigurationFile,
     // HybridCrytpo/RSA keys for secret encryption/decryption
-    pub hybrid_crypto_for_secrets: Arc<RwLock<Option<HybridCrypto>>>,
+    pub hybrid_crypto_for_secrets: Arc<Mutex<Option<HybridCrypto>>>,
     // RSA keys for cookie encryption/decryption
     pub rsa_keys_for_cookies: Arc<CookieRsaKeys>,
     // SharedSecret (context for creating uuids)
@@ -160,9 +161,9 @@ pub struct ApplicationConfiguration {
     // stores the regex after the config file has been read
     pub email_regex: Regex,
     // stores the current status of the TLS/SSL certificate
-    pub tls_cert_status: Arc<RwLock<TlsCertStatus>>,
+    pub tls_cert_status: Arc<Mutex<TlsCertStatus>>,
     // stores the server handle of the unix domain socket server
-    pub uds_server_handle: Arc<RwLock<Option<ServerHandle>>>,
+    pub uds_server_handle: Arc<Mutex<Option<ServerHandle>>>,
 }
 
 /// Build a new instance of ApplicationConfiguration
@@ -201,7 +202,7 @@ impl ApplicationConfiguration {
         };
         Ok(ApplicationConfiguration {
             configuration_file: config_file.clone(),
-            hybrid_crypto_for_secrets: Arc::new(RwLock::new(None)),
+            hybrid_crypto_for_secrets: Arc::new(Mutex::new(None)),
             rsa_keys_for_cookies: Arc::new(rsa_keys_for_cookies),
             shared_secret: Arc::new(RwLock::new(SharedSecretData::new())),
             shared_authenticated_users: Arc::new(RwLock::new(
@@ -215,8 +216,8 @@ impl ApplicationConfiguration {
                 SharedOidcVerificationDataHashMap::new(),
             )),
             email_regex,
-            tls_cert_status: Arc::new(RwLock::new(TlsCertStatus::NotLoaded)),
-            uds_server_handle: Arc::new(RwLock::new(None)),
+            tls_cert_status: Arc::new(Mutex::new(TlsCertStatus::NotLoaded)),
+            uds_server_handle: Arc::new(Mutex::new(None)),
         })
     }
 
@@ -232,7 +233,7 @@ impl ApplicationConfiguration {
     }
 
     /// Load certificate chain and its private key and return it as `rustls::ServerConfig`
-    pub fn load_rustls_config(&self) -> Result<rustls::ServerConfig, Box<dyn Error>> {
+    pub async fn load_rustls_config(&self) -> Result<rustls::ServerConfig, Box<dyn Error>> {
         let cert_chain = CertificateDer::pem_file_iter(
             self.configuration_file.ssl_certificate_chain_file.clone(),
         )?
@@ -242,7 +243,7 @@ impl ApplicationConfiguration {
             PrivateKeyDer::from_pem_file(self.configuration_file.ssl_private_key_file.clone())?;
 
         {
-            let mut tls_cert_status_write_lock = self.tls_cert_status.write().unwrap();
+            let mut tls_cert_status_write_lock = self.tls_cert_status.lock().await;
             *tls_cert_status_write_lock = TlsCertStatus::HasBeenLoaded;
         }
         // Looking for a way to select ciphers explitictly, e.g. like

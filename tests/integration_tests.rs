@@ -586,8 +586,8 @@ async fn with_setup() {
     {
         if application_configuration
             .hybrid_crypto_for_secrets
-            .read()
-            .unwrap()
+            .lock()
+            .await
             .is_some()
         {
             panic!("rsa private key should not have been loaded at this point!");
@@ -645,8 +645,8 @@ async fn with_setup() {
 
     let mut rwlockguard = application_configuration
         .hybrid_crypto_for_secrets
-        .write()
-        .unwrap();
+        .lock()
+        .await;
     *rwlockguard = Some(hybrid_crypto);
     drop(rwlockguard);
 
@@ -1032,8 +1032,8 @@ async fn with_setup() {
         {
             if application_configuration
                 .hybrid_crypto_for_secrets
-                .read()
-                .unwrap()
+                .lock()
+                .await
                 .is_none()
             {
                 panic!("rsa private key should have been loaded at this point!");
@@ -1184,8 +1184,8 @@ async fn with_setup() {
     let encrypted_cookie_value = {
         let mut hybrid_crypto_rwlock = application_configuration
             .hybrid_crypto_for_secrets
-            .write()
-            .unwrap();
+            .lock()
+            .await;
         // Take the `Option<HybridCrypto>`, so that we can work with it. As long as the write lock exists,
         // nobody else will notice. This code path must not panic (we shouln't anyway inside a thread)!
         // Really ugly hack, there must be a better way!

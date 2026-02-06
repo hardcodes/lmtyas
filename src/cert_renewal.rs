@@ -17,7 +17,8 @@ use log::{debug, info, warn};
 use std::env;
 #[cfg(debug_assertions)]
 use std::path::Path;
-use std::sync::{Arc, RwLock};
+use std::sync::Arc;
+use tokio::sync::Mutex;
 
 #[cfg(feature = "ldap-auth")]
 type AuthConfiguration = LdapCommonConfiguration;
@@ -42,16 +43,16 @@ pub enum TlsCertStatus {
 #[derive(Clone)]
 pub struct UdsConfiguration {
     // stores the current status of the TLS/SSL certificate
-    pub tls_cert_status: Arc<RwLock<TlsCertStatus>>,
+    pub tls_cert_status: Arc<Mutex<TlsCertStatus>>,
     // stores the server handle of the tcp/https server
-    pub tcp_server_handle: Arc<RwLock<Option<ServerHandle>>>,
+    pub tcp_server_handle: Arc<Mutex<Option<ServerHandle>>>,
 }
 
 impl UdsConfiguration {
-    pub fn new(tls_cert_status: Arc<RwLock<TlsCertStatus>>) -> Self {
+    pub fn new(tls_cert_status: Arc<Mutex<TlsCertStatus>>) -> Self {
         UdsConfiguration {
             tls_cert_status,
-            tcp_server_handle: Arc::new(RwLock::new(None)),
+            tcp_server_handle: Arc::new(Mutex::new(None)),
         }
     }
 }
@@ -70,7 +71,7 @@ pub async fn tcp_server_loop(
         .clone();
     // Restart tcp/https server after certificate reload in a loop
     loop {
-        let rusttls_server_config = match application_configuration.load_rustls_config() {
+        let rusttls_server_config = match application_configuration.load_rustls_config().await {
             Ok(c) => c,
             Err(e) => {
                 warn!("Cannot load tls certficate : {}", &e);
@@ -108,17 +109,15 @@ pub async fn tcp_server_loop(
         // store the tcp/https-server handle, so that the uds server can stop it.
         let https_server_handle = tcp_server.handle();
         {
-            let mut tcp_server_handle_rwlock = uds_configuration.tcp_server_handle.write().unwrap();
-            *tcp_server_handle_rwlock = Some(https_server_handle);
+            let mut tcp_server_handle_lock = uds_configuration.tcp_server_handle.lock().await;
+            *tcp_server_handle_lock = Some(https_server_handle);
         }
         tcp_server.await?;
-        if TlsCertStatus::ReloadRequested
-            != *application_configuration.tls_cert_status.read().unwrap()
+        if TlsCertStatus::ReloadRequested != *application_configuration.tls_cert_status.lock().await
         {
             // This should only happen if the service is stopped.
             info!("https server went down");
-            let uds_server_handle_rlock =
-                application_configuration.uds_server_handle.read().unwrap();
+            let uds_server_handle_rlock = application_configuration.uds_server_handle.lock().await;
             let handle = match uds_server_handle_rlock.as_ref() {
                 None => {
                     // Should never happen
@@ -128,9 +127,7 @@ pub async fn tcp_server_loop(
                 Some(handle) => handle.clone(),
             };
             debug!("got uds server handle");
-            drop(uds_server_handle_rlock);
             info!("stopping uds server");
-            // cargo clippy is unhappy here, but we `drop`ed uds_server_handle_rlock.
             handle.stop(true).await;
             break;
         }
@@ -175,9 +172,8 @@ pub async fn uds_server(
     // store the uds server handle, so that the tcp/https-server control thread can stop it.
     let uds_server_handle = uds_server.handle();
     {
-        let mut uds_server_handle_rwlock =
-            application_configuration.uds_server_handle.write().unwrap();
-        *uds_server_handle_rwlock = Some(uds_server_handle);
+        let mut uds_server_handle_lock = application_configuration.uds_server_handle.lock().await;
+        *uds_server_handle_lock = Some(uds_server_handle);
     }
     uds_server.await?;
     Ok(())
@@ -194,16 +190,16 @@ pub async fn uds_reload_cert(uds_configuration: web::Data<UdsConfiguration>) -> 
     const ERROR_MESSAGE: &str = "ERROR, cannot reload cert!";
     info!("received reload cert request via unix domain socket!");
     {
-        let mut tls_cert_status_rwlock = uds_configuration.tls_cert_status.write().unwrap();
-        if *tls_cert_status_rwlock != TlsCertStatus::HasBeenLoaded {
+        let mut tls_cert_status_lock = uds_configuration.tls_cert_status.lock().await;
+        if *tls_cert_status_lock != TlsCertStatus::HasBeenLoaded {
             // Make sure that we were not called too early, before the server was even started.
             warn!("https server is not ready yet, cannot reload certificate");
             return ERROR_MESSAGE;
         }
-        *tls_cert_status_rwlock = TlsCertStatus::ReloadRequested;
+        *tls_cert_status_lock = TlsCertStatus::ReloadRequested;
     }
 
-    let tcp_server_handle_rlock = uds_configuration.tcp_server_handle.read().unwrap();
+    let tcp_server_handle_rlock = uds_configuration.tcp_server_handle.lock().await;
     let handle = match tcp_server_handle_rlock.as_ref() {
         None => {
             // Should never happen
@@ -213,9 +209,7 @@ pub async fn uds_reload_cert(uds_configuration: web::Data<UdsConfiguration>) -> 
         Some(handle) => handle.clone(),
     };
     debug!("got https server handle");
-    drop(tcp_server_handle_rlock);
     info!("stopping https server");
-    // cargo clippy is unhappy here, but we `drop`ed tcp_server_handle_rlock.
     handle.stop(true).await;
 
     OK_MESSAGE

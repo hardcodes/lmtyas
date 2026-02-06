@@ -2006,7 +2006,7 @@ checksum = "6373607a59f0be73a39b6fe456b8192fcc3585f602af20751600e974dd455e77"
 
 [[package]]
 name = "lmtyas"
-version = "4.1.47"
+version = "4.1.48"
 dependencies = [
  "actix-files",
  "actix-http",
