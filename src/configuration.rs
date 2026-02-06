@@ -181,7 +181,11 @@ impl ApplicationConfiguration {
 
         let rsa_keys_for_cookies = match CookieRsaKeys::random(hacaoi::rsa::KeySize::Bit2048) {
             Err(e) => {
-                return Err(format!("cannot generate random RSA keys for cookie encryption/decryption: {}", &e).into());
+                return Err(format!(
+                    "cannot generate random RSA keys for cookie encryption/decryption: {}",
+                    &e
+                )
+                .into());
             }
             Ok(rsa_keys) => rsa_keys,
         };
@@ -270,4 +274,3 @@ pub struct Weblink {
     pub href: String,
     pub target: Target,
 }
-

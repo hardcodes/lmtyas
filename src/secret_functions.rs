@@ -99,7 +99,7 @@ impl Secret {
     /// # Arguments
     ///
     /// - `path`: Path and filename, expected to be in the form of
-    ///           /path/<uuid>
+    ///   /path/<uuid>
     ///
     /// # Returns
     ///
@@ -115,7 +115,7 @@ impl Secret {
     /// # Arguments
     ///
     /// - `path`: Path and filename, expected to be in the form of
-    ///           /path/<uuid>
+    ///   /path/<uuid>
     ///
     /// # Returns
     ///
@@ -200,9 +200,9 @@ impl Secret {
     ///
     /// # Arguments
     ///  
-    /// - `url_payload`:      url payload that contains the rsa encrypted uuid (=file name)
-    ///                       of the secret, the iv and key for the aes encrypted
-    ///                       secret itself: will replace {UrlPayload} in the mail template.
+    /// - `url_payload`: url payload that contains the rsa encrypted uuid (=file name)
+    ///   of the secret, the iv and key for the aes encrypted
+    ///   secret itself: will replace {UrlPayload} in the mail template.
     ///
     /// # Returns
     ///

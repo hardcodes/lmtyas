@@ -51,7 +51,7 @@ pub trait ParseMailboxWithContext {
     ///
     /// - `address`:         email address that should be pared into a `Mailbox`
     /// - `error_context`:   context that shows what the email address should be used for
-    ///                      (from, to, cc, bcc)
+    ///   (from, to, cc, bcc)
     fn parse_with_context_on_error(
         address: &str,
         error_context: ParseMailAddressErrorContext,
@@ -85,7 +85,7 @@ pub trait SendEMail {
     ///
     /// - `mail_to`:          mail address of the receiver of the secret.
     /// - `mail_reply_to`:    mail address of the sender of the secret, so that replies will
-    ///                       not go to the technical sender address.
+    ///   not go to the technical sender address.
     /// - `mail_subject`:     subject of the mail
     /// - `mail_body`:        body of the mail
     fn send_mail(

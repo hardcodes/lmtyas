@@ -78,7 +78,7 @@ impl LdapCommonConfiguration {
     ///
     /// - `user_name`:      uid of the user that should be looked up.
     /// - `Option<filter>`: optional filter expression to use for the search. If `None` is
-    ///                     given, `ldap_user_filter` will be used.
+    ///   given, `ldap_user_filter` will be used.
     ///
     /// # Returns
     ///
@@ -104,7 +104,7 @@ impl LdapCommonConfiguration {
     ///
     /// - `mail     `:      mail of the user that should be looked up.
     /// - `Option<filter>`: optional filter expression to use for the search. If `None` is
-    ///                     given, `ldap_user_filter` will be used.
+    ///   given, `ldap_user_filter` will be used.
     ///
     /// # Returns
     ///
