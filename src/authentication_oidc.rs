@@ -94,7 +94,7 @@ impl OidcConfiguration {
         );
         let issuer_url = match IssuerUrl::new(self.provider_metadata_url.clone()) {
             Err(e) => {
-                return Err(format!("cannot build issuer_url: {}", e).into());
+                return Err(format!("cannot build issuer_url: {e}").into());
             }
             Ok(i) => i,
         };
@@ -104,11 +104,9 @@ impl OidcConfiguration {
             .build()
         {
             Err(e) => {
-                return Err(format!(
-                    "cannot build http client to discover provider metadata: {}",
-                    e
-                )
-                .into());
+                return Err(
+                    format!("cannot build http client to discover provider metadata: {e}").into(),
+                );
             }
             Ok(h) => h,
         };
@@ -120,14 +118,14 @@ impl OidcConfiguration {
         let provider_metadata =
             match CoreProviderMetadata::discover_async(issuer_url, &http_client).await {
                 Err(e) => {
-                    return Err(format!("cannot load oidc provider metadata: {}", e).into());
+                    return Err(format!("cannot load oidc provider metadata: {e}").into());
                 }
                 Ok(p) => p,
             };
         let redirect_url =
-            match RedirectUrl::new(format!("https://{}/authentication{}", fqdn, auth_route)) {
+            match RedirectUrl::new(format!("https://{fqdn}/authentication{auth_route}")) {
                 Err(e) => {
-                    return Err(format!("invalid redirect URL {}", e).into());
+                    return Err(format!("invalid redirect URL {e}").into());
                 }
                 Ok(r) => r,
             };
@@ -247,10 +245,10 @@ fn warn_with_error_stack<T: std::error::Error>(fail: &T, message: &'static str) 
     let mut error_mesage = message.to_string();
     let mut current_fail: Option<&dyn std::error::Error> = Some(fail);
     while let Some(cause) = current_fail {
-        error_mesage += &format!(", caused by: {}", cause);
+        error_mesage += &format!(", caused by: {cause}");
         current_fail = cause.source();
     }
-    warn!("{}", error_mesage);
+    warn!("{error_mesage}");
 }
 
 #[async_trait(?Send)]
@@ -263,7 +261,7 @@ impl Login for OidcConfiguration {
         request: HttpRequest,
         application_configuration: web::Data<ApplicationConfiguration>,
     ) -> HttpResponse {
-        debug!("oidc response:\n\n{:?}", request);
+        debug!("oidc response:\n\n{request:?}");
         // accept GET method only
         if Method::GET != request.method() {
             return HttpResponse::Forbidden().finish();
@@ -419,14 +417,14 @@ impl Login for OidcConfiguration {
             .build()
         {
             Err(e) => {
-                warn!("cannot build http client to get ID token: {}", e);
+                warn!("cannot build http client to get ID token: {e}");
                 return login_fail_redirect;
             }
             Ok(h) => h,
         };
         let code_token_request = match application_configuration.oidc_client.exchange_code(code) {
             Err(e) => {
-                warn!("cannot build code token requesr to get ID token: {}", e);
+                warn!("cannot build code token requesr to get ID token: {e}");
                 return login_fail_redirect;
             }
             Ok(c) => c,

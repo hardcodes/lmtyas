@@ -67,8 +67,7 @@ impl ParseMailboxWithContext for lettre::message::Mailbox {
         match address.parse::<lettre::message::Mailbox>() {
             Ok(p) => Ok(p),
             Err(e) => Err(Box::<dyn Error + Send + Sync>::from(format!(
-                "{}, {:?}",
-                e, error_context
+                "{e}, {error_context:?}"
             ))),
         }
     }

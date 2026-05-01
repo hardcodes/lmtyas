@@ -24,15 +24,15 @@ pub enum LmtyasError {
 impl std::fmt::Display for LmtyasError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            LmtyasError::FromIoError(e) => write!(f, "{}", e),
-            LmtyasError::FromStringUtf8Error(e) => write!(f, "{}", e),
-            LmtyasError::FromStrUtf8Error(e) => write!(f, "{}", e),
-            LmtyasError::FromStringError(e) => write!(f, "{}", e),
-            LmtyasError::FromHacaoiError(e) => write!(f, "{}", e),
-            LmtyasError::FromRegexError(e) => write!(f, "{}", e),
-            LmtyasError::FromBoxedStdError(e) => write!(f, "{}", e),
-            LmtyasError::FromSerdeJsonError(e) => write!(f, "{}", e),
-            LmtyasError::FromOpenidReqwestError(e) => write!(f, "{}", e),
+            LmtyasError::FromIoError(e) => write!(f, "{e}"),
+            LmtyasError::FromStringUtf8Error(e) => write!(f, "{e}"),
+            LmtyasError::FromStrUtf8Error(e) => write!(f, "{e}"),
+            LmtyasError::FromStringError(e) => write!(f, "{e}"),
+            LmtyasError::FromHacaoiError(e) => write!(f, "{e}"),
+            LmtyasError::FromRegexError(e) => write!(f, "{e}"),
+            LmtyasError::FromBoxedStdError(e) => write!(f, "{e}"),
+            LmtyasError::FromSerdeJsonError(e) => write!(f, "{e}"),
+            LmtyasError::FromOpenidReqwestError(e) => write!(f, "{e}"),
         }
     }
 }

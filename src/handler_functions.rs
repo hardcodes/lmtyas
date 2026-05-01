@@ -258,7 +258,7 @@ pub async fn set_password_for_rsa_rivate_key(
     let mut decoded_password = match String::from_utf8(base64_decoded_password) {
         Ok(password) => password.trim_matches(char::from(0)).to_string(),
         Err(e) => {
-            warn!("could not base64 decode password: {}, {}", &e, &admin);
+            warn!("could not base64 decode password: {e}, {admin}");
             return HttpResponse::err_text_response("ERROR: password was not set");
         }
     };
@@ -267,7 +267,7 @@ pub async fn set_password_for_rsa_rivate_key(
         Err(e) => {
             // loading the rsa keys did not work, throw the password away
             decoded_password.zeroize();
-            warn!("error loading rsa private key: {}, {}", e, admin);
+            warn!("error loading rsa private key: {e}, {admin}");
             return HttpResponse::err_text_response("ERROR: could not load rsa private key!");
         }
         Ok(hybrid_crypto) => {
@@ -361,22 +361,17 @@ async fn parse_and_validate_secret_form_data(
             return Err("ERROR: could not parse form data".into());
         }
     };
-    debug!("{}", form_data);
+    debug!("{form_data}");
     if form_data.len() > MAX_FORM_BYTES_LEN {
-        warn!("form data exceeds {} bytes! {}", MAX_FORM_BYTES_LEN, &user);
-        return Err(format!(
-            "ERROR: more than {} bytes of data sent {}",
-            &MAX_FORM_BYTES_LEN, &user
-        )
-        .into());
+        warn!("form data exceeds {MAX_FORM_BYTES_LEN} bytes! {user}");
+        return Err(
+            format!("ERROR: more than {MAX_FORM_BYTES_LEN} bytes of data sent {user}").into(),
+        );
     }
     let mut parsed_form_data = match serde_json::from_str(&form_data) as Result<Secret, _> {
         Ok(parsed_form_data) => parsed_form_data,
         Err(e) => {
-            warn!(
-                "could not parse json form data with secret: {} {}",
-                &e, &user
-            );
+            warn!("could not parse json form data with secret: {e} {user}");
             return Err("ERROR: could not parse json form data".into());
         }
     };
@@ -384,33 +379,33 @@ async fn parse_and_validate_secret_form_data(
     if ValidateCsrfToken::Yes == validate_csrf_token {
         match parsed_form_data.csrf_token {
             None => {
-                warn!("empty csrf token! {}", &user);
+                warn!("empty csrf token! {user}");
                 return Err(ERROR_CRSF_VALIDATION.into());
             }
             Some(ref form_data_csrf_token) => {
                 if *form_data_csrf_token != user.csrf_token {
-                    warn!("csrf token does not match! {}", &user);
+                    warn!("csrf token does not match! {user}");
                     return Err(ERROR_CRSF_VALIDATION.into());
                 }
             }
         }
     }
     if parsed_form_data.from_email.len() > MAX_FORM_INPUT_LEN {
-        warn!("from email > {} chars!", MAX_FORM_INPUT_LEN);
+        warn!("from email > {MAX_FORM_INPUT_LEN} chars!");
         return Err(format!("ERROR: from email > {} chars {}", MAX_FORM_INPUT_LEN, &user).into());
     }
     if parsed_form_data.to_email.len() > MAX_FORM_INPUT_LEN {
-        warn!("to email > {} chars!", MAX_FORM_INPUT_LEN);
+        warn!("to email > {MAX_FORM_INPUT_LEN} chars!");
         return Err(format!("ERROR: to email > {} chars {}", MAX_FORM_INPUT_LEN, &user).into());
     }
     if parsed_form_data.context.len() > MAX_FORM_INPUT_LEN {
-        warn!("context > {} chars!", MAX_FORM_INPUT_LEN);
+        warn!("context > {MAX_FORM_INPUT_LEN} chars!");
         return Err(format!("ERROR: context > {} chars {}", MAX_FORM_INPUT_LEN, &user).into());
     }
     let secret_length = get_base64_encoded_secret_len(&parsed_form_data.secret);
     if secret_length > MAX_FORM_INPUT_LEN {
         warn!("secret > {} bytes! {}", MAX_FORM_INPUT_LEN, &user);
-        return Err(format!("ERROR: secret > {} bytes!", MAX_FORM_INPUT_LEN).into());
+        return Err(format!("ERROR: secret > {MAX_FORM_INPUT_LEN} bytes!").into());
     }
     // Check if that looks like an email address before we query some external data source.
     if !application_configuration
@@ -876,7 +871,7 @@ pub async fn csrf_template_tell_html(user: AuthenticatedUser) -> HttpResponse {
     debug!("tell.html is requested from {}", &user);
     match inject_csrf_token(CsrfTemplateFile::Tell, &user.csrf_token).await {
         Err(e) => {
-            warn!("{}", e);
+            warn!("{e}");
             not_found_404().await
         }
         Ok(body) => HttpResponse::Ok()
@@ -891,7 +886,7 @@ pub async fn csrf_template_sysop_html(admin: AuthenticatedAdministrator) -> Http
     debug!("sysop.html is requested from {}", &admin);
     match inject_csrf_token(CsrfTemplateFile::Sysop, &admin.csrf_token()).await {
         Err(e) => {
-            warn!("{}", e);
+            warn!("{e}");
             not_found_404().await
         }
         Ok(body) => HttpResponse::Ok()

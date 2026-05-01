@@ -19,7 +19,7 @@ impl OidcUserDetails for OidcUserLdapUserDetails {
         {
             Ok(l) => l,
             Err(e) => {
-                return Err(format!("cannot deserialize ldap result: {}", e).into());
+                return Err(format!("cannot deserialize ldap result: {e}").into());
             }
         };
         // dirty hack to build a json string from the ldap query result,

@@ -152,7 +152,7 @@ async fn get_access_token_payload(req: &HttpRequest) -> Result<ValidatedAccessTo
             match serde_json::from_str(&bearer_token_json) as Result<AccessTokenPayload, _> {
                 Ok(bearer_token) => bearer_token,
                 Err(e) => {
-                    warn!("could not parse json bearer token payload: {}", &e);
+                    warn!("could not parse json bearer token payload: {e}");
                     return Err(ErrorUnauthorized("Could not parse access token!"));
                 }
             };
@@ -165,10 +165,7 @@ async fn get_access_token_payload(req: &HttpRequest) -> Result<ValidatedAccessTo
             .await;
         if let Some(rsa_keys) = hybrid_crypto_lock.as_deref() {
             if let Err(e) = rsa_keys.validate_sha512_b64_signature(&sub, &bearer_token.jti) {
-                warn!(
-                    "could not verify signature (jti value) from access token: {}",
-                    e
-                );
+                warn!("could not verify signature (jti value) from access token: {e}");
                 return Err(ErrorForbidden("Invalid access token!"));
             }
         }

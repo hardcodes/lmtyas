@@ -98,10 +98,7 @@ pub fn get_authenticated_user_from_request(req: &HttpRequest) -> Result<Authenti
         return Ok(authenticated_user.clone());
     }
 
-    warn!(
-        "no cookie with name {} or no authenticated_user found!",
-        COOKIE_NAME
-    );
+    warn!("no cookie with name {COOKIE_NAME} or no authenticated_user found!");
     Err(ErrorUnauthorized(
         "ERROR: no matching cookie found! Authorization expired?",
     ))
@@ -185,9 +182,6 @@ pub fn update_authenticated_user_cookie_lifetime(req: &HttpRequest) -> HttpRespo
         return cookie_response;
     }
 
-    warn!(
-        "no cookie with name {} or no authenticated_user found!",
-        COOKIE_NAME
-    );
+    warn!("no cookie with name {COOKIE_NAME} or no authenticated_user found!");
     HttpResponse::ok_text_response("ERROR: no matching cookie found! Authorization expired?")
 }
