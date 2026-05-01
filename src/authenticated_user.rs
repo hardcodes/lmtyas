@@ -1,7 +1,8 @@
 use chrono::{DateTime, Utc};
 use log::{debug, info, warn};
 use std::collections::HashMap;
-use uuid::v1::{Context, Timestamp};
+use uuid::v1::Timestamp;
+use uuid::ContextV1;
 use uuid::Uuid;
 extern crate env_logger;
 use crate::authentication_functions::get_authenticated_user_from_request;
@@ -194,7 +195,7 @@ pub struct SharedAuthenticatedUsersHashMap {
     /// holds the authenticated users
     pub authenticated_users_hashmap: AuthenticatedUsersHashMap,
     /// used by the uuid crate to build unique uuids across threads
-    pub uuid_context: Context,
+    pub uuid_context: ContextV1,
     /// These accounts are designated administrators
     /// from the configuration file.
     /// They are ot derived from the ldap server because
@@ -214,7 +215,7 @@ impl SharedAuthenticatedUsersHashMap {
     pub fn new(admin_accounts: Vec<String>) -> SharedAuthenticatedUsersHashMap {
         SharedAuthenticatedUsersHashMap {
             authenticated_users_hashmap: AuthenticatedUsersHashMap::new(),
-            uuid_context: Context::new(1),
+            uuid_context: ContextV1::new(1),
             admin_accounts,
         }
     }

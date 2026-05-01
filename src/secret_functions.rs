@@ -4,7 +4,8 @@ use serde::{Deserialize, Serialize};
 use std::error::Error;
 use std::fs::File;
 use std::path::Path;
-use uuid::v1::{Context, Timestamp};
+use uuid::v1::Timestamp;
+use uuid::ContextV1;
 use uuid::Uuid;
 use zeroize::Zeroize;
 
@@ -19,7 +20,7 @@ const SECRET_ID: &[u8; 6] = &[0x99, 0xa8, 0xdb, 0x5c, 0x43, 0x85];
 
 pub struct SharedSecretData {
     /// used by the uuid crate to build unique uuids across threads
-    pub uuid_context: Context,
+    pub uuid_context: ContextV1,
 }
 
 impl Default for SharedSecretData {
@@ -33,7 +34,7 @@ impl SharedSecretData {
     /// context for creating unique uuids.
     pub fn new() -> SharedSecretData {
         SharedSecretData {
-            uuid_context: Context::new(1),
+            uuid_context: ContextV1::new(1),
         }
     }
 

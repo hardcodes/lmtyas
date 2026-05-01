@@ -18,7 +18,8 @@ use std::collections::HashMap;
 use std::fmt;
 use std::future::{ready, Ready};
 use std::sync::{Arc, RwLock};
-use uuid::v1::{Context, Timestamp};
+use uuid::v1::Timestamp;
+use uuid::ContextV1;
 use uuid::Uuid;
 
 #[cfg(feature = "ldap-auth")]
@@ -117,7 +118,7 @@ pub struct SharedRequestData {
     /// holds the authentication requests
     pub authentication_state_hashmap: AuthenticationStateHashMap,
     /// used by the uuid crate to build unique uuids across threads
-    pub uuid_context: Context,
+    pub uuid_context: ContextV1,
 }
 
 impl Default for SharedRequestData {
@@ -130,7 +131,7 @@ impl SharedRequestData {
     pub fn new() -> SharedRequestData {
         SharedRequestData {
             authentication_state_hashmap: AuthenticationStateHashMap::new(),
-            uuid_context: Context::new(1),
+            uuid_context: ContextV1::new(1),
         }
     }
 
