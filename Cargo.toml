@@ -1,7 +1,7 @@
 [package]
 name = "lmtyas"
 description = "let-me-tell-you-a-secret, a web service that allows an authenticated user to send secrets like passwords to other authenticated users in a secure way."
-version = "4.1.67"
+version = "4.1.68"
 edition = "2021"
 authors = ["Sven Putze <github@hardcodes.de>", "Matthias Bläsing"]
 readme = "README.md"
@@ -25,8 +25,8 @@ clap = "4.6.1"
 env_logger = "0.11.10"
 futures = "0.3.32"
 futures-util = "0.3.32"
-# hacaoi, version = "0.2.3"
-hacaoi = { git = "https://github.com/hardcodes/hacaoi.git", rev = "1b66d966b0374692827eea885151d25ebf3b31cc", default-features = false, optional = true }
+# hacaoi, version = "0.2.5"
+hacaoi = { git = "https://github.com/hardcodes/hacaoi.git", rev = "f40664bf91d1bec4a54e038d672b10463ce91240", default-features = false, optional = true }
 ldap3 = { version = "0.12.1", default-features = false, features = ["tls-rustls", "tls-rustls-ring"] }
 lettre = { version = "0.11.21", default-features = false, features = ["smtp-transport", "pool", "hostname", "builder"] }
 log = "0.4.29"
