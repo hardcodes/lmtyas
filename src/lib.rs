@@ -39,7 +39,7 @@ pub mod string_trait;
 pub mod unsecure_string;
 
 pub const PROGRAM_NAME: &str = env!("CARGO_PKG_NAME");
-pub const PROGRAM_VERSION: &str = env!("CARGO_PKG_VERSION");
+pub const PROGRAM_VERSION: &str = concat!(env!("CARGO_PKG_VERSION"), "-", env!("GIT_HASH"));
 pub const PROGRAM_AUTHORS: &str = env!("CARGO_PKG_AUTHORS");
 pub const PROGRAM_DESCRIPTION: &str = env!("CARGO_PKG_DESCRIPTION");
 pub const UNKNOWN_RECEIVER_EMAIL: &str = "UNKOWN RECEIVER EMAIL";
