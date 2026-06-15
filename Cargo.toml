@@ -1,7 +1,7 @@
 [package]
 name = "lmtyas"
 description = "let-me-tell-you-a-secret, a web service that allows an authenticated user to send secrets like passwords to other authenticated users in a secure way."
-version = "4.1.83"
+version = "4.1.84"
 edition = "2021"
 authors = ["Sven Putze <github@hardcodes.de>", "Matthias Bläsing"]
 readme = "README.md"
@@ -38,7 +38,7 @@ rustls = "0.23.40"
 secstr = { version = "0.5", features = ["serde"] }
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0.150"
-serde_regex = "1"
+serde_regex = "1.2.0"
 timer = "0.2"
 tokio = "1.52.3"
 uuid = { version = "1.23.3", features = ["v1", "serde"] }
