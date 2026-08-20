@@ -130,7 +130,7 @@ pub async fn get_colors_css() -> impl Responder {
         true => path_local,
         _ => path_static,
     };
-    NamedFile::open_async(file_path).await
+    NamedFile::open(file_path)
 }
 
 /// Return the custom lmtyas.css file if it exists.
@@ -141,7 +141,7 @@ pub async fn get_lmtyas_css() -> impl Responder {
         true => path_local,
         _ => path_static,
     };
-    NamedFile::open_async(file_path).await
+    NamedFile::open(file_path)
 }
 
 /// Return the custom company-logo.png if it exists.
@@ -152,7 +152,7 @@ pub async fn get_company_logo() -> impl Responder {
         true => path_local,
         _ => path_static,
     };
-    NamedFile::open_async(file_path).await
+    NamedFile::open(file_path)
 }
 
 /// Return the custom favicon.png if it exists.
@@ -163,14 +163,14 @@ pub async fn get_favicon() -> impl Responder {
         true => path_local,
         _ => path_static,
     };
-    NamedFile::open_async(file_path).await
+    NamedFile::open(file_path)
 }
 
 /// Return the custom imprint.html if it exists.
 pub async fn get_imprint_html() -> impl Responder {
     let path_local = Path::new("local/html/imprint.html");
     if path_local.exists() {
-        return NamedFile::open_async(path_local).await;
+        return NamedFile::open(path_local);
     }
     warn!("route access forbidden!");
     Err(Error::new(
@@ -183,7 +183,7 @@ pub async fn get_imprint_html() -> impl Responder {
 pub async fn get_privacy_html() -> impl Responder {
     let path_local = Path::new("local/html/privacy.html");
     if path_local.exists() {
-        return NamedFile::open_async(path_local).await;
+        return NamedFile::open(path_local);
     }
     warn!("route access forbidden!");
     Err(Error::new(
@@ -788,7 +788,7 @@ pub async fn get_validated_receiver_email(
 
 /// Get admin protected sysop.js.
 pub async fn get_sysop_js(_admin: AuthenticatedAdministrator) -> impl Responder {
-    NamedFile::open_async("web-content/admin-html/js/sysop.js").await
+    NamedFile::open("web-content/admin-html/js/sysop.js")
 }
 
 /// Renew cookie lifetime for the authenticated user by setting the
