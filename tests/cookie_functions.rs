@@ -8,7 +8,7 @@ type CookieRsaKeys = hacaoi::openssl::rsa::RsaKeys;
 #[cfg(feature = "hacaoi-rust-crypto")]
 type CookieRsaKeys = hacaoi::rust_crypto::rsa::RsaKeys;
 // the trait RsaKeysFunctions is needed for both OpenSSL and Rust-Crypto rsa
-use hacaoi::rsa::RsaKeysFunctions;
+use hacaoi::rsa::PrivatePublicKeysRsaFunctions;
 
 #[cfg(not(feature = "oidc-auth-ldap"))]
 const INVALID_RSA_COOKIE: &str =

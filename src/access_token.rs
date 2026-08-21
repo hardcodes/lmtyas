@@ -9,7 +9,7 @@ use actix_web::{
 };
 use chrono::DateTime;
 use hacaoi::base64_trait::Base64VecU8Conversions;
-use hacaoi::rsa::RsaKeysFunctions;
+use hacaoi::rsa::PrivatePublicKeysRsaFunctions;
 use log::{debug, info, warn};
 use serde::{Deserialize, Serialize};
 use std::fmt;

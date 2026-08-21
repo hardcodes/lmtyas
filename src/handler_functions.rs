@@ -22,7 +22,7 @@ use actix_files::NamedFile;
 use actix_web::web::Bytes;
 use actix_web::{http::header, http::StatusCode, web, HttpRequest, HttpResponse, Responder};
 use hacaoi::base64_trait::{Base64StringConversions, Base64VecU8Conversions};
-use hacaoi::rsa::RsaKeysFunctions;
+use hacaoi::rsa::PrivatePublicKeysRsaFunctions;
 use log::{debug, info, warn};
 use percent_encoding::{percent_decode_str, utf8_percent_encode, AsciiSet, CONTROLS};
 use serde::{Deserialize, Serialize};

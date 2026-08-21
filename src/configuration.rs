@@ -30,7 +30,7 @@ type CookieRsaKeys = hacaoi::openssl::rsa::RsaKeys;
 #[cfg(feature = "hacaoi-rust-crypto")]
 type CookieRsaKeys = hacaoi::rust_crypto::rsa::RsaKeys;
 // the trait RsaKeysFunctions is needed for OpenSSL and Rust-Crypto rsa
-use hacaoi::{error::HacaoiError, rsa::RsaKeysFunctions};
+use hacaoi::{error::HacaoiError, rsa::PrivatePublicKeysRsaFunctions};
 #[cfg(feature = "hacaoi-openssl")]
 type HybridCrypto = hacaoi::openssl::hybrid_crypto::HybridCrypto;
 #[cfg(feature = "hacaoi-rust-crypto")]

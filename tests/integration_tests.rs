@@ -11,7 +11,7 @@ type HybridCrypto = hacaoi::openssl::hybrid_crypto::HybridCrypto;
 #[cfg(feature = "hacaoi-rust-crypto")]
 type HybridCrypto = hacaoi::rust_crypto::hybrid_crypto::HybridCrypto;
 use hacaoi::base64_trait::{Base64StringConversions, Base64VecU8Conversions};
-use hacaoi::rsa::RsaKeysFunctions;
+use hacaoi::rsa::PrivatePublicKeysRsaFunctions;
 #[cfg(feature = "ldap-auth")]
 use lmtyas::authentication_ldap::LdapCommonConfiguration;
 #[cfg(feature = "ldap-auth")]
