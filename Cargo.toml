@@ -1,7 +1,7 @@
 [package]
 name = "lmtyas"
 description = "let-me-tell-you-a-secret, a web service that allows an authenticated user to send secrets like passwords to other authenticated users in a secure way."
-version = "4.1.129"
+version = "4.1.130"
 edition = "2021"
 authors = ["Sven Putze <github@hardcodes.de>", "Matthias Bläsing"]
 readme = "README.md"
@@ -42,7 +42,7 @@ serde_regex = "1.2.0"
 timer = "0.2"
 tokio = "1.54.0"
 uuid = { version = "1.28.0", features = ["v1", "serde"] }
-zeroize = "1.9.0"
+zeroize = "1.9.1"
 
 [features]
 default = ["oidc-auth-ldap", "mail-noauth-notls", "api-access-token", "hacaoi-rust-crypto"]
